@@ -22,7 +22,7 @@ ENTITY atari800core_eclaireXLproto IS
 	);
 	PORT
 	(
-		CLOCK_5 :  IN  STD_LOGIC;
+		CLOCK_IN :  IN  STD_LOGIC;
 
 		PS2CLK :  IN  STD_LOGIC;
 		PS2DAT :  IN  STD_LOGIC;
@@ -100,7 +100,8 @@ BEGIN
 	GENERIC MAP
 	(
 		internal_rom => internal_rom,
-		internal_ram => internal_ram
+		internal_ram => internal_ram,
+		enable_ps2 => 1
 	)
 	PORT MAP
 	(
@@ -212,7 +213,10 @@ BEGIN
 		USB1DP => USB1DP,
 		
 		ADC_SDA => open,
-		ADC_SCL => open
+		ADC_SCL => open,
+
+		PS2CLK_IN(1) => PS2CLK,
+		PS2DAT_IN(1) => PS2DAT
 	);
 
 
@@ -258,9 +262,10 @@ gen_hdmi : if hdmiOnGPIO=1 generate
 
 end generate gen_hdmi;
 
-pll_gclk_inst : pll_gclk -- upscale clock from 5 to 50MHz and put on global clock line - so we can use more plls and fractional features!
-PORT MAP(refclk => CLOCK_5,
-	 outclk_0 => ADAPTCLOCK_50);
+--pll_gclk_inst : pll_gclk -- upscale clock from 5 to 50MHz and put on global clock line - so we can use more plls and fractional features!
+--PORT MAP(refclk => CLOCK_5,
+--	 outclk_0 => ADAPTCLOCK_50);
+ADAPTCLOCK_50 <= CLOCK_IN; -- Changed to 50MHz on the board!
 
 
 END vhdl;

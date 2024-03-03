@@ -44,6 +44,14 @@ my %variants =
 		"postfix" => "v2",
 		"sid" => 1
 	},
+	"A2EBAprotorom" =>
+	{
+		"internal_ram" => 65536,
+		"internal_rom" => 1,
+		"fpga" => "5CEBA2F23C8",
+		"postfix" => "proto",
+		"sid" => 0
+	},
 #	"A2EBAproto" =>
 #	{
 #		"internal_ram" => 0,

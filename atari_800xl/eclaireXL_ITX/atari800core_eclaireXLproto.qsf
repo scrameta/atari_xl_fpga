@@ -53,25 +53,32 @@ set_global_assignment -name EDA_OUTPUT_DATA_FORMAT VHDL -section_id eda_simulati
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
 set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
+set_global_assignment -name STRATIXV_CONFIGURATION_SCHEME "ACTIVE SERIAL X1"
+set_global_assignment -name ACTIVE_SERIAL_CLOCK FREQ_100MHZ
 
 set_global_assignment -name VHDL_FILE atari800core_eclaireXLproto.vhd
-set_global_assignment -name VHDL_FILE atari800core_eclaireXL.vhd
+set_global_assignment -name VHDL_FILE atari800core_eclaireXLv1.vhd
 
 set_global_assignment -name QIP_FILE pll_gclk.qip
 
 set_global_assignment -name QIP_FILE pll_usb.qip
+#set_global_assignment -name QIP_FILE serial_loader/synthesis/serial_loader.qip
 set_global_assignment -name QIP_FILE zpu_rom.qip
 set_global_assignment -name QIP_FILE pll_hdmi.qip
+set_global_assignment -name QIP_FILE pll_hdmi2.qip
 set_global_assignment -name QIP_FILE pll_acore.qip
 set_global_assignment -name QIP_FILE pll_acore_reconfig.qip
 set_global_assignment -name QIP_FILE pll_usb.qip
 set_global_assignment -name QIP_FILE altddio_out1.qip
 set_global_assignment -name QIP_FILE pll_fifo.qip
+set_global_assignment -name QIP_FILE fifo_receive.qip
+set_global_assignment -name QIP_FILE fifo_transmit.qip
+set_global_assignment -name QIP_FILE sfl.qip
 set_global_assignment -name QSYS_FILE clkctrl.qsys
+set_global_assignment -name QSYS_FILE clkctrl2.qsys
 set_global_assignment -name QSYS_FILE ddioclkctrl.qsys
 
-
-set_location_assignment PIN_H16 -to CLOCK_5
+set_location_assignment PIN_H16 -to CLOCK_IN
 
 set_location_assignment PIN_A5 -to VGA_R[0]
 set_location_assignment PIN_B5 -to VGA_R[1]
