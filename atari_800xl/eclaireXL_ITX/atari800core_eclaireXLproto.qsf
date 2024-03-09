@@ -59,8 +59,6 @@ set_global_assignment -name ACTIVE_SERIAL_CLOCK FREQ_100MHZ
 set_global_assignment -name VHDL_FILE atari800core_eclaireXLproto.vhd
 set_global_assignment -name VHDL_FILE atari800core_eclaireXLv1.vhd
 
-set_global_assignment -name QIP_FILE pll_gclk.qip
-
 set_global_assignment -name QIP_FILE pll_usb.qip
 #set_global_assignment -name QIP_FILE serial_loader/synthesis/serial_loader.qip
 set_global_assignment -name QIP_FILE zpu_rom.qip
