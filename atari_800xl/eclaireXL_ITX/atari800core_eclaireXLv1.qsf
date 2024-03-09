@@ -73,6 +73,8 @@ set_global_assignment -name QIP_FILE sfl.qip
 set_global_assignment -name QSYS_FILE clkctrl.qsys
 set_global_assignment -name QSYS_FILE ddioclkctrl.qsys
 
+set_global_assignment -name SDC_FILE atari800core_eclaireXLv1.sdc
+
 set_location_assignment PIN_H16 -to CLOCK_50
 
 set_location_assignment PIN_A5 -to VGA_R[0]

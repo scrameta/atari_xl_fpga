@@ -74,6 +74,8 @@ set_global_assignment -name QSYS_FILE clkctrl.qsys
 set_global_assignment -name VHDL_FILE adc084.vhdl
 set_global_assignment -name VHDL_FILE gpio_debug.vhd
 
+set_global_assignment -name SDC_FILE atari800core_eclaireXLv3.sdc
+
 set_location_assignment PIN_H16 -to CLOCK_50
 
 set_location_assignment PIN_A5 -to HD_TX2P 

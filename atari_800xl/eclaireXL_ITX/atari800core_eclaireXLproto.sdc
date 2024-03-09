@@ -1,19 +1,15 @@
-create_clock -period 5MHz [get_ports CLOCK_5]
+create_clock -period 50MHz [get_ports CLOCK_IN]
 derive_pll_clocks
 derive_clock_uncertainty
 
 set_clock_groups -asynchronous \
-  -group { CLOCK_5 } \
+  -group { CLOCK_IN } \
   -group { \
     newboard|pll_acore_inst|pll_acore_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk \
     newboard|pll_acore_inst|pll_acore_inst|altera_pll_i|cyclonev_pll|counter[1].output_counter|divclk \
     newboard|pll_acore_inst|pll_acore_inst|altera_pll_i|cyclonev_pll|counter[2].output_counter|divclk \
     newboard|pll_acore_inst|pll_acore_inst|altera_pll_i|cyclonev_pll|counter[3].output_counter|divclk \
-    newboard|pll_acore_inst|pll_acore_inst|altera_pll_i|cyclonev_pll|fpll_0|fpll|vcoph[0]  \
-  } \
-  -group { \
-    pll_gclk_inst|pll_gclk_inst|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|vcoph[0] \
-    pll_gclk_inst|pll_gclk_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk \
+    newboard|pll_acore_inst|pll_acore_inst|altera_pll_i|cyclonev_pll|fpll_0|fpll|vcoph[0] \
   } \
   -group { \
     newboard|pll_hdmi_inst|pll_hdmi_inst|altera_pll_i|general[0].gpll~FRACTIONAL_PLL|vcoph[0] \
