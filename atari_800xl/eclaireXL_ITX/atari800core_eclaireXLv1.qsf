@@ -556,3 +556,6 @@ set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[15]
 
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SD_DAT2
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SD_DAT1
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SD_DETECT
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SD_WRITEPROTECT
+
