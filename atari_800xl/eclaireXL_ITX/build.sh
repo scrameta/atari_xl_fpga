@@ -162,6 +162,10 @@ foreach my $variant (sort keys %variants)
 	`quartus_sh --flow compile atari800core_eclaireXL$postfix > build.log 2> build.err`;
 
 	`quartus_cpf --convert ../convert$convertpostfix.cof`;
+	if ($convertpostfix eq "proto")
+	{
+		`quartus_cpf --convert ../convertprotosmall.cof`;
+	}
 	
 	chdir "..";
 }

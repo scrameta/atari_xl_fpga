@@ -15,12 +15,13 @@ cat ../firmware_eclairexl/mif_file_stuff/rom_prologue_40.vhd  zpu_rom.mif_inside
 if [ $1 != "BUILD" ]; then
     echo Updating existing
 
-    cp zpu_romv1.mif build_A2EBArom/zpu_rom.mif
-    quartus_cdb --update_mif build_A2EBArom/atari800core_eclaireXLv1.qpf
-    quartus_asm build_A2EBArom/atari800core_eclaireXLv1.qpf
+    cp zpu_romproto.mif build_A2EBAprotorom/zpu_rom.mif
+    quartus_cdb --update_mif build_A2EBAprotorom/atari800core_eclaireXLproto.qpf
+    quartus_asm build_A2EBAprotorom/atari800core_eclaireXLproto.qpf
     
-    pushd build_A2EBArom/
-    quartus_cpf --convert ../convertv1.cof
+    pushd build_A2EBAprotorom/
+    quartus_cpf --convert ../convertproto.cof
+    quartus_cpf --convert ../convertprotosmall.cof
     popd
 else
     echo Skipping update
