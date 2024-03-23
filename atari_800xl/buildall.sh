@@ -9,7 +9,7 @@ function max3 {
    done
 }
 
-export PATH=${ORIGPATH}:/home/markw/fpga/altera/13.0sp1/quartus/bin
+export PATH=${ORIGPATH}:/home/markw/altera/13.0sp1/quartus/bin
 #cd de1
 #max3; ./build.sh ALL &
 cd chameleon
@@ -36,7 +36,7 @@ cd ../mcctv_5200
 max3; ./build.sh ALL &
 
 
-export PATH=${ORIGPATH}:/home/markw/intelFPGA_lite/18.0/quartus/bin:/home/markw/intelFPGA_lite/18.0/quartus/sopc_builder/bin/
+export PATH=${ORIGPATH}:/home/markw/intelFPGA_lite/20.1/quartus/bin:/home/markw/intelFPGA_lite/20.1/quartus/sopc_builder/bin/
 #cd ../sockit
 #max3; ./build.sh &
 cd ../chameleon2
