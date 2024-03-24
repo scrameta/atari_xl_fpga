@@ -1,0 +1,11 @@
+pushd ./chameleon2/ && ./makemif && popd
+pushd ./chameleon/ && ./makemif && popd
+pushd ./eclaireXL_ITX/ && ./makemifv1 && popd
+pushd ./eclaireXL_ITX/ && ./makemifv2 && popd
+pushd ./eclaireXL_ITX/ && ./makemifv3 && popd
+pushd ./mcc216_5200/ && ./makemif && popd
+pushd ./mcc216/ && ./makemif && popd
+pushd ./mcctv_5200/ && ./makemif && popd
+pushd ./mcctv/ && ./makemif && popd
+pushd ./mist_5200/ && ./makemif && popd
+pushd ./mist/ && ./makemif && popd

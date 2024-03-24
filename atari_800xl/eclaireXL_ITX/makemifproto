@@ -1,6 +1,6 @@
 #!/bin/bash
 export TODAY=`date +'%Y%m%d'`
-export VERSION=`cat VERSION`
+export VERSION=`cat ../VERSION`
 echo "D:$TODAY:"
 echo "V:$VERSION:"
 if [[ ! -f ../firmware_eclairexl/ECLAIREXL.bin ]] ; then
