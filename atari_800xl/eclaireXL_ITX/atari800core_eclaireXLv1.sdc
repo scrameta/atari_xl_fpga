@@ -21,6 +21,9 @@ set_clock_groups -asynchronous \
     pllusbinstance|pll_usb_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk \
   }
 
+set_max_skew -to [get_ports {USB1DP USB1DM}] 1
+set_max_skew -to [get_ports {USB2DP USB2DM}] 1
+
 #create_generated_clock -name sdram_clk -source pll_acore_inst|pll_acore_inst|altera_pll_i|cyclonev_pll|counter[1].output_counter|divclk
 #set_output_delay -clock sdram_clk -max 6.0 [get_ports DRAM_DQ[*]]
 #set_output_delay -clock sdram_clk -min -1.0 [get_ports DRAM_DQ[*]] 

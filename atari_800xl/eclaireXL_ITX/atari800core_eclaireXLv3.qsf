@@ -37,7 +37,7 @@
 # -------------------------------------------------------------------------- #
 
 
-set_global_assignment -name NUM_PARALLEL_PROCESSORS 6
+set_global_assignment -name NUM_PARALLEL_PROCESSORS 4
 set_global_assignment -name FAMILY "Cyclone V"
 set_global_assignment -name TOP_LEVEL_ENTITY atari800core_eclaireXL
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 14.0
@@ -533,6 +533,24 @@ set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[12]
 set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[13]
 set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[14]
 set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[15]
+
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to USB1DP
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to USB1DP
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to USB1DP
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to USB1DM
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to USB1DM
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to USB1DM
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to USB2DP
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to USB2DP
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to USB2DP
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to USB2DM
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to USB2DM
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to USB2DM
+set_instance_assignment -name SLEW_RATE 0 -to USB1DM
+set_instance_assignment -name SLEW_RATE 0 -to USB1DP
+set_instance_assignment -name SLEW_RATE 0 -to USB2DM
+set_instance_assignment -name SLEW_RATE 0 -to USB2DP
+
 
 #set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SD_DAT2
 #set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SD_DAT1
