@@ -1,0 +1,534 @@
+(kicad_sch
+	(version 20250114)
+	(generator "eeschema")
+	(generator_version "9.0")
+	(uuid "f8f92944-710a-49a0-a698-f840e5f20e15")
+	(paper "A4")
+	(lib_symbols)
+	(bus
+		(pts
+			(xy 102.87 99.06) (xy 102.87 123.19)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3b97abf2-8a03-4dde-b274-43e7babd7336")
+	)
+	(bus
+		(pts
+			(xy 170.18 85.09) (xy 185.42 85.09)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3f46411e-9e12-405b-9414-cbd06ac1994d")
+	)
+	(bus
+		(pts
+			(xy 170.18 120.65) (xy 170.18 85.09)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "45147512-8065-44e5-b1b9-626bda6bfa56")
+	)
+	(bus
+		(pts
+			(xy 102.87 123.19) (xy 109.22 123.19)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "467d3634-9754-48ee-9117-b8cbdbd67a4f")
+	)
+	(bus
+		(pts
+			(xy 166.37 82.55) (xy 185.42 82.55)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5ccd6606-7579-4b18-9b58-8ed7dcf7ba20")
+	)
+	(bus
+		(pts
+			(xy 105.41 120.65) (xy 105.41 95.25)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6951bc8c-22ae-4f4c-a5d0-8190cdccb029")
+	)
+	(bus
+		(pts
+			(xy 166.37 120.65) (xy 170.18 120.65)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "783805c9-cb44-4c75-a586-ca137802eef6")
+	)
+	(bus
+		(pts
+			(xy 105.41 95.25) (xy 93.98 95.25)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7c3d855d-987c-45fe-b5e6-2f32cf12f410")
+	)
+	(bus
+		(pts
+			(xy 166.37 123.19) (xy 172.72 123.19)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8458d2e1-f9c3-4043-8626-9f2505cbb513")
+	)
+	(bus
+		(pts
+			(xy 172.72 123.19) (xy 172.72 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8618c18f-eb2b-49ed-aa4b-f333cf807c2a")
+	)
+	(bus
+		(pts
+			(xy 100.33 102.87) (xy 93.98 102.87)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9eb5d362-d903-4312-bd52-372d259e9ab1")
+	)
+	(bus
+		(pts
+			(xy 109.22 120.65) (xy 105.41 120.65)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a1873d59-ecab-48a2-b630-957d0d63f5d8")
+	)
+	(bus
+		(pts
+			(xy 93.98 99.06) (xy 102.87 99.06)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a2416718-5bb0-4772-a318-99fb84a96427")
+	)
+	(bus
+		(pts
+			(xy 109.22 125.73) (xy 100.33 125.73)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d92df410-3185-47e2-b7ff-894919f0691d")
+	)
+	(bus
+		(pts
+			(xy 100.33 125.73) (xy 100.33 102.87)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e1efc5c3-f7cf-4081-8804-dd25b932eb79")
+	)
+	(bus
+		(pts
+			(xy 93.98 82.55) (xy 109.22 82.55)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f5ef94c8-b6ac-4c1a-b2de-b117ff1ef3cf")
+	)
+	(bus
+		(pts
+			(xy 172.72 87.63) (xy 185.42 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f5fbdbac-16d1-4b12-bf53-98425d85e614")
+	)
+	(sheet
+		(at 185.42 73.66)
+		(size 57.15 34.29)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "473fb442-f6a6-4f3e-b077-9a313beb11d5")
+		(property "Sheetname" "antic_pins"
+			(at 185.42 72.9484 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "antic_pins.kicad_sch"
+			(at 185.42 108.5346 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "EXT{D[0..7]}" passive
+			(at 185.42 85.09 180)
+			(uuid "5cb7a68f-1d49-45a9-b4c5-eeecab68f54c")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "EXT{A[0..15]}" passive
+			(at 185.42 87.63 180)
+			(uuid "b6b2e92f-608d-44fe-b655-b4c6d42d61b1")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "EXT{C[0..19]}" passive
+			(at 185.42 82.55 180)
+			(uuid "b85c251c-4909-4c21-b474-0a12deb47ccf")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(instances
+			(project "anticmax"
+				(path "/f8f92944-710a-49a0-a698-f840e5f20e15"
+					(page "7")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 109.22 114.3)
+		(size 57.15 35.56)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "9960f3de-f40f-4029-80a8-5406de02e1f2")
+		(property "Sheetname" "Bus drivers"
+			(at 109.22 113.5884 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "bus_drivers.kicad_sch"
+			(at 109.22 150.4446 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "EXT{D[0..7]}" bidirectional
+			(at 166.37 120.65 0)
+			(uuid "b12e5ce2-6184-4c88-b242-48bce140d19a")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(pin "FPGA{D[0..7]}" input
+			(at 109.22 120.65 180)
+			(uuid "99b8ede6-1ff5-49c4-93a7-5d2440510d8a")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "EXT{A[0..15]}" bidirectional
+			(at 166.37 123.19 0)
+			(uuid "b41b8348-441b-4deb-b914-b09c65a2a92d")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(pin "FPGA{A[0..15]}" input
+			(at 109.22 123.19 180)
+			(uuid "ec9a2a6b-35ac-40d3-9051-f8e3c63fc875")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "{D_DIR D_OE_N A_DIR A_OE_N}" input
+			(at 109.22 125.73 180)
+			(uuid "dec4f9e2-ff20-43bf-977f-489f982b53b1")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(instances
+			(project "anticmax"
+				(path "/f8f92944-710a-49a0-a698-f840e5f20e15"
+					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 34.29 17.78)
+		(size 57.15 35.56)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "b3c63cf3-5aec-4ac7-b511-941f39b58d95")
+		(property "Sheetname" "Power"
+			(at 34.29 17.0684 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "power.kicad_sch"
+			(at 34.29 53.9246 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "anticmax"
+				(path "/f8f92944-710a-49a0-a698-f840e5f20e15"
+					(page "5")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 34.29 73.66)
+		(size 59.69 35.56)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "ca19021e-142b-41f4-aacf-17c21d0aabf5")
+		(property "Sheetname" "FPGA"
+			(at 34.29 72.9484 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "fpga.kicad_sch"
+			(at 34.29 109.8046 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "{D_DIR D_OE_N A_DIR A_OE_N}" input
+			(at 93.98 102.87 0)
+			(uuid "42cb3b34-8d68-4ec4-8191-40fc3763d6a7")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(pin "FPGA{A[0..15]}" input
+			(at 93.98 99.06 0)
+			(uuid "8bfe0cec-b90d-40bb-bdc9-960618628a34")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(pin "FPGA{C[0..19]}" input
+			(at 93.98 82.55 0)
+			(uuid "89972d34-b2dd-4db6-88dc-42a9bd2217e6")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(pin "FPGA{D[0..7]}" input
+			(at 93.98 95.25 0)
+			(uuid "8db0e44f-2112-4b46-ad18-77d5d4656094")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(instances
+			(project "anticmax"
+				(path "/f8f92944-710a-49a0-a698-f840e5f20e15"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 109.22 73.66)
+		(size 57.15 35.56)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "e00ce38b-69d6-4d0f-a366-e4bbe3db0f24")
+		(property "Sheetname" "level shifters"
+			(at 109.22 72.9484 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "level_shifters.kicad_sch"
+			(at 109.22 109.8046 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "FPGA{C[0..19]}" input
+			(at 109.22 82.55 180)
+			(uuid "edf4c2c2-8d94-4839-a234-8a46c4adfb36")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "EXT{C[0..19]}" bidirectional
+			(at 166.37 82.55 0)
+			(uuid "ff90b9d1-ef56-4ba6-a3d2-d7024cb226da")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(instances
+			(project "anticmax"
+				(path "/f8f92944-710a-49a0-a698-f840e5f20e15"
+					(page "3")
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+	(embedded_fonts no)
+)
