@@ -6892,7 +6892,7 @@
 		)
 		(uuid "ff48531e-2341-4ae0-9528-169fafabcd10")
 	)
-	(label "AUDR"
+	(label "AUDL"
 		(at 154.94 36.83 90)
 		(effects
 			(font
@@ -7362,7 +7362,7 @@
 		)
 		(uuid "a77aff5b-57fb-4496-a01e-b7037aa66577")
 	)
-	(label "AUDL"
+	(label "AUDR"
 		(at 152.4 36.83 90)
 		(effects
 			(font
@@ -7553,7 +7553,7 @@
 		)
 		(uuid "10820317-4a77-4884-8e0c-d57ad7046ab3")
 	)
-	(hierarchical_label "AUDL"
+	(hierarchical_label "AUDR"
 		(shape input)
 		(at 152.4 19.05 90)
 		(effects
@@ -7608,7 +7608,7 @@
 		)
 		(uuid "e1c67d15-0773-419f-8f68-4d13c807d96a")
 	)
-	(hierarchical_label "AUDR"
+	(hierarchical_label "AUDL"
 		(shape input)
 		(at 154.94 19.05 90)
 		(effects

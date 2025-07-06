@@ -4577,7 +4577,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "2k7"
+		(property "Value" "DNP"
 			(at 48.26 114.2999 0)
 			(effects
 				(font
@@ -5131,7 +5131,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "2k7"
+		(property "Value" "DNP"
 			(at 163.83 111.7599 0)
 			(effects
 				(font
