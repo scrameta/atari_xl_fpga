@@ -33,24 +33,28 @@ foreach my $variant (sort keys %variants)
 	`rm -rf $dir`;
 	mkdir $dir;
 	`cp atari800core_vampire.vhd $dir`;
-	`cp *pll*.* $dir`;
+	`cp -r pll* $dir`;
+	`cp -r ddr3* $dir`;
+	`cp -r sfl* $dir`;
 	`cp *clkctrl*.* $dir`;
-	`cp *mist_sector*.* $dir`;
 	`cp *.v $dir`;
 	`cp *.vhdl $dir`;
 	`cp *.vhd $dir`;
-	`cp ntsc.mif  pal.mif $dir`;
-	`cp pal_rom.* ntsc_rom.* $dir`;
 	`cp zpu_rom.* $dir`;
+	`cp -r altddio* $dir`;
+ 	`mkdir $dir/hdmi`;
 	`cp atari800core.sdc $dir`;
 	`mkdir $dir/common`;
 	`mkdir $dir/common/a8core`;
 	`mkdir $dir/common/components`;
 	`mkdir $dir/common/zpu`;
+	mkdir "./$dir/common/components/usbhostslave";
+	`cp ../common/components/usbhostslave/trunk/RTL/*/*.v ./$dir/common/components/usbhostslave`;
 	`cp ../common/a8core/* ./$dir/common/a8core`;
 	`cp -r ../common/components/* ./$dir/common/components`;
 	`mv ./$dir/common/components/*cyclone3/* ./$dir/common/components/`;
 	`cp ../common/zpu/* ./$dir/common/zpu`;
+ 	`cp ./hdmi/* ./$dir/hdmi`;
 	`rm ./$dir/common/a8core/atari800core_helloworld.vhd`;
 	`rm ./$dir/common/a8core/atari800nx_core_simple_sdram.vhd`;
 	`rm ./$dir/common/a8core/atari800xl.vhd`;
@@ -58,7 +62,7 @@ foreach my $variant (sort keys %variants)
 	`rm ./$dir/common/a8core/internalromram_simple.vhd`;
 
 	chdir $dir;
-	`../makeqsf ../atari800core.qsf ./common/a8core ./common/components ./common/zpu`;
+	`../makeqsf ../atari800core.qsf ./hdmi ./common/a8core ./common/components ./common/zpu ./common/components/usbhostslave`;
 
 	foreach my $key (sort keys %{$variants{$variant}})
 	{

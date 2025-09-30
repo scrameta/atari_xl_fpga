@@ -874,7 +874,7 @@ set_global_assignment -name VHDL_FILE hdmi/scandoubler_hdmi.vhdl
 set_global_assignment -name VHDL_FILE hdmi/encoder.vhd
 set_global_assignment -name VHDL_FILE hdmi/hdmi.vhd
 set_global_assignment -name QIP_FILE pll2.qip
-set_global_assignment -name VHDL_FILE top.vhdl
+set_global_assignment -name VHDL_FILE atari800core_vampire.vhd
 set_global_assignment -name VHDL_FILE ./common/a8core/atari5200core.vhd
 set_global_assignment -name VHDL_FILE ./common/a8core/atari5200core_simplesdram.vhd
 set_global_assignment -name VHDL_FILE ./common/a8core/atari800core.vhd
