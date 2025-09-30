@@ -1,0 +1,25 @@
+#        //memory map of flash
+#        //0x200000: settings (32KB!) (8KB each)
+#        //0x208000: basic rom (32KB) (8KB each)
+#        //0x210000: os rom (64KB - 4x16KB) (16KB each)
+#        //0x220000: freezer rom (64KB)
+#        //0x230000: ?? (64KB)
+#
+#        -rw-r--r--  1 markw markw  16384 Feb 18 22:53 xlhias.rom
+#        -rw-r--r--  1 markw markw  16384 Feb 18 22:53 xlorig.rom
+#        -rw-r--r--  1 markw markw  10240 Feb 18 22:53 osborig.rom
+#        drwxr-xr-x 24 markw markw  12288 Feb 18 22:53 .
+#        -rw-r--r--  1 markw markw  16384 Feb 18 22:53 ultimon.rom
+
+./makehex ../firmware_eclairexl/576kcompy_PAL_HDMI settings1.hex "0x400000"
+./makehex ../firmware_eclairexl/576kcompy_PAL_HDMI settings2.hex "0x402000"
+./makehex ../firmware_eclairexl/576kcompy_PAL_HDMI settings3.hex "0x404000"
+./makehex ../firmware_eclairexl/48k800_PAL_HDMI settings4.hex "0x406000"
+#cat ./ataribas.rom altirra_roms_3.0/atbasicHDMIm ataribas.rom ataribas.rom > basic.rom
+./makehex ../eclaireXL_ITX/basic.rom basic.hex   "0x408000"
+dd if=/dev/zero of=../eclaireXL_ITX/blank.rom bs=1 count=6144
+#cat ./xlhias.rom ./altirra_roms_3.0/altirraos-xl.rom xlorig.rom blank.rom osborig.rom > os.rom
+./makehex ../eclaireXL_ITX/os.rom   os.hex    "0x410000"
+./makehex ../eclaireXL_ITX/freezer.rom  freezer.hex    "0x420000"
+
+

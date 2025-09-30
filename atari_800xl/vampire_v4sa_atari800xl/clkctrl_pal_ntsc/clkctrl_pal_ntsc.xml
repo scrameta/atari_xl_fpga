@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<deploy
+ date="2024.09.20.13:23:19"
+ outputDirectory="/home/markw/fpga/svn/repo/branches/trunkv37/atari_800xl/vampire_atari/clkctrl_pal_ntsc/">
+ <perimeter>
+  <parameter
+     name="AUTO_GENERATION_ID"
+     type="Integer"
+     defaultValue="0"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_UNIQUE_ID"
+     type="String"
+     defaultValue=""
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE_FAMILY"
+     type="String"
+     defaultValue="Cyclone V"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE"
+     type="String"
+     defaultValue="5CEFA5F23C8"
+     onHdl="0"
+     affectsHdl="1" />
+  <parameter
+     name="AUTO_DEVICE_SPEEDGRADE"
+     type="String"
+     defaultValue="8"
+     onHdl="0"
+     affectsHdl="1" />
+  <interface name="altclkctrl_input" kind="conduit" start="0">
+   <property name="associatedClock" value="" />
+   <property name="associatedReset" value="" />
+   <port name="inclk3x" direction="input" role="inclk3x" width="1" />
+   <port name="inclk2x" direction="input" role="inclk2x" width="1" />
+   <port name="inclk1x" direction="input" role="inclk1x" width="1" />
+   <port name="inclk0x" direction="input" role="inclk0x" width="1" />
+   <port name="clkselect" direction="input" role="clkselect" width="2" />
+   <port name="ena" direction="input" role="ena" width="1" />
+  </interface>
+  <interface name="altclkctrl_output" kind="conduit" start="0">
+   <property name="associatedClock" value="" />
+   <property name="associatedReset" value="" />
+   <port name="outclk" direction="output" role="outclk" width="1" />
+  </interface>
+ </perimeter>
+ <entity
+   path=""
+   parameterizationKey="clkctrl_pal_ntsc:1.0:AUTO_DEVICE=5CEFA5F23C8,AUTO_DEVICE_FAMILY=Cyclone V,AUTO_DEVICE_SPEEDGRADE=8,AUTO_GENERATION_ID=1726831399,AUTO_UNIQUE_ID=(altclkctrl:23.1:CLOCK_TYPE=0,DEVICE_FAMILY=Cyclone V,ENA_REGISTER_MODE=0,GUI_USE_ENA=true,NUMBER_OF_CLOCKS=4,USE_GLITCH_FREE_SWITCH_OVER_IMPLEMENTATION=true)"
+   instancePathKey="clkctrl_pal_ntsc"
+   kind="clkctrl_pal_ntsc"
+   version="1.0"
+   name="clkctrl_pal_ntsc">
+  <parameter name="AUTO_GENERATION_ID" value="1726831399" />
+  <parameter name="AUTO_DEVICE" value="5CEFA5F23C8" />
+  <parameter name="AUTO_DEVICE_FAMILY" value="Cyclone V" />
+  <parameter name="AUTO_UNIQUE_ID" value="" />
+  <parameter name="AUTO_DEVICE_SPEEDGRADE" value="8" />
+  <generatedFiles>
+   <file
+       path="/home/markw/fpga/svn/repo/branches/trunkv37/atari_800xl/vampire_atari/clkctrl_pal_ntsc/synthesis/clkctrl_pal_ntsc.vhd"
+       type="VHDL" />
+  </generatedFiles>
+  <childGeneratedFiles>
+   <file
+       path="/home/markw/fpga/svn/repo/branches/trunkv37/atari_800xl/vampire_atari/clkctrl_pal_ntsc/synthesis/submodules/clkctrl_pal_ntsc_altclkctrl_0.v"
+       type="VERILOG"
+       attributes="" />
+  </childGeneratedFiles>
+  <sourceFiles>
+   <file
+       path="/home/markw/fpga/svn/repo/branches/trunkv37/atari_800xl/vampire_atari/clkctrl_pal_ntsc.qsys" />
+  </sourceFiles>
+  <childSourceFiles>
+   <file
+       path="/home/markw/intelFPGA_lite/23.1std/ip/altera/megafunctions/altclkctrl/altclkctrl_hw.tcl" />
+  </childSourceFiles>
+  <messages>
+   <message level="Debug" culprit="clkctrl_pal_ntsc">queue size: 0 starting:clkctrl_pal_ntsc "clkctrl_pal_ntsc"</message>
+   <message level="Progress" culprit="min"></message>
+   <message level="Progress" culprit="max"></message>
+   <message level="Progress" culprit="current"></message>
+   <message level="Debug">Transform: CustomInstructionTransform</message>
+   <message level="Debug">No custom instruction connections, skipping transform </message>
+   <message level="Debug" culprit="merlin_custom_instruction_transform"><![CDATA[After transform: <b>1</b> modules, <b>0</b> connections]]></message>
+   <message level="Debug">Transform: MMTransform</message>
+   <message level="Debug">Transform: InterruptMapperTransform</message>
+   <message level="Debug">Transform: InterruptSyncTransform</message>
+   <message level="Debug">Transform: InterruptFanoutTransform</message>
+   <message level="Debug">Transform: AvalonStreamingTransform</message>
+   <message level="Debug">Transform: ResetAdaptation</message>
+   <message level="Debug" culprit="clkctrl_pal_ntsc"><![CDATA["<b>clkctrl_pal_ntsc</b>" reuses <b>altclkctrl</b> "<b>submodules/clkctrl_pal_ntsc_altclkctrl_0</b>"]]></message>
+   <message level="Debug" culprit="clkctrl_pal_ntsc">queue size: 0 starting:altclkctrl "submodules/clkctrl_pal_ntsc_altclkctrl_0"</message>
+   <message level="Info" culprit="altclkctrl_0">Generating top-level entity clkctrl_pal_ntsc_altclkctrl_0.</message>
+   <message level="Debug" culprit="altclkctrl_0">Current quartus bindir: /home/markw/intelFPGA_lite/23.1std/quartus/linux64/.</message>
+   <message level="Info" culprit="altclkctrl_0"><![CDATA["<b>clkctrl_pal_ntsc</b>" instantiated <b>altclkctrl</b> "<b>altclkctrl_0</b>"]]></message>
+  </messages>
+ </entity>
+ <entity
+   path="submodules/"
+   parameterizationKey="altclkctrl:23.1:CLOCK_TYPE=0,DEVICE_FAMILY=Cyclone V,ENA_REGISTER_MODE=0,GUI_USE_ENA=true,NUMBER_OF_CLOCKS=4,USE_GLITCH_FREE_SWITCH_OVER_IMPLEMENTATION=true"
+   instancePathKey="clkctrl_pal_ntsc:.:altclkctrl_0"
+   kind="altclkctrl"
+   version="23.1"
+   name="clkctrl_pal_ntsc_altclkctrl_0">
+  <parameter name="NUMBER_OF_CLOCKS" value="4" />
+  <parameter name="USE_GLITCH_FREE_SWITCH_OVER_IMPLEMENTATION" value="true" />
+  <parameter name="GUI_USE_ENA" value="true" />
+  <parameter name="DEVICE_FAMILY" value="Cyclone V" />
+  <parameter name="ENA_REGISTER_MODE" value="0" />
+  <parameter name="CLOCK_TYPE" value="0" />
+  <generatedFiles>
+   <file
+       path="/home/markw/fpga/svn/repo/branches/trunkv37/atari_800xl/vampire_atari/clkctrl_pal_ntsc/synthesis/submodules/clkctrl_pal_ntsc_altclkctrl_0.v"
+       type="VERILOG"
+       attributes="" />
+  </generatedFiles>
+  <childGeneratedFiles/>
+  <sourceFiles>
+   <file
+       path="/home/markw/intelFPGA_lite/23.1std/ip/altera/megafunctions/altclkctrl/altclkctrl_hw.tcl" />
+  </sourceFiles>
+  <childSourceFiles/>
+  <instantiator instantiator="clkctrl_pal_ntsc" as="altclkctrl_0" />
+  <messages>
+   <message level="Debug" culprit="clkctrl_pal_ntsc">queue size: 0 starting:altclkctrl "submodules/clkctrl_pal_ntsc_altclkctrl_0"</message>
+   <message level="Info" culprit="altclkctrl_0">Generating top-level entity clkctrl_pal_ntsc_altclkctrl_0.</message>
+   <message level="Debug" culprit="altclkctrl_0">Current quartus bindir: /home/markw/intelFPGA_lite/23.1std/quartus/linux64/.</message>
+   <message level="Info" culprit="altclkctrl_0"><![CDATA["<b>clkctrl_pal_ntsc</b>" instantiated <b>altclkctrl</b> "<b>altclkctrl_0</b>"]]></message>
+  </messages>
+ </entity>
+</deploy>

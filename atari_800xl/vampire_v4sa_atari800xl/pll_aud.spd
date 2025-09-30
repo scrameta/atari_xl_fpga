@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<simPackage>
+ <file path="pll_aud_sim/pll_aud.vho" type="VHDL" />
+ <topLevel name="pll_aud" />
+ <deviceFamily name="cyclonev" />
+</simPackage>

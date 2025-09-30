@@ -1,0 +1,1022 @@
+# -------------------------------------------------------------------------- #
+#
+# Copyright (C) 2020  Intel Corporation. All rights reserved.
+# Your use of Intel Corporation's design tools, logic functions 
+# and other software and tools, and any partner logic 
+# functions, and any output files from any of the foregoing 
+# (including device programming or simulation files), and any 
+# associated documentation or information are expressly subject 
+# to the terms and conditions of the Intel Program License 
+# Subscription Agreement, the Intel Quartus Prime License Agreement,
+# the Intel FPGA IP License Agreement, or other applicable license
+# agreement, including, without limitation, that your use is for
+# the sole purpose of programming logic devices manufactured by
+# Intel and sold by Intel or its authorized distributors.  Please
+# refer to the applicable agreement for further details, at
+# https://fpgasoftware.intel.com/eula.
+#
+# -------------------------------------------------------------------------- #
+#
+# Quartus Prime
+# Version 20.1.1 Build 720 11/11/2020 SJ Lite Edition
+# Date created = 21:55:25  May 21, 2024
+#
+# -------------------------------------------------------------------------- #
+#
+# Notes:
+#
+# 1) The default values for assignments are stored in the file:
+#		vampire_assignment_defaults.qdf
+#    If this file doesn't exist, see file:
+#		assignment_defaults.qdf
+#
+# 2) Altera recommends that you do not modify this file. This
+#    file is updated automatically by the Quartus Prime software
+#    and any changes you make may be lost or overwritten.
+#
+# -------------------------------------------------------------------------- #
+
+
+set_global_assignment -name FAMILY "Cyclone V"
+set_global_assignment -name DEVICE 5CEFA5F23C8
+set_global_assignment -name TOP_LEVEL_ENTITY vampire
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 20.1.1
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "21:55:25  MAY 21, 2024"
+set_global_assignment -name LAST_QUARTUS_VERSION "23.1std.1 Lite Edition"
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 256
+set_global_assignment -name ENABLE_OCT_DONE OFF
+set_global_assignment -name ENABLE_CONFIGURATION_PINS OFF
+set_global_assignment -name ENABLE_BOOT_SEL_PIN OFF
+set_global_assignment -name STRATIXV_CONFIGURATION_SCHEME "ACTIVE SERIAL X1"
+set_global_assignment -name USE_CONFIGURATION_DEVICE ON
+set_global_assignment -name CRC_ERROR_OPEN_DRAIN ON
+set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -rise
+set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -fall
+set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -rise
+set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -fall
+set_global_assignment -name ACTIVE_SERIAL_CLOCK FREQ_100MHZ
+set_global_assignment -name STRATIX_DEVICE_IO_STANDARD "3.3-V LVTTL"
+
+#DDR3L RAM
+set_location_assignment PIN_K16 -to DRAM_DQ[15]
+set_location_assignment PIN_G15 -to DRAM_DQ[14]
+set_location_assignment PIN_C15 -to DRAM_DQ[13]
+set_location_assignment PIN_B15 -to DRAM_DQ[12]
+set_location_assignment PIN_A13 -to DRAM_DQ[11]
+set_location_assignment PIN_J11 -to DRAM_DQ[10]
+set_location_assignment PIN_E14 -to DRAM_DQ[9]
+set_location_assignment PIN_F13 -to DRAM_DQ[8]
+set_location_assignment PIN_F12 -to DRAM_DQ[7]
+set_location_assignment PIN_B12 -to DRAM_DQ[6]
+set_location_assignment PIN_D13 -to DRAM_DQ[5]
+set_location_assignment PIN_C13 -to DRAM_DQ[4]
+set_location_assignment PIN_K9 -to DRAM_DQ[3]
+set_location_assignment PIN_C11 -to DRAM_DQ[2]
+set_location_assignment PIN_D12 -to DRAM_DQ[1]
+set_location_assignment PIN_E12 -to DRAM_DQ[0]
+
+set_location_assignment PIN_H6 -to DRAM_A[15]
+set_location_assignment PIN_G6 -to DRAM_A[14]
+set_location_assignment PIN_C8 -to DRAM_A[13]
+set_location_assignment PIN_D7 -to DRAM_A[12]
+set_location_assignment PIN_D6 -to DRAM_A[11]
+set_location_assignment PIN_C6 -to DRAM_A[10]
+set_location_assignment PIN_A7 -to DRAM_A[9]
+set_location_assignment PIN_A8 -to DRAM_A[8]
+set_location_assignment PIN_A9 -to DRAM_A[7]
+set_location_assignment PIN_A10 -to DRAM_A[6]
+set_location_assignment PIN_J8 -to DRAM_A[5]
+set_location_assignment PIN_J7 -to DRAM_A[4]
+set_location_assignment PIN_G8 -to DRAM_A[3]
+set_location_assignment PIN_H8 -to DRAM_A[2]
+set_location_assignment PIN_K7 -to DRAM_A[1]
+set_location_assignment PIN_L7 -to DRAM_A[0]
+
+set_location_assignment PIN_C9 -to DRAM_BA[2]
+set_location_assignment PIN_B10 -to DRAM_BA[1]
+set_location_assignment PIN_A5 -to DRAM_BA[0]
+
+set_location_assignment PIN_H14 -to DRAM_UDQS
+set_location_assignment PIN_J13 -to DRAM_UDQS_N
+
+set_location_assignment PIN_H11 -to DRAM_LDQS
+set_location_assignment PIN_G12 -to DRAM_LDQS_N
+
+set_location_assignment PIN_J17 -to DRAM_UDM
+set_location_assignment PIN_G11 -to DRAM_LDM
+
+set_location_assignment PIN_B7 -to DRAM_RAS_N
+set_location_assignment PIN_B6 -to DRAM_CAS_N
+
+set_location_assignment PIN_J9 -to DRAM_CK
+set_location_assignment PIN_H9 -to DRAM_CK_N
+
+set_location_assignment PIN_L8 -to DRAM_ODT
+set_location_assignment PIN_F14 -to DRAM_CKE
+set_location_assignment PIN_E9 -to DRAM_CS_N
+set_location_assignment PIN_F7 -to DRAM_WE_N
+#set_location_assignment PIN_?	-to DRAM_ZQ	# Reference, so NC
+set_location_assignment PIN_J19 -to DRAM_RESET_N
+
+set_location_assignment PIN_B11 -to DRAM_RZQ
+
+#Micro SD card
+set_location_assignment PIN_M7 -to SD_DAT2
+set_location_assignment PIN_M6 -to SD_DAT3
+set_location_assignment PIN_N6 -to SD_CMD
+set_location_assignment PIN_P7 -to SD_CLK
+set_location_assignment PIN_R5 -to SD_DAT0
+set_location_assignment PIN_P6 -to SD_DAT1
+set_location_assignment PIN_U6 -to SD_CD
+
+#Joystick (U9/74_573)
+set_location_assignment PIN_K17 -to JOY_OE_N
+set_location_assignment PIN_U20 -to JOY1[1]
+set_location_assignment PIN_R12 -to JOY1[2]
+set_location_assignment PIN_R11 -to JOY1[3]
+set_location_assignment PIN_V10 -to JOY1[4]
+set_location_assignment PIN_U12 -to JOY2[1]
+set_location_assignment PIN_T8 -to JOY2[2]
+set_location_assignment PIN_T10 -to JOY2[3]
+set_location_assignment PIN_Y9 -to JOY2[4]
+#U24=to fpga			
+#	OE_N	GND	
+#	LE	3.3v	
+set_location_assignment PIN_P18 -to JOY1BUTTON[0]
+set_location_assignment PIN_AA22 -to JOY1BUTTON[1]
+set_location_assignment PIN_P16 -to JOY2BUTTON[0]
+set_location_assignment PIN_N20 -to JOY2BUTTON[1]
+
+#Compact flash 
+#(U5/U6/74_245)
+set_location_assignment PIN_K21 -to CF_DATA_OE_N
+set_location_assignment PIN_T17 -to CF_DATA_DIR
+#$set_location_assignment PIN_R11 -to CF_DATA[15]  #SHARED
+#$set_location_assignment PIN_U12	 -to CF_DATA[14] #SHARED
+#$set_location_assignment PIN_T10	 -to CF_DATA[13] #SHARED
+#$set_location_assignment PIN_Y9	 -to CF_DATA[12] #SHARED
+#$set_location_assignment PIN_T8	 -to CF_DATA[11] #SHARED
+#$set_location_assignment PIN_V10	 -to CF_DATA[10] #SHARED
+#$set_location_assignment PIN_R12 -to CF_DATA[9]   #SHARED
+#$set_location_assignment PIN_V14 -to CF_DATA[8]   #SHARED
+set_location_assignment PIN_M16 -to CF_DATA[7]
+set_location_assignment PIN_M18 -to CF_DATA[6]
+set_location_assignment PIN_P14 -to CF_DATA[5]
+set_location_assignment PIN_R15 -to CF_DATA[4]
+set_location_assignment PIN_P17 -to CF_DATA[3]
+set_location_assignment PIN_T19 -to CF_DATA[2]
+set_location_assignment PIN_T18 -to CF_DATA[1]
+#$set_location_assignment PIN_U20 -to CF_DATA[0]   #SHARED
+
+#U20/FromFPGA	FUNC	PIN	IDE
+set_location_assignment PIN_V13 -to CF_40CS1
+set_location_assignment PIN_U11 -to CF_40CS0
+set_location_assignment PIN_AA10 -to CF_44CS1
+set_location_assignment PIN_AB11 -to CF_44CS0
+set_location_assignment PIN_Y11 -to CF_READSTROBE
+set_location_assignment PIN_AB12 -to CF_WRITESTROBE
+#set_location_assignment PIN_AA12 -to 68K_E    #CHECK TODO
+#set_location_assignment PIN_AB13 -to 68K_BG   #CHECK TODO
+
+#U8/ToFPGA
+#set_location_assignment PIN_Y21	 -to 68k_VPA
+#set_location_assignment PIN_AB22 -to 68K_IPL[2]
+#set_location_assignment PIN_AB21 -to 68K_IPL[1]
+set_location_assignment PIN_AA20 -to CF_IORDY
+#set_location_assignment PIN_AB20 -to 68k_IPL[0]
+set_location_assignment PIN_AA19 -to CF_INTRQ
+
+#Transistor by U6...
+set_location_assignment PIN_L17 -to CF_RESET
+
+#U2/CF ADDR
+set_location_assignment PIN_R22 -to CF_ADDR_OE_N
+set_location_assignment PIN_Y22 -to CF_ADDR_LE
+#set_location_assignment PIN_R11	-to CF_ADDR_68K_A[9] #SHARED
+#set_location_assignment PIN_U12	-to CF_ADDR_68K_A[7] #SHARED
+#set_location_assignment PIN_T10	-to CF_ADDR_68K_A[6] #SHARED
+#set_location_assignment PIN_Y9	-to CF_ADDR_68K_A[5] #SHARED
+#$set_location_assignment PIN_T8	-to CF_ADDR[2] #A[4] SHARED
+#$set_location_assignment PIN_V10	-to CF_ADDR[1] #A[3] SHARED
+#$set_location_assignment PIN_R12	-to CF_ADDR[0] #A[2] SHARED
+#set_location_assignment PIN_V14	-to CF_ADDR_68K_A[1] #SHARED
+			
+#HDMI level
+set_location_assignment PIN_J22 -to HDMI_D4P
+set_location_assignment PIN_J21 -to HDMI_D4N
+set_location_assignment PIN_E21 -to HDMI_D3P
+set_location_assignment PIN_D21 -to HDMI_D3N
+set_location_assignment PIN_E22 -to HDMI_D2P
+set_location_assignment PIN_D22 -to HDMI_D2N
+set_location_assignment PIN_C21 -to HDMI_D1P
+set_location_assignment PIN_B21 -to HDMI_D1N
+set_location_assignment PIN_N9 -to HDMI_SCL
+set_location_assignment PIN_P8 -to HDMI_SDA
+set_location_assignment PIN_V6 -to HDMI_OE_N
+		
+#USB
+#set_location_assignment PIN_T9 -to USB1_DP
+#set_location_assignment PIN_V9 -to USB1_DN
+#set_location_assignment PIN_AB10 -to USB2_DP
+#set_location_assignment PIN_Y10 -to USB2_DN
+#set_location_assignment PIN_V20 -to USB3_DP
+#set_location_assignment PIN_V19 -to USB3_DN
+
+set_location_assignment PIN_T9 -to USB1_DN
+set_location_assignment PIN_V9 -to USB1_DP
+set_location_assignment PIN_AB10 -to USB2_DP
+set_location_assignment PIN_Y10 -to USB2_DN
+set_location_assignment PIN_V20 -to USB3_DN
+set_location_assignment PIN_V19 -to USB3_DP
+
+#Ethernet (and 25MHz->50MHz clock)
+set_location_assignment PIN_AA9 -to ETH_MODE1
+set_location_assignment PIN_AB8 -to ETH_MODE0
+set_location_assignment PIN_AB7 -to ETH_CRS
+set_location_assignment PIN_W9 -to ETH_MDIO
+set_location_assignment PIN_W8 -to ETH_MDC
+set_location_assignment PIN_R10 -to ETH_RST_N
+set_location_assignment PIN_AA7 -to ETH_TXEN
+set_location_assignment PIN_AB6 -to ETH_TXD0
+set_location_assignment PIN_AB5 -to ETH_TXD1
+
+#10 pin expansion ports
+#P20	GND	3.3v	U13	T14	U15
+#	V20	V19	V18	U17	T13
+#set_location_assignment PIN_V20 -to GPIO_P20[0] #1 USB3_DP SHARED
+#set_location_assignment PIN_V19 -to GPIO_P20[1] #3 USB3_DN SHARED
+set_location_assignment PIN_V18 -to GPIO_P20[2]
+#set_location_assignment PIN_U13 -to GPIO_P20[3]
+set_location_assignment PIN_U17 -to GPIO_P20[4]
+#set_location_assignment PIN_T14 -to GPIO_P20[5]
+set_location_assignment PIN_T13 -to GPIO_P20[6]
+#set_location_assignment PIN_U15 -to GPIO_P20[7]
+
+#AUD_BCLK :  IN  STD_LOGIC;
+set_location_assignment PIN_T14 -to AUD_BCLK
+#AUD_DACLRCK :  IN  STD_LOGIC;
+set_location_assignment PIN_U13 -to AUD_DACLRCK
+##AUD_XCK :  OUT  STD_LOGIC;
+#AUD_DACDAT :  OUT  STD_LOGIC;
+set_location_assignment PIN_U15 -to AUD_DACDAT
+					
+#P21	GND	3.3v	Y14	U16	Y15
+#	Y20	W19	Y19	Y17	Y16
+set_location_assignment PIN_Y20 -to GPIO_P21[0]
+set_location_assignment PIN_W19 -to GPIO_P21[1]
+set_location_assignment PIN_Y19 -to GPIO_P21[2]
+set_location_assignment PIN_Y14 -to GPIO_P21[3]
+set_location_assignment PIN_Y17 -to GPIO_P21[4]
+set_location_assignment PIN_U16 -to GPIO_P21[5]
+set_location_assignment PIN_Y16 -to GPIO_P21[6]
+set_location_assignment PIN_Y15 -to GPIO_P21[7]
+					
+#P22	GND	3.3v	AA13	AA14	AB15
+#	AA18	AB18	AA17	AB17	AA15
+set_location_assignment PIN_AA18 -to GPIO_P22[0]
+set_location_assignment PIN_AB18 -to GPIO_P22[1]
+set_location_assignment PIN_AA17 -to GPIO_P22[2]
+set_location_assignment PIN_AA13 -to GPIO_P22[3]
+set_location_assignment PIN_AB17 -to GPIO_P22[4]
+set_location_assignment PIN_AA14 -to GPIO_P22[5]
+set_location_assignment PIN_AA15 -to GPIO_P22[6]
+set_location_assignment PIN_AB15 -to GPIO_P22[7]
+					
+#Clock port
+#P13	3.3v	P9	R9	?	GND
+set_location_assignment PIN_P9 -to GPIO_P13_D
+set_location_assignment PIN_R9 -to GPIO_P13_C
+
+#LEDS
+set_location_assignment PIN_T12 -to LED_DISK
+set_location_assignment PIN_V16 -to LED_POWER
+
+#U24=to fpga			
+#	OE_N	GND	
+#	LE	3.3v	
+#set_location_assignment PIN_W16 -to 68k_clk
+#set_location_assignment PIN_N16 -to 68k_bgack
+#set_location_assignment PIN_N19 -to 68k_rw
+
+
+#set_location_assignment PIN_A12 -to PIN_A12
+#set_location_assignment PIN_A14 -to PIN_A14
+#set_location_assignment PIN_A15 -to PIN_A15
+#set_location_assignment PIN_A17 -to PIN_A17
+#set_location_assignment PIN_A18 -to PIN_A18
+#set_location_assignment PIN_A19 -to PIN_A19
+#set_location_assignment PIN_A20 -to PIN_A20
+#set_location_assignment PIN_A22 -to PIN_A22
+#set_location_assignment PIN_AA8 -to PIN_AA8
+#set_location_assignment PIN_AB17 -to PIN_AB17
+#set_location_assignment PIN_B5 -to PIN_B5
+#set_location_assignment PIN_B11 -to PIN_B11
+#set_location_assignment PIN_B13 -to PIN_B13
+#set_location_assignment PIN_B16 -to PIN_B16
+#set_location_assignment PIN_B17 -to PIN_B17
+#set_location_assignment PIN_B18 -to PIN_B18
+#set_location_assignment PIN_B20 -to PIN_B20
+#set_location_assignment PIN_B22 -to PIN_B22
+#set_location_assignment PIN_C16 -to PIN_C16
+#set_location_assignment PIN_C18 -to PIN_C18
+#set_location_assignment PIN_C19 -to PIN_C19
+#set_location_assignment PIN_C20 -to PIN_C20
+#set_location_assignment PIN_D9 -to PIN_D9
+#set_location_assignment PIN_D17 -to PIN_D17
+#set_location_assignment PIN_D19 -to PIN_D19
+#set_location_assignment PIN_E7 -to PIN_E7
+#set_location_assignment PIN_E10 -to PIN_E10
+#set_location_assignment PIN_E15 -to PIN_E15
+#set_location_assignment PIN_E16 -to PIN_E16
+#set_location_assignment PIN_E19 -to PIN_E19
+#set_location_assignment PIN_E20 -to PIN_E20
+#set_location_assignment PIN_F9 -to PIN_F9
+#set_location_assignment PIN_F10 -to PIN_F10
+#set_location_assignment PIN_F15 -to PIN_F15
+#set_location_assignment PIN_F18 -to PIN_F18
+#set_location_assignment PIN_F19 -to PIN_F19
+#set_location_assignment PIN_F20 -to PIN_F20
+#set_location_assignment PIN_F22 -to PIN_F22
+#set_location_assignment PIN_G10 -to PIN_G10
+#set_location_assignment PIN_G13 -to PIN_G13
+#set_location_assignment PIN_G16 -to PIN_G16
+#set_location_assignment PIN_G17 -to PIN_G17
+#set_location_assignment PIN_G18 -to PIN_G18
+#set_location_assignment PIN_G20 -to PIN_G20
+#set_location_assignment PIN_G21 -to PIN_G21
+#set_location_assignment PIN_G22 -to PIN_G22
+#set_location_assignment PIN_H10 -to PIN_H10
+#set_location_assignment PIN_H15 -to PIN_H15
+#set_location_assignment PIN_H16 -to PIN_H16
+#set_location_assignment PIN_H18 -to PIN_H18
+#set_location_assignment PIN_H20 -to PIN_H20
+#set_location_assignment PIN_H21 -to PIN_H21
+#set_location_assignment PIN_J18 -to PIN_J18
+#set_location_assignment PIN_K19 -to PIN_K19
+#set_location_assignment PIN_K20 -to PIN_K20
+#set_location_assignment PIN_K22 -to PIN_K22
+#set_location_assignment PIN_L18 -to PIN_L18
+#set_location_assignment PIN_L19 -to PIN_L19
+#set_location_assignment PIN_L22 -to PIN_L22
+#set_location_assignment PIN_M8 -to PIN_M8
+#set_location_assignment PIN_M9 -to PIN_M9
+#set_location_assignment PIN_M20 -to PIN_M20
+#set_location_assignment PIN_M21 -to PIN_M21
+#set_location_assignment PIN_M22 -to PIN_M22
+#set_location_assignment PIN_N8 -to PIN_N8
+#set_location_assignment PIN_N21 -to PIN_N21
+#set_location_assignment PIN_P12 -to PIN_P12
+#set_location_assignment PIN_P19 -to PIN_P19
+#set_location_assignment PIN_P22 -to PIN_P22
+#set_location_assignment PIN_R6 -to PIN_R6
+#set_location_assignment PIN_R7 -to PIN_R7
+#set_location_assignment PIN_R14 -to PIN_R14
+#set_location_assignment PIN_R16 -to PIN_R16
+#set_location_assignment PIN_R17 -to PIN_R17
+#set_location_assignment PIN_R21 -to PIN_R21
+#set_location_assignment PIN_T7 -to PIN_T7
+#set_location_assignment PIN_T15 -to PIN_T15
+#set_location_assignment PIN_T20 -to PIN_T20
+#set_location_assignment PIN_T22 -to PIN_T22
+#set_location_assignment PIN_U7 -to PIN_U7
+#set_location_assignment PIN_U8 -to PIN_U8
+#set_location_assignment PIN_U10 -to PIN_U10
+#set_location_assignment PIN_U21 -to PIN_U21
+#set_location_assignment PIN_U22 -to PIN_U22
+#set_location_assignment PIN_V21 -to PIN_V21
+#set_location_assignment PIN_W21 -to PIN_W21
+#set_location_assignment PIN_W22 -to PIN_W22
+
+set_location_assignment PIN_H13 -to CLK0
+set_location_assignment PIN_V15 -to CLK1
+
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+
+set_global_assignment -name IOBANK_VCCIO 1.5V -section_id 8A
+set_global_assignment -name IOBANK_VCCIO 1.5V -section_id 7A
+
+
+
+
+set_instance_assignment -name IO_STANDARD "1.5 V" -to HDMI_D1N
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_A[0] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "1.5 V" -to HDMI_D4P
+set_instance_assignment -name IO_STANDARD "1.5 V" -to HDMI_D4N
+set_instance_assignment -name IO_STANDARD "1.5 V" -to HDMI_D3P
+set_instance_assignment -name IO_STANDARD "1.5 V" -to HDMI_D3N
+set_instance_assignment -name IO_STANDARD "1.5 V" -to HDMI_D2P
+set_instance_assignment -name IO_STANDARD "1.5 V" -to HDMI_D2N
+set_instance_assignment -name IO_STANDARD "1.5 V" -to HDMI_D1P
+set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.5-V SSTL CLASS I" -to DRAM_UDQS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.5-V SSTL CLASS I" -to DRAM_UDQS -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_UDM -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD 1.5V -to DRAM_RESET_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_ODT -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.5-V SSTL CLASS I" -to DRAM_LDQS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.5-V SSTL CLASS I" -to DRAM_LDQS -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_LDM -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_DQ[15] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_DQ[14] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_DQ[13] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_DQ[12] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_DQ[11] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_DQ[10] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_DQ[9] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_DQ[8] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_DQ[7] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_DQ[6] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_DQ[5] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_DQ[4] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_DQ[3] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_DQ[2] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_DQ[1] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_DQ[0] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_CKE -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "1.5 V" -to CLK0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_WE_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_RAS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_CS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.5-V SSTL CLASS I" -to DRAM_CK_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "DIFFERENTIAL 1.5-V SSTL CLASS I" -to DRAM_CK -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_CAS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_BA[2] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_BA[1] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_BA[0] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "1.5 V" -to DRAM_A[15]
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_A[14] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_A[13] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_A[12] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_A[11] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_A[10] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_A[9] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_A[8] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_A[7] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_A[6] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_A[5] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_A[4] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_A[3] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_A[2] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name IO_STANDARD "SSTL-15 CLASS I" -to DRAM_A[1] -tag __ddr3_mem_if_ddr3_emif_0_p0
+
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to HDMI_D4P
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to HDMI_D4N
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to HDMI_D3P
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to HDMI_D3N
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to HDMI_D2P
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to HDMI_D2N
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to HDMI_D1P
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to HDMI_D1N
+
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_DQ[15]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_DQ[14]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_DQ[13]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_DQ[12]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_DQ[11]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_DQ[10]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_DQ[9]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_DQ[8]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_DQ[7]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_DQ[6]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_DQ[5]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_DQ[4]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_DQ[3]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_DQ[2]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_DQ[1]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_DQ[0]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_A[15]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_A[14]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_A[13]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_A[12]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_A[11]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_A[10]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_A[9]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_A[8]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_A[7]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_A[6]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_A[5]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_A[4]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_A[3]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_A[2]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_A[1]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_A[0]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_BA[2]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_BA[1]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_BA[0]
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_UDQS
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_UDQS_N
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_LDQS
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_LDQS_N
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_UDM
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_LDM
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_RAS_N
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_CAS_N
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_CK
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_CK_N
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_ODT
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_CKE
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_CS_N
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_WE_N
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to DRAM_RESET_N
+
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[15]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[14]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[13]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[12]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[11]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[10]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[9]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[8]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[7]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[6]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[5]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[4]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[3]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[2]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[1]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_DQ[0]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_A[15]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_A[14]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_A[13]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_A[12]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_A[11]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_A[10]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_A[9]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_A[8]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_A[7]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_A[6]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_A[5]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_A[4]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_A[3]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_A[2]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_A[1]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_A[0]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_BA[2]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_BA[1]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_BA[0]
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_UDQS
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_UDQS_N
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_LDQS
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_LDQS_N
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_UDM
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_LDM
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_RAS_N
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_CAS_N
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_CK
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_CK_N
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_ODT
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_CKE
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_CS_N
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_WE_N
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to DRAM_RESET_N
+
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[15]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[14]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[13]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[12]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[11]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[10]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[9]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[8]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[7]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[6]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[5]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[4]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[3]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[2]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[1]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_DQ[0]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_A[15]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_A[14]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_A[13]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_A[12]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_A[11]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_A[10]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_A[9]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_A[8]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_A[7]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_A[6]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_A[5]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_A[4]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_A[3]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_A[2]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_A[1]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_A[0]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_BA[2]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_BA[1]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_BA[0]
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_UDQS
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_UDQS_N
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_LDQS
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_LDQS_N
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_UDM
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_LDM
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_RAS_N
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_CAS_N
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_CK
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_CK_N
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_ODT
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_CKE
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_CS_N
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_WE_N
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to DRAM_RESET_N
+
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to HDMI_D4P
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to HDMI_D4P
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to HDMI_D4P
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to HDMI_D3P
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to HDMI_D3P
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to HDMI_D3P
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to HDMI_D2P
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to HDMI_D2P
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to HDMI_D2P
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to HDMI_D1P
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to HDMI_D1P
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to HDMI_D1P
+
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to HDMI_D4N
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to HDMI_D4N
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to HDMI_D4N
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to HDMI_D3N
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to HDMI_D3N
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to HDMI_D3N
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to HDMI_D2N
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to HDMI_D2N
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to HDMI_D2N
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to HDMI_D1N
+set_instance_assignment -name FAST_INPUT_REGISTER ON -to HDMI_D1N
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to HDMI_D1N
+
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to USB1_DP
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to USB1_DP
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to USB1_DP
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to USB1_DN
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to USB1_DN
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to USB1_DN
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to USB2_DP
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to USB2_DP
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to USB2_DP
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to USB2_DN
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to USB2_DN
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to USB2_DN
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to USB3_DP
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to USB3_DP
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to USB3_DP
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to USB3_DN
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to USB3_DN
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to USB3_DN
+
+
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to CF_INTRQ
+
+
+
+set_global_assignment -name ENABLE_SIGNALTAP ON
+
+set_instance_assignment -name IO_STANDARD "SSTL-15" -to DRAM_RZQ -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_DQ[0] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_DQ[0] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_DQ[1] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_DQ[1] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_DQ[2] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_DQ[2] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_DQ[3] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_DQ[3] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_DQ[4] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_DQ[4] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_DQ[5] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_DQ[5] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_DQ[6] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_DQ[6] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_DQ[7] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_DQ[7] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_DQ[8] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_DQ[8] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_DQ[9] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_DQ[9] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_DQ[10] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_DQ[10] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_DQ[11] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_DQ[11] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_DQ[12] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_DQ[12] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_DQ[13] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_DQ[13] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_DQ[14] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_DQ[14] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_DQ[15] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_DQ[15] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_LDQS -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_LDQS -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name D5_DELAY 4 -to DRAM_LDQS -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name D6_DELAY 0 -to DRAM_LDQS -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_UDQS -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_UDQS -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name D5_DELAY 4 -to DRAM_UDQS -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name D6_DELAY 0 -to DRAM_UDQS -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_LDQS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_LDQS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name D5_DELAY 4 -to DRAM_LDQS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name D6_DELAY 0 -to DRAM_LDQS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name INPUT_TERMINATION "PARALLEL 50 OHM WITH CALIBRATION" -to DRAM_UDQS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_UDQS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name D5_DELAY 4 -to DRAM_UDQS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name D6_DELAY 0 -to DRAM_UDQS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITHOUT CALIBRATION" -to DRAM_CK -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name D5_DELAY 2 -to DRAM_CK -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITHOUT CALIBRATION" -to DRAM_CK_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name D5_DELAY 2 -to DRAM_CK_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_A[0] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_A[10] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_A[11] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_A[12] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_A[13] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_A[14] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_A[1] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_A[2] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_A[3] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_A[4] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_A[5] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_A[6] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_A[7] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_A[8] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_A[9] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_BA[0] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_BA[1] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_BA[2] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_CS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_WE_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_RAS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_CAS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_ODT -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_CKE -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name CURRENT_STRENGTH_NEW "MAXIMUM CURRENT" -to DRAM_RESET_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_LDM -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name OUTPUT_TERMINATION "SERIES 50 OHM WITH CALIBRATION" -to DRAM_UDM -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_DQ[0] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_DQ[1] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_DQ[2] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_DQ[3] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_DQ[4] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_DQ[5] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_DQ[6] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_DQ[7] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_DQ[8] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_DQ[9] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_DQ[10] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_DQ[11] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_DQ[12] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_DQ[13] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_DQ[14] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_DQ[15] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_LDM -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_UDM -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_LDQS -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_UDQS -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_LDQS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_UDQS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_A[0] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_A[10] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_A[11] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_A[12] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_A[13] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_A[14] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_A[1] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_A[2] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_A[3] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_A[4] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_A[5] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_A[6] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_A[7] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_A[8] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_A[9] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_BA[0] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_BA[1] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_BA[2] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_CS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_WE_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_RAS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_CAS_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_ODT -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_CKE -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_RESET_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_CK -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PACKAGE_SKEW_COMPENSATION OFF -to DRAM_CK_N -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to ddr3_inst|ddr3_inst|pll0|pll_afi_clk -tag __ddr3_p0
+set_instance_assignment -name GLOBAL_SIGNAL "DUAL-REGIONAL CLOCK" -to ddr3_inst|ddr3_inst|pll0|pll_addr_cmd_clk -tag __ddr3_p0
+set_instance_assignment -name GLOBAL_SIGNAL "DUAL-REGIONAL CLOCK" -to ddr3_inst|ddr3_inst|pll0|pll_avl_clk -tag __ddr3_p0
+set_instance_assignment -name GLOBAL_SIGNAL "DUAL-REGIONAL CLOCK" -to ddr3_inst|ddr3_inst|pll0|pll_config_clk -tag __ddr3_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to ddr3_inst|ddr3_inst|p0|umemphy|ureset|phy_reset_mem_stable_n -tag __ddr3_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to ddr3_inst|ddr3_inst|p0|umemphy|ureset|phy_reset_n -tag __ddr3_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to ddr3_inst|ddr3_inst|s0|sequencer_rw_mgr_inst|rw_mgr_inst|rw_mgr_core_inst|rw_soft_reset_n -tag __ddr3_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to ddr3_inst|ddr3_inst|p0|umemphy|uread_datapath|reset_n_fifo_write_side[0] -tag __ddr3_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to ddr3_inst|ddr3_inst|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[0] -tag __ddr3_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to ddr3_inst|ddr3_inst|p0|umemphy|uread_datapath|reset_n_fifo_write_side[1] -tag __ddr3_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to ddr3_inst|ddr3_inst|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[1] -tag __ddr3_p0
+set_instance_assignment -name ENABLE_BENEFICIAL_SKEW_OPTIMIZATION_FOR_NON_GLOBAL_CLOCKS ON -to ddr3_inst|ddr3_inst -tag __ddr3_p0
+set_instance_assignment -name PLL_COMPENSATION_MODE DIRECT -to ddr3_inst|ddr3_inst|pll0|fbout -tag __ddr3_p0
+set_global_assignment -name USE_DLL_FREQUENCY_FOR_DQS_DELAY_CHAIN ON
+set_global_assignment -name UNIPHY_SEQUENCER_DQS_CONFIG_ENABLE ON
+set_global_assignment -name OPTIMIZE_MULTI_CORNER_TIMING ON
+set_global_assignment -name ECO_REGENERATE_REPORT ON
+set_instance_assignment -name GLOBAL_SIGNAL "GLOBAL CLOCK" -to ddr3_inst|mem_if_ddr3_emif_0|pll0|pll_afi_clk -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name GLOBAL_SIGNAL "DUAL-REGIONAL CLOCK" -to ddr3_inst|mem_if_ddr3_emif_0|pll0|pll_addr_cmd_clk -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name GLOBAL_SIGNAL "DUAL-REGIONAL CLOCK" -to ddr3_inst|mem_if_ddr3_emif_0|pll0|pll_avl_clk -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name GLOBAL_SIGNAL "DUAL-REGIONAL CLOCK" -to ddr3_inst|mem_if_ddr3_emif_0|pll0|pll_config_clk -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to ddr3_inst|mem_if_ddr3_emif_0|p0|umemphy|ureset|phy_reset_mem_stable_n -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to ddr3_inst|mem_if_ddr3_emif_0|p0|umemphy|ureset|phy_reset_n -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to ddr3_inst|mem_if_ddr3_emif_0|s0|sequencer_rw_mgr_inst|rw_mgr_inst|rw_mgr_core_inst|rw_soft_reset_n -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to ddr3_inst|mem_if_ddr3_emif_0|p0|umemphy|uread_datapath|reset_n_fifo_write_side[0] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to ddr3_inst|mem_if_ddr3_emif_0|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[0] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to ddr3_inst|mem_if_ddr3_emif_0|p0|umemphy|uread_datapath|reset_n_fifo_write_side[1] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to ddr3_inst|mem_if_ddr3_emif_0|p0|umemphy|uread_datapath|reset_n_fifo_wraddress[1] -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name ENABLE_BENEFICIAL_SKEW_OPTIMIZATION_FOR_NON_GLOBAL_CLOCKS ON -to ddr3_inst|mem_if_ddr3_emif_0 -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name PLL_COMPENSATION_MODE DIRECT -to ddr3_inst|mem_if_ddr3_emif_0|pll0|fbout -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_global_assignment -name OPTIMIZATION_MODE "HIGH PERFORMANCE EFFORT"
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to ddr3_inst|mem_if_ddr3_emif_0|p0|umemphy|uio_pads|dq_ddio[0].read_capture_clk_buffer -tag __ddr3_mem_if_ddr3_emif_0_p0
+set_instance_assignment -name GLOBAL_SIGNAL OFF -to ddr3_inst|mem_if_ddr3_emif_0|p0|umemphy|uio_pads|dq_ddio[1].read_capture_clk_buffer -tag __ddr3_mem_if_ddr3_emif_0_p0
+
+
+
+set_global_assignment -name USE_SIGNALTAP_FILE lots_of_detail.stp
+
+set_global_assignment -name VHDL_FILE i2smaster.vhdl
+set_global_assignment -name QIP_FILE sfl/synthesis/sfl.qip
+set_global_assignment -name QSYS_FILE clkctrl_pal_ntsc.qsys
+set_global_assignment -name SOURCE_FILE pll_usb.cmp
+set_global_assignment -name QIP_FILE zpu_rom.qip
+set_global_assignment -name QIP_FILE pll_usb.qip
+set_global_assignment -name VHDL_FILE common/zpu/zpupkg.vhd
+set_global_assignment -name VHDL_FILE common/zpu/zpucore.vhd
+set_global_assignment -name VHDL_FILE common/zpu/zpu_glue.vhdl
+set_global_assignment -name VHDL_FILE common/zpu/zpu_core.vhd
+set_global_assignment -name VHDL_FILE common/zpu/zpu_config_regs.vhdl
+set_global_assignment -name VHDL_FILE common/zpu/sio_handler.vhdl
+set_global_assignment -name VHDL_FILE bytesel.vhdl
+set_global_assignment -name VHDL_FILE bytemux.vhdl
+set_global_assignment -name SDC_FILE vampire.sdc
+set_global_assignment -name QSYS_FILE ddr3.qsys
+set_global_assignment -name QIP_FILE altddio_out8.qip
+set_global_assignment -name VHDL_FILE hdmi/dvi.vhd
+set_global_assignment -name SOURCE_FILE hdmi/hdmi_line_buffer.cmp
+set_global_assignment -name QIP_FILE hdmi/hdmi_line_buffer.qip
+set_global_assignment -name VHDL_FILE hdmi/hdmi_line_buffer.vhd
+set_global_assignment -name VERILOG_FILE hdmi/hdmidataencoder.v
+set_global_assignment -name VHDL_FILE hdmi/hdmidelay.vhd
+set_global_assignment -name VERILOG_FILE hdmi/infopacketstate.v
+set_global_assignment -name VHDL_FILE hdmi/scandoubler_hdmi.vhdl
+set_global_assignment -name VHDL_FILE hdmi/encoder.vhd
+set_global_assignment -name VHDL_FILE hdmi/hdmi.vhd
+set_global_assignment -name QIP_FILE pll2.qip
+set_global_assignment -name VHDL_FILE top.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/atari5200core.vhd
+set_global_assignment -name VHDL_FILE ./common/a8core/atari5200core_simplesdram.vhd
+set_global_assignment -name VHDL_FILE ./common/a8core/atari800core.vhd
+set_global_assignment -name VHDL_FILE ./common/a8core/atari800core_simple_sdram.vhd
+set_global_assignment -name VHDL_FILE ./common/a8core/cart_logic.vhd
+set_global_assignment -name VHDL_FILE ./common/a8core/covox.vhd
+set_global_assignment -name VHDL_FILE ./common/a8core/cpu.vhd
+set_global_assignment -name VHDL_FILE ./common/a8core/cpu_6510.vhd
+set_global_assignment -name VHDL_FILE ./common/a8core/cpu_65xx_a.vhd
+set_global_assignment -name VHDL_FILE ./common/a8core/cpu_65xx_e.vhd
+set_global_assignment -name VHDL_FILE ./common/a8core/freezer_debug_trigger.vhd
+set_global_assignment -name VHDL_FILE ./common/a8core/freezer_logic.vhd
+set_global_assignment -name VHDL_FILE ./common/a8core/internalromram.vhd
+set_global_assignment -name VHDL_FILE ./common/a8core/pbi6502.vhd
+set_global_assignment -name VHDL_FILE ./common/a8core/svideo_gtia.vhd
+set_global_assignment -name VHDL_FILE ./common/a8core/timing6502.vhd
+set_global_assignment -name VHDL_FILE ./common/a8core/address_decoder.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/address_decoder_pbi.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/antic.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/antic_counter.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/antic_delay.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/antic_dma_clock.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/basic.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/enable_divider.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/gtia.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/gtia_palette.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/gtia_player.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/gtia_priority.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/irq_glue.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/mmu.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/os16.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/os16_loop.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/os2.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/os8.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/os_5200.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/pia.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/pokey.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/pokey_countdown_timer.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/pokey_keyboard_scanner.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/pokey_mixer.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/pokey_mixer_mux.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/pokey_noise_filter.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/pokey_poly_17_9.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/pokey_poly_4.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/pokey_poly_5.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/pot_from_signed.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/ps2_to_atari5200.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/ps2_to_atari800.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/reg_file.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/shared_enable.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/simple_counter.vhdl
+set_global_assignment -name VHDL_FILE ./common/a8core/wide_delay_line.vhdl
+set_global_assignment -name VERILOG_FILE ./common/a8core/sid8580/sid8580.v
+set_global_assignment -name VERILOG_FILE ./common/a8core/sid8580/sid_envelope.v
+set_global_assignment -name VERILOG_FILE ./common/a8core/sid8580/sid_filters.v
+set_global_assignment -name VERILOG_FILE ./common/a8core/sid8580/sid_tables.v
+set_global_assignment -name VERILOG_FILE ./common/a8core/sid8580/sid_voice.v
+set_global_assignment -name QIP_FILE ./common/a8core/sid8580/sid.qip
+set_global_assignment -name VERILOG_FILE ./common/components/hq_dac.v
+set_global_assignment -name VHDL_FILE ./common/components/fifo_receive.vhd
+set_global_assignment -name VHDL_FILE ./common/components/fifo_transmit.vhd
+set_global_assignment -name VHDL_FILE ./common/components/i2c_master.vhd
+set_global_assignment -name VHDL_FILE ./common/components/spi_master.vhd
+set_global_assignment -name VHDL_FILE ./common/components/syncreset_enable_divider.vhd
+set_global_assignment -name VHDL_FILE ./common/components/complete_address_decoder.vhdl
+set_global_assignment -name VHDL_FILE ./common/components/delay_line.vhdl
+set_global_assignment -name VHDL_FILE ./common/components/generic_ram_infer.vhdl
+set_global_assignment -name VHDL_FILE ./common/components/latch_delay_line.vhdl
+set_global_assignment -name VHDL_FILE ./common/components/mult_infer.vhdl
+set_global_assignment -name VHDL_FILE ./common/components/ps2_keyboard.vhdl
+set_global_assignment -name VHDL_FILE ./common/components/scandouble_ram_infer.vhdl
+set_global_assignment -name VHDL_FILE ./common/components/scandoubler.vhdl
+set_global_assignment -name VHDL_FILE ./common/components/sdram_statemachine.vhdl
+set_global_assignment -name VHDL_FILE ./common/components/simple_low_pass_filter.vhdl
+set_global_assignment -name VHDL_FILE ./common/components/synchronizer.vhdl
+set_global_assignment -name QIP_FILE ./common/components/fifo_receive.qip
+set_global_assignment -name QIP_FILE ./common/components/fifo_transmit.qip
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/directcontrol.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/dpMem_dc.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/endpMux.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/fifoMux.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/fifoRTL.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/getpacket.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/hctxportarbiter.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/hostcontroller.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/hostSlaveMux.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/hostSlaveMuxBI.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/lineControlUpdate.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/processRxBit.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/processRxByte.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/processTxByte.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/readUSBWireData.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/RxFifo.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/RxFifoBI.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/rxStatusMonitor.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/sctxportarbiter.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/sendpacket.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/sendpacketarbiter.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/sendpacketcheckpreamble.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/siereceiver.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/SIETransmitter.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/slavecontroller.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/slaveDirectcontrol.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/slaveGetpacket.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/slaveRxStatusMonitor.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/slaveSendpacket.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/sofcontroller.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/softransmit.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/speedCtrlMux.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/timescale.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/TxFifo.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/TxFifoBI.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/updateCRC16.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/updateCRC5.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/usbConstants_h.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/usbHost.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/usbHostControl.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/usbHostControl_h.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/USBHostControlBI.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/usbHostCyc2Wrap.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/usbHostCyc2Wrap_usb1t11.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/usbHostSlave.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/usbHostSlave_h.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/usbHostSlaveAvalonWrap.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/usbHostSlaveCyc2Wrap.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/usbSerialInterfaceEngine.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/usbSerialInterfaceEngine_h.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/usbSlave.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/usbSlaveControl.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/usbSlaveControl_h.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/USBSlaveControlBI.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/usbSlaveCyc2Wrap.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/usbSlaveCyc2Wrap_usb1t11.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/usbTxWireArbiter.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/wishBoneBI.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/wishBoneBus_h.v
+set_global_assignment -name VERILOG_FILE ./common/components/usbhostslave/writeUSBWireData.v
+set_global_assignment -name QIP_FILE pll_ntsc.qip
+set_global_assignment -name SIP_FILE pll_ntsc.sip
+set_global_assignment -name QIP_FILE pll_pal.qip
+set_global_assignment -name SIP_FILE pll_pal.sip
+set_global_assignment -name QIP_FILE pll_aud.qip
+set_global_assignment -name SIP_FILE pll_aud.sip
+set_global_assignment -name SIGNALTAP_FILE lots_of_detail.stp
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

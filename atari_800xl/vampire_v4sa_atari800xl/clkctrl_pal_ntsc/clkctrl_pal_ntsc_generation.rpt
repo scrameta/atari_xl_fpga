@@ -1,0 +1,33 @@
+Info: Starting: Create block symbol file (.bsf)
+Info: qsys-generate /home/markw/fpga/svn/repo/branches/trunkv37/atari_800xl/vampire_atari/clkctrl_pal_ntsc.qsys --block-symbol-file --output-directory=/home/markw/fpga/svn/repo/branches/trunkv37/atari_800xl/vampire_atari/clkctrl_pal_ntsc --family="Cyclone V" --part=5CEFA5F23C8
+Progress: Loading vampire_atari/clkctrl_pal_ntsc.qsys
+Progress: Reading input file
+Progress: Adding altclkctrl_0 [altclkctrl 23.1]
+Progress: Parameterizing module altclkctrl_0
+Progress: Building connections
+Progress: Parameterizing connections
+Progress: Validating
+Progress: Done reading input file
+: clkctrl_pal_ntsc.altclkctrl_0: Targeting device family: Cyclone V.
+: clkctrl_pal_ntsc.altclkctrl_0: Selecting AUTO allows the compiler to pick the best clock buffer to use, while other values restrict usage to only the given clock buffer.
+Info: qsys-generate succeeded.
+Info: Finished: Create block symbol file (.bsf)
+Info: 
+Info: Starting: Create HDL design files for synthesis
+Info: qsys-generate /home/markw/fpga/svn/repo/branches/trunkv37/atari_800xl/vampire_atari/clkctrl_pal_ntsc.qsys --synthesis=VHDL --output-directory=/home/markw/fpga/svn/repo/branches/trunkv37/atari_800xl/vampire_atari/clkctrl_pal_ntsc/synthesis --family="Cyclone V" --part=5CEFA5F23C8
+Progress: Loading vampire_atari/clkctrl_pal_ntsc.qsys
+Progress: Reading input file
+Progress: Adding altclkctrl_0 [altclkctrl 23.1]
+Progress: Parameterizing module altclkctrl_0
+Progress: Building connections
+Progress: Parameterizing connections
+Progress: Validating
+Progress: Done reading input file
+: clkctrl_pal_ntsc.altclkctrl_0: Targeting device family: Cyclone V.
+: clkctrl_pal_ntsc.altclkctrl_0: Selecting AUTO allows the compiler to pick the best clock buffer to use, while other values restrict usage to only the given clock buffer.
+Info: clkctrl_pal_ntsc: Generating clkctrl_pal_ntsc "clkctrl_pal_ntsc" for QUARTUS_SYNTH
+Info: altclkctrl_0: Generating top-level entity clkctrl_pal_ntsc_altclkctrl_0.
+Info: altclkctrl_0: "clkctrl_pal_ntsc" instantiated altclkctrl "altclkctrl_0"
+Info: clkctrl_pal_ntsc: Done "clkctrl_pal_ntsc" with 2 modules, 2 files
+Info: qsys-generate succeeded.
+Info: Finished: Create HDL design files for synthesis

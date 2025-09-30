@@ -1,0 +1,71 @@
+IP Upgrade report for vampire
+Fri Sep 20 15:34:40 2024
+Quartus Prime Version 23.1std.1 Build 993 05/14/2024 SC Lite Edition
+
+
+---------------------
+; Table of Contents ;
+---------------------
+  1. Legal Notice
+  2. IP Upgrade Summary
+  3. Failed Upgrade IP Components
+  4. IP Upgrade Messages
+
+
+
+----------------
+; Legal Notice ;
+----------------
+Copyright (C) 2024  Intel Corporation. All rights reserved.
+Your use of Intel Corporation's design tools, logic functions 
+and other software and tools, and any partner logic 
+functions, and any output files from any of the foregoing 
+(including device programming or simulation files), and any 
+associated documentation or information are expressly subject 
+to the terms and conditions of the Intel Program License 
+Subscription Agreement, the Intel Quartus Prime License Agreement,
+the Intel FPGA IP License Agreement, or other applicable license
+agreement, including, without limitation, that your use is for
+the sole purpose of programming logic devices manufactured by
+Intel and sold by Intel or its authorized distributors.  Please
+refer to the applicable agreement for further details, at
+https://fpgasoftware.intel.com/eula.
+
+
+
++-------------------------------------------------------------------------------+
+; IP Upgrade Summary                                                            ;
++------------------------------+------------------------------------------------+
+; IP Components Upgrade Status ; Passed - Fri Sep 20 15:34:40 2024              ;
+; Quartus Prime Version        ; 23.1std.1 Build 993 05/14/2024 SC Lite Edition ;
+; Revision Name                ; vampire                                        ;
+; Top-level Entity Name        ; vampire                                        ;
+; Family                       ; Cyclone V                                      ;
++------------------------------+------------------------------------------------+
+
+
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+; Failed Upgrade IP Components                                                                                                                                            ;
++-------------+----------------------------+---------+-----------------------+----------------------+-----------------+---------------------------------------------------+
+; Entity Name ; Component Name             ; Version ; Original Source File  ; Generation File Path ; New Source File ; Message                                           ;
++-------------+----------------------------+---------+-----------------------+----------------------+-----------------+---------------------------------------------------+
+; sfl         ; altera_serial_flash_loader ; 17.0    ; sfl/synthesis/sfl.qip ; sfl.qsys             ;                 ; Error upgrading Platform Designer file "sfl.qsys" ;
++-------------+----------------------------+---------+-----------------------+----------------------+-----------------+---------------------------------------------------+
+
+
++---------------------+
+; IP Upgrade Messages ;
++---------------------+
+Info (11902): Backing up file "sfl/synthesis/sfl.vhd" to "sfl.BAK.vhd"
+Info (11837): Started upgrading IP component altera_serial_flash_loader with file "sfl.qsys"
+Error: 2024.09.20.15:34:40 Error: Error opening /home/markw/fpga/svn/repo/branches/trunkv37/atari_800xl/vampire_atari
+Error (14923): Error upgrading Platform Designer file "sfl.qsys"
+Error (11890): Unable to automatically upgrade Platform Designer component. Please manually upgrade "sfl.qsys" in Platform Designer
+Error (23031): Evaluation of Tcl script /home/markw/intelFPGA_lite/23.1std/quartus/common/tcl/internal/ip_regen/ip_regen.tcl unsuccessful
+Error: Quartus Prime Shell was unsuccessful. 4 errors, 0 warnings
+    Error: Peak virtual memory: 594 megabytes
+    Error: Processing ended: Fri Sep 20 15:34:40 2024
+    Error: Elapsed time: 00:00:05
+    Error: Total CPU time (on all processors): 00:00:11
+
+
