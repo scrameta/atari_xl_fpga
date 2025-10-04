@@ -42,6 +42,7 @@ foreach my $variant (sort keys %variants)
 	`cp *.vhd $dir`;
 	`cp zpu_rom.* $dir`;
 	`cp -r altddio* $dir`;
+ 	`cp *.hex ./$dir/`;
  	`mkdir $dir/hdmi`;
 	`cp atari800core.sdc $dir`;
 	`mkdir $dir/common`;
@@ -52,7 +53,7 @@ foreach my $variant (sort keys %variants)
 	`cp ../common/components/usbhostslave/trunk/RTL/*/*.v ./$dir/common/components/usbhostslave`;
 	`cp ../common/a8core/* ./$dir/common/a8core`;
 	`cp -r ../common/components/* ./$dir/common/components`;
-	`mv ./$dir/common/components/*cyclone3/* ./$dir/common/components/`;
+	`mv ./$dir/common/components/*cycloneV/* ./$dir/common/components/`;
 	`cp ../common/zpu/* ./$dir/common/zpu`;
  	`cp ./hdmi/* ./$dir/hdmi`;
 	`rm ./$dir/common/a8core/atari800core_helloworld.vhd`;

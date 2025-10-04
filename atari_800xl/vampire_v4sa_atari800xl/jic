@@ -1,1 +1,1 @@
-quartus_pgm -z  --mode=jtag --operation="ip;./output_files/vampire.jic"
+quartus_pgm -z  --mode=jtag --operation="ip;./build_COMMON/output_files/atari800core.jic"

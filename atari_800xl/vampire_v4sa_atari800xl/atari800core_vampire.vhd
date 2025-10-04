@@ -6,7 +6,7 @@ use IEEE.STD_LOGIC_MISC.all;
 
 LIBRARY work;
 
-ENTITY vampire IS 
+ENTITY atari800core_vampire IS 
 	PORT
 	(
 		CLK0 : IN STD_LOGIC;
@@ -125,9 +125,9 @@ ENTITY vampire IS
 		LED_DISK : OUT STD_LOGIC;
 		LED_POWER : OUT STD_LOGIC
 	);
-END vampire;		
+END atari800core_vampire;		
 		
-ARCHITECTURE vhdl OF vampire IS
+ARCHITECTURE vhdl OF atari800core_vampire IS
 	--atari
 	signal THROTTLE_COUNT_6502 : std_logic_vector(5 downto 0);
 	signal AUDIO_L_PCM_SIGNED : std_logic_vector(15 downto 0);
