@@ -160,7 +160,6 @@ ARCHITECTURE vhdl OF atari800core_vampire IS
 	signal clk_atari_ntsc : std_logic;
 	signal clk_aud : std_logic;
 	signal clk_refresh : std_logic;
-	signal reset_n : std_logic;
 
 component pll_pal is
 	port (
@@ -237,7 +236,11 @@ end component;
 
 signal pll_locked_pal: std_logic;
 signal pll_locked_ntsc: std_logic;
-signal pll_locked: std_logic;
+
+signal ddrpll_pll_locked: std_logic;
+signal atari_reset_n: std_logic;
+signal softreset_reset_n: std_logic;
+signal reset_reset_n: std_logic;
 
 signal ddr3ip_waitrequest        : std_logic;
 signal ddr3ip_addr               : std_logic_vector(26 downto 0);
@@ -434,6 +437,20 @@ BEGIN
 	LED_DISK <= zpu_sio_txd;
 	LED_POWER <= '0';
 
+reset_gen1 : entity work.reset_gen
+	PORT MAP
+	(
+		pll_pal_locked => pll_locked_pal,
+                pll_ntsc_locked => pll_locked_ntsc,
+		clk_atari => clk_atari,
+		ddr3ip_local_init_done => ddr3ip_local_init_done,
+		ddrpll_pll_locked => ddrpll_pll_locked,
+
+		atari_reset_n => atari_reset_n,
+		softreset_reset_n => softreset_reset_n,
+		reset_reset_n => reset_reset_n
+	);
+
 -- PLL
 pll_pal_inst: pll_pal
 port map (
@@ -461,8 +478,6 @@ clkctrl_pal_ntsc_inst : clkctrl_pal_ntsc
 				outclk    => clk_atari
 	 );
 	
-pll_locked <= pll_locked_pal and pll_locked_ntsc;	
-	
 pll2_inst: pll2
 port map (
 	refclk		=> clk1,		-- 50.0 MHz
@@ -487,7 +502,7 @@ atarixl_simple_sdram1 : entity work.atari800core_simple_sdram
 	PORT MAP
 	(
 		CLK => CLK_ATARI,
-                RESET_N => RESET_N and not(reset_atari),
+                RESET_N => ATARI_RESET_N and not(reset_atari),
 
 		VIDEO_VS => VIDEO_VS,
 		VIDEO_HS => VIDEO_HS,
@@ -557,16 +572,16 @@ AUDIO_R_PCM_UNSIGNED <= not(AUDIO_R_PCM_SIGNED(15)) & AUDIO_R_PCM_SIGNED(14 down
 	
 audio_codec_data : entity work.i2smaster
 PORT MAP(CLK => CLK_AUD,
-		RESET_N => RESET_N,
+		RESET_N => ATARI_RESET_N,
 		 BCLK => AUD_BCLK,
 		 DACLRC => AUD_DACLRCK,
 		 LEFT_IN => AUDIO_L_PCM_SIGNED,
 		 RIGHT_IN => AUDIO_R_PCM_SIGNED,
 		 DACDAT => AUD_DACDAT);
 
-	process(clk_atari,RESET_N,reset_atari)
+	process(clk_atari,ATARI_RESET_N,reset_atari)
 	begin
-		if ((RESET_N and not(reset_atari))='0') then
+		if ((ATARI_RESET_N and not(reset_atari))='0') then
 			half_scandouble_enable_reg <= '0';
 		elsif (clk_atari'event and clk_atari='1') then
 			half_scandouble_enable_reg <= half_scandouble_enable_next;
@@ -580,7 +595,7 @@ PORT MAP
 ( 
 	CLK_ATARI_IN => CLK_ATARI,
 
-	RESET_N => RESET_N, -- and not(reset_atari),
+	RESET_N => ATARI_RESET_N, -- and not(reset_atari),
 
 	audio_left => audio_l_pcm_unsigned,
 	audio_right => audio_r_pcm_unsigned,
@@ -635,7 +650,7 @@ DRAM_A(15) <= '0';
 ddr3_inst: ddr3
 port map (
 		   clkatari_clk                     => clk_atari,
-			reset_n_reset_n                  => pll_locked,
+			reset_n_reset_n                  => reset_reset_n,
 			ddrext_mem_a                     => DRAM_A(14 downto 0),
 			ddrext_mem_ba                    => DRAM_BA,
 			ddrext_mem_ck(0)                 => DRAM_CK,
@@ -671,7 +686,7 @@ port map (
 			
 			ddrpll_pll_mem_clk               => open,
 			ddrpll_pll_write_clk             => open,
-			ddrpll_pll_locked                => reset_n,
+			ddrpll_pll_locked                => ddrpll_pll_locked,
 			ddrpll_pll_write_clk_pre_phy_clk => open,
 			ddrpll_pll_addr_cmd_clk          => open,
 			ddrpll_pll_avl_clk               => open,
@@ -683,7 +698,7 @@ port map (
 			ddrstatus_local_init_done        => ddr3ip_local_init_done,
 			ddrstatus_local_cal_success      => ddr3ip_local_cal_success,
 			ddrstatus_local_cal_fail         => ddr3ip_local_cal_fail,
-			softreset_n_reset_n              => reset_n,
+			softreset_n_reset_n              => softreset_reset_n,
 
 			refresh_clk_clk => clk_refresh,
 			
@@ -692,9 +707,9 @@ port map (
 			ddrrefresh_local_refresh_ack     => open
 	);
 
-	process(clk_atari,reset_n)
+	process(clk_atari,atari_reset_n)
 	begin
-		if (reset_n='0') then
+		if (atari_reset_n='0') then
 			ram_state_reg <= ram_state_waitrequest;
 			SDRAM_ADDR_REG <= (OTHERS=>'0');
 			SDRAM_REFRESH_STATE_REG <= SDRAM_REFRESH_STATE_WAITHIGH;
@@ -732,9 +747,9 @@ port map (
 	
 	SDRAM_REFRESH_NEXT <= SDRAM_REFRESH_SYNC and not(SDRAM_REFRESH_REG);
 
-	process(clk_refresh,reset_n)
+	process(clk_refresh,atari_reset_n)
 	begin
-		if (reset_n='0') then
+		if (atari_reset_n='0') then
 			SDRAM_REFRESH_REG <= '0';
 		elsif (clk_refresh'event and clk_refresh='1') then
 			SDRAM_REFRESH_REG <= SDRAM_REFRESH_NEXT;
@@ -888,7 +903,7 @@ zpu: entity work.zpucore
 		-- standard...
 		CLK => CLK_ATARI,
 		--RESET_N => RESET_N and sdram_rdy,
-		RESET_N => RESET_N,
+		RESET_N => ATARI_RESET_N,
 
 		-- dma bus master (with many waitstates...)
 		ZPU_ADDR_FETCH => dma_addr_fetch,
@@ -967,9 +982,9 @@ zpu: entity work.zpucore
 	csync <= zpu_out6(6);
 
 -- hack for paddles
-	process(clk_atari,RESET_N)
+	process(clk_atari,ATARI_RESET_N)
 	begin
-		if (RESET_N = '0') then
+		if (ATARI_RESET_N = '0') then
 			paddle_mode_reg <= '0';
 		elsif (clk_atari'event and clk_atari='1') then
 			paddle_mode_reg <= paddle_mode_next;
@@ -1033,7 +1048,7 @@ sfl_spi : sfl
 
 enable_179_clock_div_zpu_pokey : entity work.enable_divider
 	generic map (COUNT=>16) -- cycle_length
-	port map(clk=>clk_atari,reset_n=>reset_n,enable_in=>'1',enable_out=>zpu_pokey_enable);
+	port map(clk=>clk_atari,reset_n=>atari_reset_n,enable_in=>'1',enable_out=>zpu_pokey_enable);
 
 -- PS2 to pokey
 keyboard_map1 : entity work.ps2_to_atari800
@@ -1045,7 +1060,7 @@ keyboard_map1 : entity work.ps2_to_atari800
 	PORT MAP
 	( 
 		CLK => clk_atari,
-		RESET_N => reset_n,
+		RESET_N => atari_reset_n,
 		PS2_CLK => '1', -- No PS2...
 		PS2_DAT => '1', -- No PS2...
 

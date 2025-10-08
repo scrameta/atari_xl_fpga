@@ -847,6 +847,7 @@ set_instance_assignment -name GLOBAL_SIGNAL OFF -to ddr3_inst|mem_if_ddr3_emif_0
 set_global_assignment -name USE_SIGNALTAP_FILE lots_of_detail.stp
 
 set_global_assignment -name VHDL_FILE i2smaster.vhdl
+set_global_assignment -name VHDL_FILE reset_gen.vhdl
 set_global_assignment -name QIP_FILE sfl/synthesis/sfl.qip
 set_global_assignment -name QSYS_FILE clkctrl_pal_ntsc.qsys
 set_global_assignment -name SOURCE_FILE pll_usb.cmp
