@@ -384,6 +384,20 @@ constant ram_state_waitreadvalid : std_logic_vector(1 downto 0) := "11";
 	signal PS2_KEYS : STD_LOGIC_VECTOR(511 downto 0);
 	signal PS2_KEYS_NEXT : STD_LOGIC_VECTOR(511 downto 0);
 
+	-- usb joypad
+	signal JOY1_USB : std_logic_vector(5 downto 0);
+	signal JOY2_USB : std_logic_vector(5 downto 0);
+	signal JOY1_USB_n : std_logic_vector(4 downto 0);
+	signal JOY2_USB_n : std_logic_vector(4 downto 0);
+
+	-- paddles
+	signal paddle_mode_next : std_logic;
+	signal paddle_mode_reg : std_logic;
+	signal		JOY1X : std_logic_vector(7 downto 0);
+	signal		JOY1Y : std_logic_vector(7 downto 0);
+	signal		JOY2X : std_logic_vector(7 downto 0);
+	signal		JOY2Y : std_logic_vector(7 downto 0);
+
 	-- pokey keyboard
 	SIGNAL KEYBOARD_SCAN : std_logic_vector(5 downto 0);
 	SIGNAL KEYBOARD_RESPONSE : std_logic_vector(1 downto 0);
@@ -461,7 +475,6 @@ port map (
 	
 
 	-- Atari 800 core... With internal ROM/RAM.
-
 atarixl_simple_sdram1 : entity work.atari800core_simple_sdram
 	GENERIC MAP
 	(
@@ -489,10 +502,10 @@ atarixl_simple_sdram1 : entity work.atari800core_simple_sdram
 		AUDIO_L => AUDIO_L_PCM_SIGNED,
 		AUDIO_R => AUDIO_R_PCM_SIGNED,
 
-		JOY1_n(4) => JOY1BUTTON(0),
-		JOY1_N(3 downto 0) => JOY1,
-		JOY2_n(4) => JOY2BUTTON(0),
-		JOY2_N(3 downto 0) => JOY2,
+		JOY1_n(4) => JOY1BUTTON(0) and JOY1_USB_N(4),
+		JOY1_N(3 downto 0) => JOY1 and JOY1_USB_N(3 downto 0),
+		JOY2_n(4) => JOY2BUTTON(0) and JOY2_USB_N(4),
+		JOY2_N(3 downto 0) => JOY2 and JOY2_USB_N(3 downto 0),
 
 		KEYBOARD_RESPONSE => KEYBOARD_RESPONSE,
 		KEYBOARD_SCAN => KEYBOARD_SCAN,
@@ -678,7 +691,7 @@ port map (
 			ddrrefresh_local_refresh_chip    => "1",
 			ddrrefresh_local_refresh_ack     => open
 	);
-	
+
 	process(clk_atari,reset_n)
 	begin
 		if (reset_n='0') then
@@ -952,6 +965,41 @@ zpu: entity work.zpucore
 	PAL <= zpu_out6(4);
 	scanlines <= zpu_out6(5);
 	csync <= zpu_out6(6);
+
+-- hack for paddles
+	process(clk_atari,RESET_N)
+	begin
+		if (RESET_N = '0') then
+			paddle_mode_reg <= '0';
+		elsif (clk_atari'event and clk_atari='1') then
+			paddle_mode_reg <= paddle_mode_next;
+		end if;
+	end process;
+
+JOY1_USB <= zpu_out2(5 downto 4)&zpu_out2(0)&zpu_out2(1)&zpu_out2(2)&zpu_out2(3);
+JOY2_USB <= zpu_out3(5 downto 4)&zpu_out3(0)&zpu_out3(1)&zpu_out3(2)&zpu_out3(3);
+
+JOY1X <= zpu_out5(7 downto 0);
+JOY1Y <= zpu_out5(15 downto 8);
+JOY2X <= zpu_out5(23 downto 16);
+JOY2Y <= zpu_out5(31 downto 24);
+
+	process(paddle_mode_reg, joy1_usb, joy2_usb)
+	begin
+		joy1_usb_n <= (others=>'1');
+		joy2_usb_n <= (others=>'1');
+
+		if (paddle_mode_reg = '1') then
+			joy1_usb_n <= "111"&not(joy1_usb(4)&joy1_usb(5)); --FLRDU
+			joy2_usb_n <= "111"&not(joy2_usb(4)&joy2_usb(5));
+		else
+			joy1_usb_n <= not(joy1_usb(4 downto 0));
+			joy2_usb_n <= not(joy2_usb(4 downto 0));
+		end if;
+	end process;
+
+	paddle_mode_next <= paddle_mode_reg xor (not(ps2_keys(16#11F#)) and ps2_keys_next(16#11F#)); -- left windows key
+
 
 sfl_spi : sfl
 	port map(
