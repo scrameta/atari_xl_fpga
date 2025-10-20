@@ -429,8 +429,8 @@ BEGIN
 		joy2_n <= (others=>'1');
 
 		if (paddle_mode_reg = '1') then
-			joy1_n <= "111"&not(joy1(4)&joy1(5)); --FLRDU
-			joy2_n <= "111"&not(joy2(4)&joy2(5));
+			joy1_n <= "1"&not(joy1(5)&joy1(4))&"11"; --FLRDU
+			joy2_n <= "1"&not(joy2(5)&joy2(4))&"11";
 		else
 			joy1_n <= not(joy1(4 downto 0));
 			joy2_n <= not(joy2(4 downto 0));

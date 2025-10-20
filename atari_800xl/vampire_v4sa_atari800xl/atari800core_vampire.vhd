@@ -522,6 +522,11 @@ atarixl_simple_sdram1 : entity work.atari800core_simple_sdram
 		JOY2_n(4) => JOY2BUTTON(0) and JOY2_USB_N(4),
 		JOY2_N(3 downto 0) => JOY2 and JOY2_USB_N(3 downto 0),
 
+		PADDLE0 => signed(joy1x),
+		PADDLE1 => signed(joy1y),
+		PADDLE2 => signed(joy2x),
+		PADDLE3 => signed(joy2y),
+
 		KEYBOARD_RESPONSE => KEYBOARD_RESPONSE,
 		KEYBOARD_SCAN => KEYBOARD_SCAN,
 
@@ -1005,8 +1010,8 @@ JOY2Y <= zpu_out5(31 downto 24);
 		joy2_usb_n <= (others=>'1');
 
 		if (paddle_mode_reg = '1') then
-			joy1_usb_n <= "111"&not(joy1_usb(4)&joy1_usb(5)); --FLRDU
-			joy2_usb_n <= "111"&not(joy2_usb(4)&joy2_usb(5));
+			joy1_usb_n <= "1"&not(joy1_usb(5)&joy1_usb(4))&"11"; --FLRDU
+			joy2_usb_n <= "1"&not(joy2_usb(5)&joy2_usb(4))&"11";
 		else
 			joy1_usb_n <= not(joy1_usb(4 downto 0));
 			joy2_usb_n <= not(joy2_usb(4 downto 0));
