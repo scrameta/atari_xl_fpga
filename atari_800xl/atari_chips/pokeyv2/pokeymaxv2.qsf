@@ -167,6 +167,7 @@ set_global_assignment -name VHDL_FILE stereo_detect.vhd
 set_global_assignment -name VHDL_FILE iox_glue.vhdl
 set_global_assignment -name VHDL_FILE i2c_master.vhd
 set_global_assignment -name VHDL_FILE slave_timing_6502.vhd
+set_global_assignment -name VHDL_FILE pll_reset_sync.vhdl
 set_global_assignment -name SDC_FILE pokeymax.sdc
 set_global_assignment -name VHDL_FILE complete_address_decoder.vhdl
 set_global_assignment -name VHDL_FILE syncreset_enable_divider.vhd
@@ -176,6 +177,7 @@ set_global_assignment -name VHDL_FILE wide_delay_line.vhdl
 set_global_assignment -name VHDL_FILE latch_delay_line.vhdl
 set_global_assignment -name VHDL_FILE sigmadelta_1storder.vhd
 set_global_assignment -name VHDL_FILE sigmadelta_2ndorder.vhd
+set_global_assignment -name VHDL_FILE sigmadelta_2ndorder_dither.vhd
 set_global_assignment -name VHDL_FILE filtered_sigmadelta.vhd
 set_global_assignment -name VHDL_FILE fir_filter.vhdl
 set_global_assignment -name VHDL_FILE fir_rom.vhdl
