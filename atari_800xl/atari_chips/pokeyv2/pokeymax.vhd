@@ -19,7 +19,7 @@ ENTITY pokeymax IS
 	GENERIC
 	(
 		pokeys : integer := 1; -- 1-4
-		lowpass : integer := 0; -- 0=lowpass off, 1=lowpass on (leave on except if there is no space! Low impact...)
+		lowpass : integer := 1; -- 0=lowpass off, 1=lowpass on (leave on except if there is no space! Low impact...)
 		enable_auto_stereo : integer := 0;   -- 1=auto detect a4 => not toggling => mono
 
 		fancy_switch_bit : integer := 20; -- 0=ext is low => mono
