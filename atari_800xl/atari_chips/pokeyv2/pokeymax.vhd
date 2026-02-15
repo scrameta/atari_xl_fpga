@@ -36,6 +36,9 @@ ENTITY pokeymax IS
 		ps2clk_bit : integer := 0;
 		ps2dat_bit : integer := 0;
 
+		adc_audio_detect : integer := 0;  -- Detect 0 crossing/amplitude etc, otherwise silence
+		adc_fir_filter_v4 : integer := 0;    -- Filter out interference from keyboard scan etc
+
 		ext_bits : integer := 3; 
 		pll_v2 : integer := 1;
 
@@ -2078,6 +2081,7 @@ adc_on : if enable_adc=1 generate
 	adc_in_signed <= adc_reg; --signed(not(adc_use_reg(15))&adc_use_reg(14 downto 0));
 	--adc_in_signed <= signed(not(adc_use_reg(15))&adc_use_reg(14 downto 0));
 	--adc_in_signed <= to_signed(1024,16);
+fir_on : if adc_fir_filter_v4=1 generate 
 adcfirfilter : entity work.fir_filter
 GENERIC MAP
 (
@@ -2097,6 +2101,12 @@ PORT  MAP
 	FLASH_DATA => flash_do_slow,
 	FLASH_READY => FIR_DATA_READY
 );
+end generate fir_on;
+
+fir_off : if adc_fir_filter_v4=0 generate 
+	adc_out_signed <= adc_in_signed
+end generate fir_off;
+
 	SIO_AUDIO <= unsigned(not(adc_use_reg(15))&adc_use_reg(14 downto 0));
 
 process(adc_reg,adc_output,adc_valid,ADC_VOLUME_REG)
@@ -2119,9 +2129,14 @@ begin
 	end if;	
 end process;
 
+audio_detect_on : if adc_audio_detect=1 generate 
 audio_signal_detector1 : work.audio_signal_detector
 	port map(clk=>CLK49152,reset_n=>reset_n,audio=>adc_in_signed,sample=>adc_valid,volume=>adc_volume_reg,detect_out=>adc_enabled);
+end generate audio_detect_on;
 
+audio_detect_off : if adc_audio_detect=0 generate 
+	adc_enabled <= '1';
+end generate audio_detect_off;
 
 process(adc_use_reg,adc_frozen_reg,adc_enabled,adc_out_signed,sio_noise)
 begin
