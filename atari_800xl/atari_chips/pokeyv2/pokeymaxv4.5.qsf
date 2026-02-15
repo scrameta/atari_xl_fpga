@@ -109,9 +109,10 @@ set_location_assignment PIN_J12 -to EXT[7]   # LOUT2.B4  LIN2.A4  J12
 set_location_assignment PIN_G13 -to EXT[8]   # LOUT2.B2  LIN2.A2  G13 X
 set_location_assignment PIN_G12 -to EXT[9]   # LOUT2.B1  LIN2.A1  G12 X
 set_location_assignment PIN_L13 -to EXT[10]  # LOUT2.B8  LIN2.A8  L13 X
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to EXT[10]
 
-set_location_assignment PIN_D9 -to AUD[3]    # AUDR (CORRECTED)
-set_location_assignment PIN_C9 -to AUD[4]    # AUDL (CORRECTED)
+set_location_assignment PIN_D9 -to AUD[3]    # AUDL
+set_location_assignment PIN_C9 -to AUD[4]    # AUDR
 set_location_assignment PIN_C10 -to AUD[1]   # AUDINT
 
 set_location_assignment PIN_M12 -to ADC_RX_p # LIN2.A10

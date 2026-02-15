@@ -82,9 +82,9 @@ set_location_assignment PIN_N9 -to PADDLE[2]  #12=N9 POT0 p2
 set_location_assignment PIN_M2 -to POTRESET_N  #POTRESET - M2
 
 set_location_assignment PIN_C11 -to AUD[1] #AUD1 - C11
-set_location_assignment PIN_D11 -to AUD[3] #AUD3 - D11
+set_location_assignment PIN_D11 -to AUD[3] #AUD3 - D11 - L
 set_location_assignment PIN_C12 -to AUD[2] #AUD2 - C12
-set_location_assignment PIN_D12 -to AUD[4] #AUD4 - D12
+set_location_assignment PIN_D12 -to AUD[4] #AUD4 - D12 - R
 
 set_location_assignment PIN_M3 -to IOX_RST   #IOX_RST - M3
 set_location_assignment PIN_M4 -to IOX_SDA   #IOX_SDA - M4
@@ -102,6 +102,7 @@ set_location_assignment PIN_D13 -to EXT[3] #D13,LVLA23,EXT1
 set_location_assignment PIN_M9 -to EXT[4] #LVLB0  EXT4  - M9
 set_location_assignment PIN_M10 -to EXT[5] #LVLB1  EXT5  - M10
 set_location_assignment PIN_N10 -to EXT[6] #LVLB2  EXT6  - N10
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to EXT[6]
 set_location_assignment PIN_M11 -to EXT[7] #LVLB3  EXT7  - M11
 set_location_assignment PIN_N11 -to EXT[8] #LVLB4  EXT8  - N11
 set_location_assignment PIN_M12 -to EXT[9] #LVLB5  EXT9  - M12

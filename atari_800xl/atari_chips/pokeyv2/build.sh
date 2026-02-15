@@ -363,7 +363,8 @@ my %variants =
 				"a6_bit" => 3,
 				"a7_bit" => 19,  #use CS1
 				"cs1_bit" => 20, #force high
-				"optimisearea" => 1
+				"optimisearea" => 1,
+				"sigmadelta_implementation" => 2
 			},
 		},
 		"10M16SCU169C8G" =>
@@ -420,6 +421,7 @@ my %variants =
 				"ps2clk_bit" => 7,
 				"ps2dat_bit" => 8,
 				"ext_bits"=> 11,
+				"sigmadelta_implementation" => 2
 			},
 			"stereo_psg_covox_auto" =>
 			{
@@ -445,6 +447,7 @@ my %variants =
 				#"a7_bit" => 19,  #use CS1
 				"ext_bits"=> 11,
 				#"cs1_bit" => 20, #force high
+				"sigmadelta_implementation" => 2
 			},
 		},
 		"10M16SCU169C8G" =>
@@ -618,6 +621,10 @@ my %variants =
 				"paddle_comp"=>0,
 				"enable_iox"=>0,
 				"enable_adc"=>0,
+				"adc_audio_detect"=>1,
+				"adc_fir_filter_v4"=>1,
+				"adc_volume"=>3,
+				"sio_data_volume"=>2,
 				"pll_v2" => 0, 
 				"optimisearea" => 1,
 			},
@@ -650,6 +657,10 @@ my %variants =
 				"paddle_comp"=>0,
 				"enable_iox"=>0,
 				"enable_adc"=>1,
+				"adc_audio_detect"=>1,
+				"adc_fir_filter_v4"=>1,
+				"adc_volume"=>3,
+				"sio_data_volume"=>2,
 				"pll_v2" => 0, 
 				"optimisearea" => 1,
 			},
@@ -677,6 +688,10 @@ my %variants =
 				"paddle_comp"=>0,
 				"enable_iox"=>0,
 				"enable_adc"=>1,
+				"adc_audio_detect"=>1,
+				"adc_fir_filter_v4"=>1,
+				"adc_volume"=>3,
+				"sio_data_volume"=>2,
 				"pll_v2" => 0,
 				"optimisearea" => 1,
 			},
@@ -711,6 +726,10 @@ my %variants =
 				"paddle_comp"=>0,
 				"enable_iox"=>0,
 				"enable_adc"=>1,
+				"adc_audio_detect"=>1,
+				"adc_fir_filter_v4"=>1,
+				"adc_volume"=>3,
+				"sio_data_volume"=>2,
 				"pll_v2" => 0,
 				"optimisearea" => 1,
 			},
@@ -739,6 +758,10 @@ my %variants =
 				"paddle_comp"=>0,
 				"enable_iox"=>0,
 				"enable_adc"=>1,
+				"adc_audio_detect"=>1,
+				"adc_fir_filter_v4"=>1,
+				"adc_volume"=>3,
+				"sio_data_volume"=>2,
 				"pll_v2" => 0,
 				"optimisearea" => 1,
 			},
@@ -746,6 +769,72 @@ my %variants =
 	},
 	"pokeymax_v4.5" =>
 	{
+		"10M16SCU169C8G" =>
+		{
+			"full_quad" =>
+			{
+				"enable_audout2" => 0,
+				"pokeys" => 4,
+				"enable_auto_stereo" => 1,
+				"enable_sid" => 1,
+				"enable_psg" => 1,
+				"enable_covox" => 1,
+				"enable_sample" => 1,
+				"enable_flash" => 1,
+				"enable_spdif" => 1,
+				"enable_ps2" => 1,
+				"flash_addr_bits" => 17,
+				"sid_wave_base" => 79872, #"to_integer(unsigned(x\"13800\"))",
+				"fancy_switch_bit" => 1,
+				"a4_bit" => 2,
+				"a5_bit" => 3,
+				"a6_bit" => 4,
+				"a7_bit" => 5,
+				"ps2clk_bit" => 6,
+				"ps2dat_bit" => 7,
+				"gtia_audio_bit" => 8, 
+				"spdif_bit" => 10,
+				"ext_bits"=> 10,
+				"paddle_lvds"=>1,
+				"paddle_comp"=>0,
+				"enable_iox"=>0,
+				"enable_adc"=>1,
+				"adc_volume"=>1,
+				"sio_data_volume"=>0,
+				"pll_v2" => 0,
+				"optimisearea" => 1,
+			},
+			"mono" =>
+			{
+				"enable_audout2" => 0,
+				"pokeys" => 1,
+				"enable_auto_stereo" => 1,
+				"enable_sid" => 0,
+				"enable_psg" => 0,
+				"enable_covox" => 0,
+				"enable_sample" => 0,
+				"enable_flash" => 1,
+				"flash_addr_bits" => 17,
+				"a4_bit" => 2,
+				"a5_bit" => 3,
+				"a6_bit" => 4,
+				"a7_bit" => 5,
+				"fancy_switch_bit" => 1,
+				"ps2clk_bit" => 6,
+				"ps2dat_bit" => 7,
+				"gtia_audio_bit" => 8, 
+				"spdif_bit" => 10,
+				"ext_bits"=> 10,
+				"paddle_lvds"=>1,
+				"paddle_comp"=>0,
+				"enable_iox"=>0,
+				"enable_adc"=>1,
+				"adc_volume"=>1,
+				"sio_data_volume"=>0,
+				"pll_v2" => 0,
+				"optimisearea" => 1,
+			},
+		},
 		"10M08SCU169C8G" =>
 		{
 			"full_stereo_sample" =>
@@ -760,6 +849,7 @@ my %variants =
 				"enable_flash" => 1,
 				"enable_spdif" => 0,
 				"enable_ps2" => 0,
+				"fancy_switch_bit" => 1,
 				"a4_bit" => 2,
 				"a5_bit" => 3,
 				"a6_bit" => 4,
@@ -767,13 +857,14 @@ my %variants =
 				"ps2clk_bit" => 6,
 				"ps2dat_bit" => 7,
 				"gtia_audio_bit" => 8, 
-				"fancy_switch_bit" => 9,
-				"spdif_bit" => 1,
+				"spdif_bit" => 10,
 				"ext_bits"=> 10,
 				"paddle_lvds"=>1,
 				"paddle_comp"=>0,
 				"enable_iox"=>0,
 				"enable_adc"=>0,
+				"adc_volume"=>1,
+				"sio_data_volume"=>0,
 				"pll_v2" => 0, 
 				"optimisearea" => 1,
 			},
@@ -789,6 +880,7 @@ my %variants =
 				"enable_flash" => 1,
 				"enable_spdif" => 1,
 				"enable_ps2" => 0,
+				"fancy_switch_bit" => 1,
 				"a4_bit" => 2,
 				"a5_bit" => 3,
 				"a6_bit" => 4,
@@ -799,13 +891,14 @@ my %variants =
 				#"gtia_audio_bit" => 9,  PASS
 				#"gtia_audio_bit" => 5, PASS
 				"gtia_audio_bit" => 8, 
-				"fancy_switch_bit" => 9,
-				"spdif_bit" => 1,
+				"spdif_bit" => 10,
 				"ext_bits"=> 10,
 				"paddle_lvds"=>1,
 				"paddle_comp"=>0,
 				"enable_iox"=>0,
 				"enable_adc"=>1,
+				"adc_volume"=>1,
+				"sio_data_volume"=>0,
 				"pll_v2" => 0, 
 				"optimisearea" => 1,
 			},
@@ -819,6 +912,7 @@ my %variants =
 				"enable_covox" => 0,
 				"enable_sample" => 0,
 				"enable_flash" => 1,
+				"fancy_switch_bit" => 1,
 				"a4_bit" => 2,
 				"a5_bit" => 3,
 				"a6_bit" => 4,
@@ -826,13 +920,14 @@ my %variants =
 				"ps2clk_bit" => 6,
 				"ps2dat_bit" => 7,
 				"gtia_audio_bit" => 8, 
-				"fancy_switch_bit" => 9,
-				"spdif_bit" => 1,
+				"spdif_bit" => 10,
 				"ext_bits"=> 10,
 				"paddle_lvds"=>1,
 				"paddle_comp"=>0,
 				"enable_iox"=>0,
 				"enable_adc"=>1,
+				"adc_volume"=>1,
+				"sio_data_volume"=>0,
 				"pll_v2" => 0,
 				"optimisearea" => 1,
 			},
@@ -1045,6 +1140,21 @@ foreach my $typeboard (sort keys %variants)
 				next unless ($dir =~ /$wanted_variant/);
 			}
 			print "Building $versioncode $name of $typeboard into $dir\n";
+
+			`rm -f init*.bin`;
+			my $sio_data_volume = 2;
+			my $adc_volume = 0;
+			if (exists $spec->{"adc_volume"})
+			{
+				$adc_volume = $spec->{"adc_volume"}
+			}
+			if (exists $spec->{"sio_data_volume"})
+			{
+				$adc_volume = $spec->{"sio_data_volume"}
+			}
+			`./init adc_volume=$adc_volume sio_data_volume=$sio_data_volume`;
+			`rm -f init*.hex`;
+			`./makehexfiles`;
 	
 			`rm -rf $dir`;
 			mkdir $dir;
@@ -1097,6 +1207,7 @@ foreach my $typeboard (sort keys %variants)
 			#The sof file is compressed
 			#Reason being that we have a user flash area (UFM) and a config flash area (CFM)
 			#We steal some of the CFM space for sid wave tables but it needs to be empty
+			print("quartus_cpf --convert ../convert_secure_${type}_${needs_sid_waves}.cof");
 			`quartus_cpf --convert ../convert_secure_${type}_${needs_sid_waves}.cof`;
 		
 			if (int($fpgasize)>=8 and $needs_sid_waves) #We only patch the larger ones, the others do not have space...

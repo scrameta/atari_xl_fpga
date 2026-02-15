@@ -135,6 +135,7 @@ set_instance_assignment -name IO_STANDARD "3.3 V SCHMITT TRIGGER" -to SID
 set_instance_assignment -name IO_STANDARD "3.3 V SCHMITT TRIGGER" -to BCLK
 
 set_global_assignment -name OPTIMIZATION_MODE BALANCED
+set_global_assignment -name VHDL_FILE audio_signal_detector.vhd
 set_global_assignment -name VHDL_FILE flash_controller.vhd
 set_global_assignment -name VHDL_FILE stereo_detect.vhd
 set_global_assignment -name VHDL_FILE iox_glue.vhdl
@@ -144,6 +145,7 @@ set_global_assignment -name VHDL_FILE pll_reset_sync.vhdl
 set_global_assignment -name SDC_FILE pokeymax.sdc
 set_global_assignment -name VHDL_FILE complete_address_decoder.vhdl
 set_global_assignment -name VHDL_FILE syncreset_enable_divider.vhd
+set_global_assignment -name VHDL_FILE enable_divider.vhdl
 set_global_assignment -name VHDL_FILE delay_line.vhdl
 set_global_assignment -name VHDL_FILE wide_delay_line.vhdl
 set_global_assignment -name VHDL_FILE latch_delay_line.vhdl
@@ -151,6 +153,8 @@ set_global_assignment -name VHDL_FILE sigmadelta_1storder.vhd
 set_global_assignment -name VHDL_FILE sigmadelta_2ndorder.vhd
 set_global_assignment -name VHDL_FILE sigmadelta_2ndorder_dither.vhd
 set_global_assignment -name VHDL_FILE filtered_sigmadelta.vhd
+set_global_assignment -name VHDL_FILE fir_filter.vhdl
+set_global_assignment -name VHDL_FILE fir_rom.vhdl
 set_global_assignment -name VHDL_FILE mult_infer.vhdl
 set_global_assignment -name VHDL_FILE generic_ram_infer.vhdl
 set_global_assignment -name VHDL_FILE simple_low_pass_filter.vhdl
@@ -197,6 +201,8 @@ set_global_assignment -name VHDL_FILE covox/top.vhdl
 set_global_assignment -name QIP_FILE int_osc/synthesis/int_osc.qip
 set_global_assignment -name QIP_FILE pll.qip
 set_global_assignment -name QIP_FILE flash/synthesis/flash.qip
+set_global_assignment -name QIP_FILE fir_sample_buffer.qip
+set_global_assignment -name QIP_FILE fir_buffer.qip
 
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 

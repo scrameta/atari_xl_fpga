@@ -19,7 +19,7 @@ ENTITY pokeymax IS
 	GENERIC
 	(
 		pokeys : integer := 1; -- 1-4
-		lowpass : integer := 1; -- 0=lowpass off, 1=lowpass on (leave on except if there is no space! Low impact...)
+		lowpass : integer := 0; -- 0=lowpass off, 1=lowpass on (only needed for hdmi/spdif and we already have a local filter there)
 		enable_auto_stereo : integer := 0;   -- 1=auto detect a4 => not toggling => mono
 
 		fancy_switch_bit : integer := 20; -- 0=ext is low => mono
@@ -38,6 +38,7 @@ ENTITY pokeymax IS
 
 		adc_audio_detect : integer := 0;  -- Detect 0 crossing/amplitude etc, otherwise silence
 		adc_fir_filter_v4 : integer := 0;    -- Filter out interference from keyboard scan etc
+		sigmadelta_implementation : integer := 4; -- 4 is dithered 2nd order (recommended if it fits), 2 is 2nd order without dithering
 
 		ext_bits : integer := 3; 
 		pll_v2 : integer := 1;
@@ -446,8 +447,6 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal MHZ2_ENABLE : std_logic;
 
 	-- spdif
-	signal spdif_mux : std_logic_vector(15 downto 0);
-	signal spdif_left : std_logic;
 	signal spdif_out : std_logic;
 	signal CLK6144 : std_logic; --spdif
 	signal AUDIO_2_FILTERED : unsigned(15 downto 0);
@@ -1821,7 +1820,7 @@ PORT MAP
 dac_0 : entity work.filtered_sigmadelta  --pin37
 GENERIC MAP
 (
-	IMPLEMENTATION => 4,
+	IMPLEMENTATION => sigmadelta_implementation,
 	LOWPASS => lowpass,
 	LFSR_SEED => x"ACE2"
 )
@@ -1840,7 +1839,7 @@ audout2_on : if enable_audout2=1 generate
 dac_1 : entity work.filtered_sigmadelta
 GENERIC MAP
 (
-	IMPLEMENTATION => 4,
+	IMPLEMENTATION => sigmadelta_implementation,
 	LOWPASS => lowpass,
 	LFSR_SEED => x"1D2B"
 )
@@ -1863,7 +1862,7 @@ end generate audout2_off;
 dac_2 : entity work.filtered_sigmadelta
 GENERIC MAP
 (
-	IMPLEMENTATION => 4,
+	IMPLEMENTATION => sigmadelta_implementation,
 	LOWPASS => lowpass,
 	LFSR_SEED => x"BEEF"
 )
@@ -1880,7 +1879,7 @@ port map
 dac_3 : entity work.filtered_sigmadelta
 GENERIC MAP
 (
-	IMPLEMENTATION => 4,
+	IMPLEMENTATION => sigmadelta_implementation,
 	LOWPASS => lowpass,
 	LFSR_SEED => x"5A3C"
 )
@@ -1896,10 +1895,6 @@ port map
 
 -- Digital audio output
 spdif_on : if enable_spdif=1 generate 
-
--- todo: clock domain crossing!
-spdif_mux <= std_logic_vector(audio_2_filtered) when spdif_left='1' 
-   else std_logic_vector(audio_3_filtered);
 
 filter_left : entity work.simple_low_pass_filter
 PORT MAP 
@@ -1919,13 +1914,16 @@ PORT MAP
 	AUDIO_OUT => audio_3_filtered
 );
 
+---- todo: clock domain crossing!
 spdif : entity work.spdif_transmitter
  port map(
   bit_clock => CLK6144, -- 128x Fsample (6.144MHz for 48K samplerate)
-  data_in(23) => not(spdif_mux(15)),
-  data_in(22 downto 8) => spdif_mux(14 downto 0),
-  data_in(7 downto 0) => (others=>'0'),
-  address_out => spdif_left,
+  left_in(23) => not(audio_2_filtered(15)),
+  left_in(22 downto 8) => std_logic_vector(audio_2_filtered(14 downto 0)),
+  left_in(7 downto 0) => (others=>'0'),
+  right_in(23) => not(audio_3_filtered(15)),
+  right_in(22 downto 8) => std_logic_vector(audio_3_filtered(14 downto 0)),
+  right_in(7 downto 0) => (others=>'0'),
   spdif_out => spdif_out
  );
 
@@ -2104,7 +2102,7 @@ PORT  MAP
 end generate fir_on;
 
 fir_off : if adc_fir_filter_v4=0 generate 
-	adc_out_signed <= adc_in_signed
+	adc_out_signed <= adc_in_signed;
 end generate fir_off;
 
 	SIO_AUDIO <= unsigned(not(adc_use_reg(15))&adc_use_reg(14 downto 0));
@@ -2211,12 +2209,12 @@ SIO_RXD <= SID;
 
 
 --1->pin37
-AUD(1) <= AUDIO_0_SIGMADELTA when CHANNEL_EN_REG(0)='1' else '0';
+AUD(1) <= AUDIO_0_SIGMADELTA when CHANNEL_EN_REG(0)='1' else '0'; --L (internal)
 
 -- ext AUD pins:
-AUD(2) <= AUDIO_1_SIGMADELTA when CHANNEL_EN_REG(1)='1' else '0';
-AUD(3) <= AUDIO_2_SIGMADELTA when CHANNEL_EN_REG(2)='1' else '0';
-AUD(4) <= AUDIO_3_SIGMADELTA when CHANNEL_EN_REG(3)='1' else '0';
+AUD(2) <= AUDIO_1_SIGMADELTA when CHANNEL_EN_REG(1)='1' else '0'; --R (external version of internal, if present on board)
+AUD(3) <= AUDIO_2_SIGMADELTA when CHANNEL_EN_REG(2)='1' else '0'; --L
+AUD(4) <= AUDIO_3_SIGMADELTA when CHANNEL_EN_REG(3)='1' else '0'; --R
 
 IRQ <= '0' when (IRQ_EN_REG='1' and (and_reduce(POKEY_IRQ)='0')) or (IRQ_EN_REG='0' and POKEY_IRQ(0)='0') or (SAMPLE_IRQ='1')  else 'Z';
 

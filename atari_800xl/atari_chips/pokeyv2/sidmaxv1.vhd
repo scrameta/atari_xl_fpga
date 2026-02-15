@@ -356,8 +356,6 @@ ARCHITECTURE vhdl OF sidmax IS
 	signal MHZ358_ENABLE : std_logic;
 
 	-- spdif
-	signal spdif_mux : std_logic_vector(15 downto 0);
-	signal spdif_right : std_logic;
 	signal spdif_out : std_logic;
 	signal CLK6144 : std_logic; --spdif
 	signal AUDIO_2_FILTERED : unsigned(15 downto 0);
@@ -1598,8 +1596,9 @@ PORT MAP
 dac_0 : entity work.filtered_sigmadelta  --pin37
 GENERIC MAP
 (
-	IMPLEMENTATION => 2,
-	LOWPASS => lowpass
+	IMPLEMENTATION => 4,
+	LOWPASS => lowpass,
+	LFSR_SEED => x"ACE2"
 )
 port map
 (
@@ -1614,8 +1613,9 @@ port map
 dac_2 : entity work.filtered_sigmadelta
 GENERIC MAP
 (
-	IMPLEMENTATION => 2,
-	LOWPASS => lowpass
+	IMPLEMENTATION => 4,
+	LOWPASS => lowpass,
+	LFSR_SEED => x"BEEF"
 )
 port map
 (
@@ -1630,8 +1630,9 @@ port map
 dac_3 : entity work.filtered_sigmadelta
 GENERIC MAP
 (
-	IMPLEMENTATION => 2,
-	LOWPASS => lowpass
+	IMPLEMENTATION => 4,
+	LOWPASS => lowpass,
+	LFSR_SEED => x"5A3C"
 )
 port map
 (
@@ -1645,10 +1646,6 @@ port map
 
 -- Digital audio output
 spdif_on : if enable_spdif=1 generate 
-
--- todo: clock domain crossing!
-spdif_mux <= std_logic_vector(audio_2_filtered) when spdif_right='0' 
-   else std_logic_vector(audio_3_filtered);
 
 filter_left : entity work.simple_low_pass_filter
 PORT MAP 
@@ -1668,12 +1665,16 @@ PORT MAP
 	AUDIO_OUT => audio_3_filtered
 );
 
+-- todo: clock domain crossing!
 spdif : entity work.spdif_transmitter
  port map(
   bit_clock => CLK6144, -- 128x Fsample (6.144MHz for 48K samplerate)
-  data_in(23 downto 8) => spdif_mux,
-  data_in(7 downto 0) => (others=>'0'),
-  address_out => spdif_right,
+  left_in(23) => not(audio_2_filtered(15)),
+  left_in(22 downto 8) => std_logic_vector(audio_2_filtered(14 downto 0)),
+  left_in(7 downto 0) => (others=>'0'),
+  right_in(23) => not(audio_3_filtered(15)),
+  right_in(22 downto 8) => std_logic_vector(audio_3_filtered(14 downto 0)),
+  right_in(7 downto 0) => (others=>'0'),
   spdif_out => spdif_out
  );
 

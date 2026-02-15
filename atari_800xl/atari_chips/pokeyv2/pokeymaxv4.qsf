@@ -134,11 +134,12 @@ set_location_assignment PIN_B11 -to A[1]   #LVLA18,
 set_location_assignment PIN_A12 -to BCLK   #LVLA19,
 set_location_assignment PIN_B12 -to KR1    #LVLA20,
 set_location_assignment PIN_B13 -to EXT[10] #LVLA21,
+set_instance_assignment -name CURRENT_STRENGTH_NEW 4MA -to EXT[10]
 set_location_assignment PIN_C12 -to SID    #LVLA22,
 set_location_assignment PIN_D13 -to K[0]   #LVLA23,
 
-set_location_assignment PIN_C9 -to AUD[4]  
-set_location_assignment PIN_D9 -to AUD[3]  
+set_location_assignment PIN_C9 -to AUD[4] #R
+set_location_assignment PIN_D9 -to AUD[3] #L
 set_location_assignment PIN_C10 -to AUD[1] 
 
 set_location_assignment PIN_M12 -to ADC_RX_P  #LVLB9

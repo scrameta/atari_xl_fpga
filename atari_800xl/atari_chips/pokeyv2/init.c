@@ -1,6 +1,7 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include <math.h>
+#include <string.h>
 
 int ima_step_table[89] = {
   7, 8, 9, 10, 11, 12, 13, 14, 16, 17,
@@ -14,7 +15,7 @@ int ima_step_table[89] = {
   15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767
 };
 
-int main(void)
+int main(int argc, char * argv[])
 {
 /*
 SATURATE_NEXT <= flash_do(0));
@@ -55,22 +56,50 @@ PSG_ENVELOPE16_NEXT <= flash_do(28);
 	int irq_en = 0;
 	int detect_right = 1;
 	int pal = 1;
-	int sio_data_volume = 2;
-	int adc_volume = 3;
+	int sio_data_volume = 0;
+	int adc_volume = 0;
+	int post_divide = 0b10100000;
+	int gtia_enable = 0b1100;
+	int psg_freq = 0;
+	int psg_stereomode = 1;
+	int psg_envelope16 = 0;
+
+	for (i=1;i!=argc;++i)
+	{
+		int len = strlen(argv[i]);
+		int eq = -1;
+		for (int j=0;j!=len;++j)
+		{
+			if (argv[i][j]=='=')
+			{
+				eq = j;
+				break;
+			}
+		}
+		if (eq>=0)
+		{
+			if (strncmp(argv[i],"adc_volume",eq)==0)
+			{
+				adc_volume = atoi(argv[i]+eq+1);
+				printf("adc_volume:%d\n",adc_volume);
+			}
+			else if (strncmp(argv[i],"sio_data_volume",eq)==0)
+			{
+				sio_data_volume = atoi(argv[i]+eq+1);
+				printf("sio_data_volume:%d\n",sio_data_volume);
+			}
+		}
+	}
+
 	buffer[0] |= (saturate&3)<<0;
 	buffer[0] |= (channel_mode&1)<<2;
 	buffer[0] |= (irq_en&1)<<3;
 	buffer[0] |= (detect_right&1)<<4;
 	buffer[0] |= (pal&1)<<5;
-	int post_divide = 0b10100000;
 	buffer[1] |= (post_divide&0xff)<<0;
-	int gtia_enable = 0b1100;
 	buffer[2] |= (gtia_enable&0xf)<<0;
 	buffer[2] |= (adc_volume&0x3)<<4;
 	buffer[2] |= (sio_data_volume&0x3)<<6;
-	int psg_freq = 0;
-	int psg_stereomode = 1;
-	int psg_envelope16 = 0;
 	buffer[3] |= (psg_freq&3)<<0;
 	buffer[3] |= (psg_stereomode&3)<<2;
 	buffer[3] |= (psg_envelope16&1)<<4;
