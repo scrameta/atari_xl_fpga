@@ -179,6 +179,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal CLK116 : std_logic;
 	signal CLK106 : std_logic;
 	signal RESET_N : std_logic;
+	signal PLL_LOCKED : std_logic;
 
 	signal ENABLE_CYCLE : std_logic;
 	signal ENABLE_DOUBLE_CYCLE : std_logic;
@@ -654,7 +655,7 @@ pll_v2_inst : if pll_v2=1 generate
 			 c0 => CLK, --56 ish
 			 c1 => CLK116,  --113ish
 			 c2 => CLK106,  --106ish
-			 locked => RESET_N);
+			 locked => PLL_LOCKED);
 	CLK49152 <= '0';
 end generate;
 
@@ -665,10 +666,14 @@ pll_v3_inst : if pll_v2=0 generate
 			 c1 => CLK116,  --56ish
 			 c2 => CLK106,  --106ish
 			 c3 => CLK6144,  --6.44MHz
-			 locked => RESET_N);
+			 locked => PLL_LOCKED);
 	CLK49152 <= CLK0;
 end generate;
 
+pll_sync : entity work.pll_reset_sync
+	PORT MAP(CLK => CLK116,
+	         PLL_LOCKED => PLL_LOCKED,
+		 RESET_N => RESET_N);
 
 	AIN(3 downto 0) <= A;
 	AIN(7) <= EXT_INT(a7_bit);
@@ -1813,8 +1818,9 @@ PORT MAP
 dac_0 : entity work.filtered_sigmadelta  --pin37
 GENERIC MAP
 (
-	IMPLEMENTATION => 2,
-	LOWPASS => lowpass
+	IMPLEMENTATION => 4,
+	LOWPASS => lowpass,
+	LFSR_SEED => x"ACE2"
 )
 port map
 (
@@ -1831,8 +1837,9 @@ audout2_on : if enable_audout2=1 generate
 dac_1 : entity work.filtered_sigmadelta
 GENERIC MAP
 (
-	IMPLEMENTATION => 2,
-	LOWPASS => lowpass
+	IMPLEMENTATION => 4,
+	LOWPASS => lowpass,
+	LFSR_SEED => x"1D2B"
 )
 port map
 (
@@ -1853,8 +1860,9 @@ end generate audout2_off;
 dac_2 : entity work.filtered_sigmadelta
 GENERIC MAP
 (
-	IMPLEMENTATION => 2,
-	LOWPASS => lowpass
+	IMPLEMENTATION => 4,
+	LOWPASS => lowpass,
+	LFSR_SEED => x"BEEF"
 )
 port map
 (
@@ -1869,8 +1877,9 @@ port map
 dac_3 : entity work.filtered_sigmadelta
 GENERIC MAP
 (
-	IMPLEMENTATION => 2,
-	LOWPASS => lowpass
+	IMPLEMENTATION => 4,
+	LOWPASS => lowpass,
+	LFSR_SEED => x"5A3C"
 )
 port map
 (
