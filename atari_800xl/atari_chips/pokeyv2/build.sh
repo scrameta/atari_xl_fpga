@@ -800,7 +800,8 @@ my %variants =
 				"enable_iox"=>0,
 				"enable_adc"=>1,
 				"adc_volume"=>1,
-				"sio_data_volume"=>0,
+				"adc_audio_detect"=>1,
+				"sio_data_volume"=>2,
 				"pll_v2" => 0,
 				"optimisearea" => 1,
 			},
@@ -830,7 +831,8 @@ my %variants =
 				"enable_iox"=>0,
 				"enable_adc"=>1,
 				"adc_volume"=>1,
-				"sio_data_volume"=>0,
+				"adc_audio_detect"=>1,
+				"sio_data_volume"=>2,
 				"pll_v2" => 0,
 				"optimisearea" => 1,
 			},
@@ -864,7 +866,8 @@ my %variants =
 				"enable_iox"=>0,
 				"enable_adc"=>0,
 				"adc_volume"=>1,
-				"sio_data_volume"=>0,
+				"adc_audio_detect"=>1,
+				"sio_data_volume"=>2,
 				"pll_v2" => 0, 
 				"optimisearea" => 1,
 			},
@@ -898,7 +901,8 @@ my %variants =
 				"enable_iox"=>0,
 				"enable_adc"=>1,
 				"adc_volume"=>1,
-				"sio_data_volume"=>0,
+				"adc_audio_detect"=>1,
+				"sio_data_volume"=>2,
 				"pll_v2" => 0, 
 				"optimisearea" => 1,
 			},
@@ -927,7 +931,8 @@ my %variants =
 				"enable_iox"=>0,
 				"enable_adc"=>1,
 				"adc_volume"=>1,
-				"sio_data_volume"=>0,
+				"adc_audio_detect"=>1,
+				"sio_data_volume"=>2,
 				"pll_v2" => 0,
 				"optimisearea" => 1,
 			},
@@ -1155,6 +1160,7 @@ foreach my $typeboard (sort keys %variants)
 			`./init adc_volume=$adc_volume sio_data_volume=$sio_data_volume`;
 			`rm -f init*.hex`;
 			`./makehexfiles`;
+			`rm -f init*.bin`;
 	
 			`rm -rf $dir`;
 			mkdir $dir;
@@ -1184,6 +1190,7 @@ foreach my $typeboard (sort keys %variants)
 			`cp -r fir_sample_buffer* $dir`;
 			`cp -r fir_buffer* $dir`;
 			`cp -r audio_sig* $dir`;
+			`mv  *.hex $dir`;
 		
 			chdir $dir;
 		
