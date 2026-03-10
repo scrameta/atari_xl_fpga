@@ -181,6 +181,10 @@ BEGIN
 		if (addr_decoded5(18)='1') then
 			DO(3 downto 0) <= irq_active_reg;
 		end if;
+		if (addr_decoded5(19)='1') then
+			DO(3 downto 0) <= adpcm_reg;
+			DO(7 downto 4) <= bits8_reg;
+		end if;
 	end process;
 
 	process(adpcm_channel,adpcm_store,addr,bits8,dma_on,adpcm_on,write_enable)
