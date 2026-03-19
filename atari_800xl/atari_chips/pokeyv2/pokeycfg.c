@@ -966,8 +966,9 @@ unsigned char confirmCoreDrive(const char * action, char * filename)
 
     while (1)
     {
-	gotoxy(32,2); //column of the drive digit
+	gotoxy(29,3); //column of the drive digit
         cputc('0'+core_drive);
+	gotoxy(0,7);
         while(!kbhit());
         key = cgetc();
         if ((key >= '1') && (key <= '8'))
@@ -975,11 +976,11 @@ unsigned char confirmCoreDrive(const char * action, char * filename)
             core_drive = key - '0';
             filename[1] = '0' + core_drive;
         }
-        else if ((key == 'y') || (key == 'Y'))
+        else if (key == 'y')
         {
             return 1;
         }
-        else
+        else if (key == KEY_ESC)
         {
             return 0;
         }
@@ -1189,7 +1190,7 @@ void verifyCore()
 	unsigned char t=0;
     	if (!input)
     	{
-    		cprintf("Failed to open file!\r\n");
+    		cprintf("Failed to open %s!\r\n",filename);
     		sleep(3);
     	}
     	//fseek(input,0,SEEK_SET);
