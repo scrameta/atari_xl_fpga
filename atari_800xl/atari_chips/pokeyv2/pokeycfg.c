@@ -1150,14 +1150,13 @@ void updateCore()
 	    }
     	}
     	fclose(input);
+
+        cprintf("\r\nFlashing finished\r\n");
+        cprintf("Press key to continue\r\n");
+        while(!kbhit());
     }
     bgcolor(0x00);
     bordercolor(0x00);
-
-    cprintf("\r\nFlashing finished\r\n");
-    cprintf("Press key to continue\r\n");
-	    		
-    while(!kbhit());
 
     //writeFlashContentsToFile();
 }
@@ -1256,14 +1255,14 @@ void verifyCore()
 
     	free(buffer);
     	fclose(input);
+
+        cprintf("\r\nVerify passed\r\n");
+        cprintf("Press key to continue\r\n");
+                		
+        while(!kbhit());
     }
     bgcolor(0x00);
     bordercolor(0x00);
-
-    cprintf("\r\nVerify passed\r\n");
-    cprintf("Press key to continue\r\n");
-	    		
-    while(!kbhit());
 
     //writeFlashContentsToFile();
 }
