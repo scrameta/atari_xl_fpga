@@ -949,34 +949,31 @@ void saveConfig(unsigned long flash1, unsigned long flash2)
 
 
 #ifndef SIDMAX
-static unsigned char core_drive = 4;
-
-void makeCoreFilename(char * filename)
-{
-    filename[1] = '0' + core_drive;
-}
+static unsigned char core_drive = 1;
 
 unsigned char confirmCoreDrive(const char * action, char * filename)
 {
     unsigned char key;
 
+    clrscr();
+    bgcolor(col2());
+    chline(40);
+    cprintf("%s core\r\n", action);
+    chline(40);
+    cprintf("Please insert core.bin into D \r\n");
+    cprintf("Press number to change drive\r\n");
+    cprintf("Press Y to continue\r\n");
+
     while (1)
     {
-        clrscr();
-        bgcolor(col2());
-        chline(40);
-        cprintf("%s core\r\n", action);
-        chline(40);
-        cprintf("Please insert core.bin into D%c\r\n", '0' + core_drive);
-        cprintf("Press number to change drive\r\n");
-        cprintf("Press Y to continue\r\n");
-
+	gotoxy(32,2); //column of the drive digit
+        cputc('0'+core_drive);
         while(!kbhit());
         key = cgetc();
         if ((key >= '1') && (key <= '8'))
         {
             core_drive = key - '0';
-            makeCoreFilename(filename);
+            filename[1] = '0' + core_drive;
         }
         else if ((key == 'y') || (key == 'Y'))
         {
@@ -998,7 +995,6 @@ void updateCore()
     char filename[] = "core.bin";
 #else
     char filename[] = "d4:core.bin";
-    makeCoreFilename(filename);
 #endif    
 
 #ifdef SIDMAX
@@ -1006,13 +1002,10 @@ void updateCore()
     bgcolor(col2());
     //textcolor(0xa);
     chline(40);
-    cprintf("Updating core
-");
+    cprintf("Updating core");
     chline(40);
-    cprintf("Please insert core.bin into drive
-");
-    cprintf("Press Y to confirm core update
-");
+    cprintf("Please insert core.bin into drive");
+    cprintf("Press Y to confirm core update");
     while(!kbhit());
     if (cgetc()=='y') 
 #else
@@ -1170,8 +1163,7 @@ void verifyCore()
 #ifdef SIDMAX
     char filename[] = "core.bin";
 #else
-    char filename[] = "d4:core.bin";
-    makeCoreFilename(filename);
+    char filename[] = "dX:core.bin";
 #endif    
 
 #ifdef SIDMAX
@@ -1179,13 +1171,10 @@ void verifyCore()
     bgcolor(col2());
     //textcolor(0xa);
     chline(40);
-    cprintf("Verifying core
-");
+    cprintf("Verifying core");
     chline(40);
-    cprintf("Please insert core.bin into drive
-");
-    cprintf("Press Y to confirm core verify
-");
+    cprintf("Please insert core.bin into drive");
+    cprintf("Press Y to confirm core verify");
     while(!kbhit());
     if (cgetc()=='y') 
 #else
