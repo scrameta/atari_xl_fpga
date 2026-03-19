@@ -603,7 +603,6 @@ void renderLine(unsigned long * flash1, unsigned long * flash2, unsigned char mo
 	}
     }
     revers(0);
-    *flash2; // silence warning
 }
 
 
@@ -624,7 +623,7 @@ void render(unsigned long * flash1, unsigned long * flash2, unsigned char mode, 
 	    clrscr();
 	    //textcolor(0xa);
 	    chline(40);
-	    cprintf(PRODUCT " config v1.5 ");
+	    cprintf(PRODUCT " config v1.6 ");
             cprintf(" Core:");
             for (i=0;i!=8;++i)
             {
@@ -948,6 +947,49 @@ void saveConfig(unsigned long flash1, unsigned long flash2)
     bgcolor(0x00);
 }
 
+
+#ifndef SIDMAX
+static unsigned char core_drive = 4;
+
+void makeCoreFilename(char * filename)
+{
+    filename[1] = '0' + core_drive;
+}
+
+unsigned char confirmCoreDrive(const char * action, char * filename)
+{
+    unsigned char key;
+
+    while (1)
+    {
+        clrscr();
+        bgcolor(col2());
+        chline(40);
+        cprintf("%s core\r\n", action);
+        chline(40);
+        cprintf("Please insert core.bin into D%c\r\n", '0' + core_drive);
+        cprintf("Press number to change drive\r\n");
+        cprintf("Press Y to continue\r\n");
+
+        while(!kbhit());
+        key = cgetc();
+        if ((key >= '1') && (key <= '8'))
+        {
+            core_drive = key - '0';
+            makeCoreFilename(filename);
+        }
+        else if ((key == 'y') || (key == 'Y'))
+        {
+            return 1;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+}
+#endif
+
 void updateCore()
 {
     unsigned long flash1 = readFlash(0,0);
@@ -956,23 +998,26 @@ void updateCore()
     char filename[] = "core.bin";
 #else
     char filename[] = "d4:core.bin";
+    makeCoreFilename(filename);
 #endif    
 
+#ifdef SIDMAX
     clrscr();
     bgcolor(col2());
     //textcolor(0xa);
     chline(40);
-    cprintf("Updating core\r\n");
+    cprintf("Updating core
+");
     chline(40);
-
-#ifdef SIDMAX
-    cprintf("Please insert core.bin into drive\r\n");
-#else
-    cprintf("Please insert core.bin into D4\r\n");
-#endif
-    cprintf("Press Y to confirm core update\r\n");
+    cprintf("Please insert core.bin into drive
+");
+    cprintf("Press Y to confirm core update
+");
     while(!kbhit());
     if (cgetc()=='y') 
+#else
+    if (confirmCoreDrive("Updating", filename))
+#endif
     {
     	FILE * input = fopen(filename,"rb");
     	if (!input)
@@ -1126,23 +1171,26 @@ void verifyCore()
     char filename[] = "core.bin";
 #else
     char filename[] = "d4:core.bin";
+    makeCoreFilename(filename);
 #endif    
 
+#ifdef SIDMAX
     clrscr();
     bgcolor(col2());
     //textcolor(0xa);
     chline(40);
-    cprintf("Verifying core\r\n");
+    cprintf("Verifying core
+");
     chline(40);
-
-#ifdef SIDMAX
-    cprintf("Please insert core.bin into drive\r\n");
-#else
-    cprintf("Please insert core.bin into D4\r\n");
-#endif
-    cprintf("Press Y to confirm core verify\r\n");
+    cprintf("Please insert core.bin into drive
+");
+    cprintf("Press Y to confirm core verify
+");
     while(!kbhit());
     if (cgetc()=='y') 
+#else
+    if (confirmCoreDrive("Verifying", filename))
+#endif
     {
     	FILE * input = fopen(filename,"rb");
 	int j;
