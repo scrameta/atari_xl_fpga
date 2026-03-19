@@ -966,6 +966,7 @@ unsigned char confirmCoreDrive(const char * action, char * filename)
 
     while (1)
     {
+        filename[1] = '0' + core_drive;
 	gotoxy(29,3); //column of the drive digit
         cputc('0'+core_drive);
 	gotoxy(0,7);
@@ -974,13 +975,12 @@ unsigned char confirmCoreDrive(const char * action, char * filename)
         if ((key >= '1') && (key <= '8'))
         {
             core_drive = key - '0';
-            filename[1] = '0' + core_drive;
         }
         else if (key == 'y')
         {
             return 1;
         }
-        else if (key == KEY_ESC)
+        else
         {
             return 0;
         }
