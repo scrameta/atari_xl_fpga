@@ -9,7 +9,6 @@
 LIBRARY ieee;
 USE ieee.std_logic_1164.all; 
 use ieee.numeric_std.all;
-USE IEEE.STD_LOGIC_UNSIGNED.ALL;
 use IEEE.STD_LOGIC_MISC.all;
 use work.AudioTypes.all;
 
@@ -26,30 +25,39 @@ PORT
 	DETECT_RIGHT : IN STD_LOGIC;
 	POST_DIVIDE : IN STD_LOGIC_VECTOR(7 downto 0);
 	FANCY_ENABLE : IN STD_LOGIC;
-	GTIA_EN : IN STD_LOGIC_VECTOR(3 downto 0);	
-	ADC_EN : IN STD_LOGIC_VECTOR(3 downto 0);	
+	B_CH0_EN : IN STD_LOGIC_VECTOR(3 downto 0);	
+	B_CH1_EN : IN STD_LOGIC_VECTOR(3 downto 0);	
 
-	CH0 : IN UNSIGNED(15 downto 0); --pokey0
-	CH1 : IN UNSIGNED(15 downto 0); --pokey1
-	CH2 : IN UNSIGNED(15 downto 0); --pokey2
-	CH3 : IN UNSIGNED(15 downto 0); --pokey3
-	CH4 : IN UNSIGNED(15 downto 0); --sample0
-	CH5 : IN UNSIGNED(15 downto 0); --sample1
-	CH6 : IN UNSIGNED(15 downto 0); --sid0
-	CH7 : IN UNSIGNED(15 downto 0); --sid1
-	CH8 : IN UNSIGNED(15 downto 0); --psg0
-	CH9 : IN UNSIGNED(15 downto 0); --psg1
-	CHA : IN UNSIGNED(15 downto 0); --gtia0	
-	CHB : IN UNSIGNED(15 downto 0); --adc	
+	L_CH0 : IN SIGNED(15 downto 0);
+	L_CH1 : IN SIGNED(15 downto 0);
+	L_CH2 : IN SIGNED(15 downto 0);
+	L_CH3 : IN SIGNED(15 downto 0);
+	L_CH4 : IN SIGNED(15 downto 0);
+	R_CH0 : IN SIGNED(15 downto 0);
+	R_CH1 : IN SIGNED(15 downto 0);
+	R_CH2 : IN SIGNED(15 downto 0);
+	R_CH3 : IN SIGNED(15 downto 0);
+	R_CH4 : IN SIGNED(15 downto 0);
+	B_CH0 : IN SIGNED(15 downto 0);
+	B_CH1 : IN SIGNED(15 downto 0);
 
-	AUDIO_0_UNSIGNED : out unsigned(15 downto 0);
-	AUDIO_1_UNSIGNED : out unsigned(15 downto 0);
-	AUDIO_2_UNSIGNED : out unsigned(15 downto 0);
-	AUDIO_3_UNSIGNED : out unsigned(15 downto 0)
+	AUDIO_0_SIGNED : out signed(15 downto 0);
+	AUDIO_1_SIGNED : out signed(15 downto 0);
+	AUDIO_2_SIGNED : out signed(15 downto 0);
+	AUDIO_3_SIGNED : out signed(15 downto 0)
 );
 END mixer;		
 		
 ARCHITECTURE vhdl OF mixer IS
+
+	-- DC blocker constants
+	constant DC_EXTRA_BITS : integer := 4;
+	constant DC_ACC_WIDTH  : integer := 16 + DC_EXTRA_BITS; -- 20 bits
+	constant DC_K          : integer := 10;
+
+	subtype dc_acc_t is signed(DC_ACC_WIDTH-1 downto 0);
+	type dc_arr_t is array (0 to 3) of dc_acc_t;
+
 	-- DETECT RIGHT PLAYING
 	signal RIGHT_PLAYING_RECENTLY : std_logic;
 	signal RIGHT_NEXT : std_logic;
@@ -58,51 +66,50 @@ ARCHITECTURE vhdl OF mixer IS
 	signal RIGHT_PLAYING_COUNT_REG : unsigned(23 downto 0);
 
 	-- sums
-	signal audio0_reg : unsigned(15 downto 0);
-	signal audio0_next : unsigned(15 downto 0);
-	signal audio1_reg : unsigned(15 downto 0);
-	signal audio1_next : unsigned(15 downto 0);
-	signal audio2_reg : unsigned(15 downto 0);
-	signal audio2_next : unsigned(15 downto 0);
-	signal audio3_reg : unsigned(15 downto 0);
-	signal audio3_next : unsigned(15 downto 0);
+	signal audio0_reg : signed(15 downto 0);
+	signal audio0_next : signed(15 downto 0);
+	signal audio1_reg : signed(15 downto 0);
+	signal audio1_next : signed(15 downto 0);
+	signal audio2_reg : signed(15 downto 0);
+	signal audio2_next : signed(15 downto 0);
+	signal audio3_reg : signed(15 downto 0);
+	signal audio3_next : signed(15 downto 0);
 
-	signal acc_reg : unsigned(19 downto 0);
-	signal acc_next : unsigned(19 downto 0);
-	
-	signal secondBatch_reg : std_logic;
-	signal secondBatch_next : std_logic;
+	signal acc_reg : signed(19 downto 0);
+	signal acc_next : signed(19 downto 0);
+
+	-- DC blocker per-channel state
+	signal dc_reg  : dc_arr_t;
+	signal dc_next : dc_arr_t;
+
+	-- Pipeline register: holds dc-corrected divided value between state_dc and state_clear
+	signal dc_corrected_reg  : signed(19 downto 0);
+	signal dc_corrected_next : signed(19 downto 0);
+
+	signal out_ch_reg : std_logic_vector(1 downto 0);
+	signal out_ch_next : std_logic_vector(1 downto 0);
 	
 	signal state_reg : unsigned(3 downto 0);
 	signal state_next : unsigned(3 downto 0);
-	constant state_pokeyA_L : unsigned(3 downto 0) := "0000";
-	constant state_pokeyB_L : unsigned(3 downto 0) := "0001";
-	constant state_sample_L : unsigned(3 downto 0) := "0010";
-	constant state_sid_L    : unsigned(3 downto 0) := "0011";
-	constant state_psg_L    : unsigned(3 downto 0) := "0100";
-	constant state_adc_L    : unsigned(3 downto 0) := "0101";
-	constant state_gtia_L   : unsigned(3 downto 0) := "0110";
-	constant state_clear_L  : unsigned(3 downto 0) := "0111";
-	constant state_pokeyA_R : unsigned(3 downto 0) := "1000";
-	constant state_pokeyB_R : unsigned(3 downto 0) := "1001";
-	constant state_sample_R : unsigned(3 downto 0) := "1010";
-	constant state_sid_R    : unsigned(3 downto 0) := "1011";
-	constant state_psg_R    : unsigned(3 downto 0) := "1100";
-	constant state_adc_R    : unsigned(3 downto 0) := "1101";
-	constant state_gtia_R   : unsigned(3 downto 0) := "1110";
-	constant state_clear_R  : unsigned(3 downto 0) := "1111";
-	
+	constant state_CH0    : unsigned(3 downto 0) := "0000";
+	constant state_CH1    : unsigned(3 downto 0) := "0001";
+	constant state_CH2    : unsigned(3 downto 0) := "0010";
+	constant state_CH3    : unsigned(3 downto 0) := "0011";
+	constant state_CH4    : unsigned(3 downto 0) := "0100";
+	constant state_BCH0   : unsigned(3 downto 0) := "0101";
+	constant state_BCH1   : unsigned(3 downto 0) := "0110";
+	constant state_dc     : unsigned(3 downto 0) := "0111";  -- divide + dc block
+	constant state_clear  : unsigned(3 downto 0) := "1000";  -- saturate + write output
+
 	signal channelsel : std_logic_vector(3 downto 0);
+	signal include_in_output : std_logic_vector(3 downto 0);
+	signal left_on_right : std_logic;
 	
-	signal volume : unsigned(15 downto 0);
-	signal saturated : unsigned(15 downto 0);
+	signal volume : signed(15 downto 0);
+	signal saturated : signed(15 downto 0);
 	
-	signal ready : std_logic;
-	
-	signal write_0 : std_logic;
-	signal write_1 : std_logic;
-	signal write_2 : std_logic;
-	signal write_3 : std_logic;
+	signal write : std_logic;
+
 BEGIN
 -- DETECT IF RIGHT CHANNEL PLAYING
 -- TODO: into another entity
@@ -116,8 +123,12 @@ begin
 		audio2_reg <= (others=>'0');
 		audio3_reg <= (others=>'0');
 		acc_reg <= (others=>'0');
-		secondBatch_reg <= '0';
-		state_reg <= state_pokeyA_L;
+		out_ch_reg <= (others=>'0');
+		dc_corrected_reg <= (others=>'0');
+		state_reg <= state_CH0;
+		for i in 0 to 3 loop
+			dc_reg(i) <= (others=>'0');
+		end loop;
 	elsif (clk'event and clk='1') then
 		RIGHT_REG <= RIGHT_NEXT;
 		RIGHT_PLAYING_COUNT_REG <= RIGHT_PLAYING_COUNT_NEXT;
@@ -126,7 +137,9 @@ begin
 		audio2_reg <= audio2_next;
 		audio3_reg <= audio3_next;
 		acc_reg <= acc_next;
-		secondBatch_reg <= secondBatch_next;
+		out_ch_reg <= out_ch_next;
+		dc_reg <= dc_next;
+		dc_corrected_reg <= dc_corrected_next;
 		state_reg <= state_next;
 	end if;
 end process;
@@ -146,213 +159,231 @@ end process;
 RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 
 
-	process(state_reg,secondBatch_reg,acc_reg,volume,ready,
-	POST_DIVIDE,FANCY_ENABLE,RIGHT_PLAYING_RECENTLY,DETECT_RIGHT,RIGHT_REG,SATURATED,GTIA_EN,ADC_EN)
-		variable postdivide : std_logic_vector(1 downto 0);
-		variable presaturate : unsigned(19 downto 0);
-		variable leftOnRight : std_logic;
-		variable clearAcc : std_logic;
-		variable R : std_logic;
-		variable pdsel : std_logic_vector(1 downto 0);
+	process(state_reg,RIGHT_REG,out_ch_reg,acc_reg,volume,dc_reg,dc_corrected_reg,
+	POST_DIVIDE,SATURATED,include_in_output)
+		variable postdivide  : std_logic_vector(1 downto 0);
+		variable presaturate : signed(19 downto 0);
+		variable addAcc      : std_logic;
+		variable clearAcc    : std_logic;
+		-- DC blocker datapath variables
+		variable ch_idx   : integer range 0 to 3;
+		variable x_ext    : dc_acc_t;
+		variable dc_cur   : dc_acc_t;
+		variable err      : dc_acc_t;
+		variable adj      : dc_acc_t;
+		variable dc_new_v : dc_acc_t;
+		variable y_new    : dc_acc_t;
 	begin
-		state_next <= state_reg;
-		secondBatch_next <= secondBatch_reg;
-		acc_next <= acc_reg;
-		RIGHT_NEXT <= RIGHT_REG;
-		
-		leftOnRight := not(FANCY_ENABLE) or (not(RIGHT_PLAYING_RECENTLY) AND DETECT_RIGHT);		
-		clearAcc := '0';
+		state_next        <= state_reg;
+		out_ch_next       <= out_ch_reg;
+		acc_next          <= acc_reg;
+		RIGHT_NEXT        <= RIGHT_REG;
+		dc_next           <= dc_reg;
+		dc_corrected_next <= dc_corrected_reg;
 
-		write_0 <= '0';
-		write_1 <= '0';
-		write_2 <= '0';
-		write_3 <= '0';
-		R := '0';
+		write      <= '0';
 		channelsel <= (others=>'0');
-		saturated <= (others=>'0');
-		
-		if (ready='1') then		
-			case state_reg is
-				when state_pokeyA_L =>
-					channelsel <= x"0";					
-					state_next <= state_pokeyB_L;				
-				when state_pokeyB_L =>
-					channelsel <= x"2";
-					state_next <= state_sample_L;
-				when state_sample_L =>
-					channelsel <= x"4";
-					state_next <= state_sid_L;	
-				when state_sid_L    =>
-					channelsel <= x"6";
-					state_next <= state_psg_L;
-				when state_psg_L    =>
-					channelsel <= x"8";
-					state_next <= state_adc_L;
-				when state_adc_L   =>
-					channelsel <= x"b";
-					write_0 <= not(adc_en(0));	
-					write_1 <= not(adc_en(0)) and leftOnRight;	
-					write_2 <= not(adc_en(2));	
-					write_3 <= not(adc_en(2)) and leftOnRight; 						
-					state_next <= state_gtia_L;
-				when state_gtia_L   =>
-					channelsel <= x"a";
-					write_0 <= not(gtia_en(0));	
-					write_1 <= not(gtia_en(0)) and leftOnRight;	
-					write_2 <= not(gtia_en(2));	
-					write_3 <= not(gtia_en(2)) and leftOnRight; 						
-					state_next <= state_clear_L;
-				when state_clear_L   =>
-					clearAcc := '1';
-					write_0 <= gtia_en(0);	
-					write_1 <= gtia_en(0) and leftOnRight;	
-					write_2 <= gtia_en(2);	
-					write_3 <= gtia_en(2) and leftOnRight;				
-					state_next <= state_pokeyA_R;
-				when state_pokeyA_R =>
-					channelsel <= x"1";
-					R := '1';
-					state_next <= state_pokeyB_R;
-				when state_pokeyB_R =>
-					channelsel <= x"3";
-					R := '1';
-					state_next <= state_sample_R;
-				when state_sample_R =>
-					channelsel <= x"5";
-					R := '1';
-					state_next <= state_sid_R;
-				when state_sid_R    =>
-					channelsel <= x"7";
-					R := '1';
-					state_next <= state_psg_R;
-				when state_psg_R    =>
-					channelsel <= x"9";
-					R := '1';
-					state_next <= state_adc_R;
-				when state_adc_R   =>
-					channelsel <= x"b";
-					R := '1';
-					write_1 <= not(adc_en(1)) and not(leftOnRight);
-					write_3 <= not(adc_en(3)) and not(leftOnRight);	
-					-- NEEDS DOING WITHOUT ADC GTIA mixed, since those plays on all channels!!
-					RIGHT_NEXT <= xor_reduce(std_logic_vector(saturated));						
-					state_next <= state_gtia_R;
-				when state_gtia_R   =>
-					channelsel <= x"a";
-					R := '1';
-					write_1 <= not(gtia_en(1)) and not(leftOnRight);
-					write_3 <= not(gtia_en(3)) and not(leftOnRight);	
-					state_next <= state_clear_R;
-				when state_clear_R   =>
-					clearAcc := '1';
-					R := '1';
-					write_1 <= gtia_en(1) and not(leftOnRight);
-					write_3 <= gtia_en(3) and not(leftOnRight);				
-					state_next <= state_pokeyA_L;		
-					secondBatch_next <= not(secondBatch_reg);
-				when others =>
-					state_next <= state_pokeyA_L;
-			end case;
+		saturated  <= (others=>'0');
+		addAcc     := '0';
+		clearAcc   := '0';
+		postdivide := "00";
 
-			pdsel(1) := secondBatch_reg;
-			pdsel(0) := R;
-			case pdsel is 
-			when "00" =>
-				postdivide:=POST_DIVIDE(1 downto 0);
-			when "01" =>
-				postdivide:=POST_DIVIDE(3 downto 2);
-			when "10" =>
-				postdivide:=POST_DIVIDE(5 downto 4);
-			when "11" =>
-				postdivide:=POST_DIVIDE(7 downto 6);
+		case out_ch_reg is 
+		when "00" =>
+			postdivide := POST_DIVIDE(1 downto 0);
+			addAcc     := include_in_output(0);
+		when "01" =>
+			postdivide := POST_DIVIDE(3 downto 2);
+			addAcc     := include_in_output(1);
+		when "10" =>
+			postdivide := POST_DIVIDE(5 downto 4);
+			addAcc     := include_in_output(2);
+		when "11" =>
+			postdivide := POST_DIVIDE(7 downto 6);
+			addAcc     := include_in_output(3);
+		when others =>
+		end case;
+
+		case state_reg is
+			when state_CH0 =>
+				channelsel <= x"0";					
+				state_next <= state_CH1;				
+			when state_CH1 =>
+				channelsel <= x"1";
+				state_next <= state_CH2;
+			when state_CH2 =>
+				channelsel <= x"2";
+				state_next <= state_CH3;	
+			when state_CH3 =>
+				channelsel <= x"3";
+				state_next <= state_CH4;
+			when state_CH4 =>
+				channelsel <= x"4";
+				state_next <= state_BCH0;
+			when state_BCH0 =>
+				channelsel <= x"6";
+				state_next <= state_BCH1;
+				-- NEEDS DOING WITHOUT BCH* mixed, since those plays on all channels!!
+				RIGHT_NEXT <= (xor_reduce(std_logic_vector(acc_reg)) and out_ch_reg(0)) or (RIGHT_REG and not(out_ch_reg(0)));	
+			when state_BCH1 =>
+				channelsel <= x"7";
+				state_next <= state_dc;
+
+			when state_dc =>
+				-- Divide accumulator and run dc blocker.
+				-- Result registered into dc_corrected_reg, accumulator cleared.
+				-- Critical path: shift + subtract + shift_right(K) + add + subtract
+				case postdivide is
+					when "00" => presaturate := resize(acc_reg(19 downto 0), 20);
+					when "01" => presaturate := resize(acc_reg(19 downto 1), 20);
+					when "10" => presaturate := resize(acc_reg(19 downto 2), 20);
+					when "11" => presaturate := resize(acc_reg(19 downto 3), 20);
+					when others =>
+				end case;
+
+				ch_idx   := to_integer(unsigned(out_ch_reg));
+				x_ext    := resize(presaturate, DC_ACC_WIDTH);
+				dc_cur   := dc_reg(ch_idx);
+				err      := x_ext - dc_cur;
+				adj      := shift_right(err, DC_K);
+				dc_new_v := dc_cur + adj;
+				y_new    := x_ext - dc_new_v;
+
+				dc_next(ch_idx)   <= dc_new_v;
+				dc_corrected_next <= resize(y_new, 20);
+				clearAcc          := '1';
+				state_next        <= state_clear;
+
+			when state_clear =>
+				-- Saturate the registered dc-corrected value and write to output.
+				-- Critical path: just the saturation check + mux
+				write       <= '1';
+				out_ch_next <= std_logic_vector(unsigned(out_ch_reg)+1);
+				state_next  <= state_CH0;
+
 			when others =>
-			end case;
-			
-			case postdivide is
-				when "00" =>
-					presaturate := resize(acc_reg(19 downto 0),20);
-				when "01" =>
-					presaturate := resize(acc_reg(19 downto 1),20);
-				when "10" =>
-					presaturate := resize(acc_reg(19 downto 2),20);
-				when "11" =>
-					presaturate := resize(acc_reg(19 downto 3),20);
-				when others =>
-			end case;	
-			if or_reduce(std_logic_vector(presaturate(19 downto 16)))='1' then
-				saturated <= (others=>'1');
-			else
-				saturated <= presaturate(15 downto 0);
-			end if;					
+				state_next <= state_CH0;
+		end case;
 
-			if (clearAcc='1') then
-				acc_next <= (others=>'0');
-			else
-				acc_next <= acc_reg + resize(volume,19);
-			end if;
+		channelsel(3) <= out_ch_reg(0);
+
+		-- Saturation reads from the pipeline register, so only the
+		-- saturation check itself is on the state_clear critical path
+		if dc_corrected_reg(19 downto 15) /= "00000" and
+		   dc_corrected_reg(19 downto 15) /= "11111" then
+			saturated(14 downto 0) <= (others => not dc_corrected_reg(19));
+			saturated(15)          <= dc_corrected_reg(19);
+		else
+			saturated <= dc_corrected_reg(15 downto 0);
+		end if;
+
+		-- Accumulator update: clear takes priority over add
+		if clearAcc = '1' then
+			acc_next <= (others=>'0');
+		elsif addAcc = '1' then
+			acc_next <= acc_reg + resize(volume, 20);
 		end if;
 
 	end process;		
-	
+
 	process(state_reg,channelsel,
-		ch0,ch1,ch2,ch3,ch4,ch5,ch6,ch7,ch8,ch9,cha,chb
+		L_CH0,L_CH1,L_CH2,L_CH3,L_CH4,
+		R_CH0,R_CH1,R_CH2,R_CH3,R_CH4,
+		B_CH0,B_CH1,
+		B_CH0_EN,B_CH1_EN
 		)
 	begin
 		volume <= (others=>'0');
-		ready <= '1';	
+			--left
+		include_in_output(0) <= not(channelsel(3)); 
+		include_in_output(2) <= not(channelsel(3));
+			--right
+		include_in_output(1) <= channelsel(3);
+		include_in_output(3) <= channelsel(3);
 		case channelsel is
 		when x"0" =>
-		        volume <= ch0;
+		        volume <= L_CH0;
 		when x"1" =>
-		        volume <= ch1;
+		        volume <= L_CH1;
 		when x"2" =>
-		        volume <= ch2;
+		        volume <= L_CH2;
 		when x"3" =>
-		        volume <= ch3;
+		        volume <= L_CH3;
 		when x"4" =>
-		        volume <= ch4;
-		when x"5" =>
-		        volume <= ch5;
-		when x"6" =>
-			volume <= ch6;
-		when x"7" =>
-			volume <= ch7;
+		        volume <= L_CH4;
 		when x"8" =>
-			volume <= ch8;
+		        volume <= R_CH0;
 		when x"9" =>
-			volume <= ch9;
+			volume <= R_CH1;
 		when x"a" =>
-		        volume <= cha;
+			volume <= R_CH2;
 		when x"b" =>
-		        volume <= chb;
+			volume <= R_CH3;
+		when x"c" =>
+			volume <= R_CH4;
+		when x"6"|x"e" =>
+			include_in_output <= B_CH0_EN;
+		        volume <= B_CH0;
+		when x"7"|x"f" =>
+			include_in_output <= B_CH1_EN;
+		        volume <= B_CH1;
 		when others =>
 		end case;
 	end process;
 	
-	process(saturated,secondBatch_reg,write_0,write_1,write_2,write_3,audio0_reg,audio1_reg,audio2_reg,audio3_reg)
+	left_on_right <= not(FANCY_ENABLE) or (not(RIGHT_PLAYING_RECENTLY) AND DETECT_RIGHT);		
+
+	process(write,saturated,out_ch_reg,left_on_right,audio0_reg,audio1_reg,audio2_reg,audio3_reg)
+		variable out_ch_adj : std_logic_vector(2 downto 0);
+		variable wr : std_logic_vector(3 downto 0);
 	begin
 		audio0_next <= audio0_reg;
 		audio1_next <= audio1_reg;
 		audio2_next <= audio2_reg;
 		audio3_next <= audio3_reg;
+
+		out_ch_adj(1 downto 0) := out_ch_reg;
+		out_ch_adj(2) := left_on_right;
 		
-		if (write_0='1' and secondBatch_reg='0') then
+		wr := (others=>'0');
+		case out_ch_adj is 	
+		when "000" => 
+			wr(0) := write;
+		when "001" => 
+			wr(1) := write;
+		when "010" => 
+			wr(2) := write;
+		when "011" => 
+			wr(3) := write;
+		when "100" => 
+			wr(0) := write;
+			wr(1) := write;
+		when "110" => 
+			wr(2) := write;
+			wr(3) := write;
+		when others =>
+			-- 101 -> write to right, dropped since we are playing ONLY left on right
+			-- 111 -> write to right, dropped since we are playing ONLY left on right
+			-- Deliberate! We accumulate right still for the right detect logic but do not output it
+		end case;
+
+		if (wr(0)='1') then
 			audio0_next <= saturated;
 		end if;
-		if (write_1='1' and secondBatch_reg='0') then
+		if (wr(1)='1') then
 			audio1_next <= saturated;
 		end if;
-		if (write_2='1' and secondBatch_reg='1') then
+		if (wr(2)='1') then
 			audio2_next <= saturated;
 		end if;
-		if (write_3='1' and secondBatch_reg='1') then
+		if (wr(3)='1') then
 			audio3_next <= saturated;
-		end if;		
+		end if;
 	end process;	
 	
 -- output
-	AUDIO_0_UNSIGNED <= audio0_reg;
-	AUDIO_1_UNSIGNED <= audio1_reg;
-	AUDIO_2_UNSIGNED <= audio2_reg;
-	AUDIO_3_UNSIGNED <= audio3_reg;
+	AUDIO_0_SIGNED <= audio0_reg;
+	AUDIO_1_SIGNED <= audio1_reg;
+	AUDIO_2_SIGNED <= audio2_reg;
+	AUDIO_3_SIGNED <= audio3_reg;
 end vhdl;

@@ -28,8 +28,8 @@ PORT
 	CHANNEL_MASK_1 : IN STD_LOGIC_VECTOR(5 downto 0); --1ABC/2ABC
 	CHANNEL_MASK_2 : IN STD_LOGIC_VECTOR(5 downto 0); 
 
-	AUDIO_OUT_1 : OUT STD_LOGIC_VECTOR(15 downto 0);
-	AUDIO_OUT_2 : OUT STD_LOGIC_VECTOR(15 downto 0);
+	AUDIO_OUT_1 : OUT UNSIGNED(15 downto 0);
+	AUDIO_OUT_2 : OUT UNSIGNED(15 downto 0);
 
 	PROFILE_ADDR : OUT std_logic_vector(4 downto 0);
 	PROFILE_REQUEST : OUT std_logic;
@@ -270,8 +270,8 @@ BEGIN
 	ready <= profile_ready;
 		
 	-- output
-	AUDIO_OUT_1 <= STD_LOGIC_VECTOR(vol_1_reg);
-	AUDIO_OUT_2 <= STD_LOGIC_VECTOR(vol_2_reg);
+	AUDIO_OUT_1 <= vol_1_reg;
+	AUDIO_OUT_2 <= vol_2_reg;
 
 	PROFILE_ADDR <= channel_mux;
 	PROFILE_REQUEST <= request;

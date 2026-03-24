@@ -38,7 +38,7 @@ ENTITY SID_top IS
 		DO : out std_logic_vector(7 downto 0);
 		DRIVE_DO : out std_logic;
 		
-		AUDIO : out std_logic_vector(15 downto 0);
+		AUDIO : out signed(15 downto 0);
 
 		DEBUG_WV1 : out unsigned(11 downto 0);
 		DEBUG_EV1 : out unsigned(7 downto 0);
@@ -177,7 +177,7 @@ ARCHITECTURE vhdl OF SID_top IS
 	-- op regs
 	signal addr_decoded : std_logic_vector(31 downto 0);
 	
-	signal audio_reg: std_logic_vector(15 downto 0);
+	signal audio_reg: signed(15 downto 0);
 
 	-- osc regs
 	signal osc_a_reg : std_logic_vector(11 downto 0);

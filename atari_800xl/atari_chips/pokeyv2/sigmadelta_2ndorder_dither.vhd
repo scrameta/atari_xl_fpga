@@ -14,7 +14,7 @@ use IEEE.STD_LOGIC_MISC.all;
 ENTITY sigmadelta_2ndorder_dither IS
 GENERIC (
   DITHER_ENABLE : integer := 1;              -- 0/1
-  DITHER_BITS   : integer := 2;              -- 1..4; start small
+  DITHER_BITS   : integer := 3;              -- 1..4; start small
   LFSR_SEED     : unsigned(15 downto 0) := x"ACE1"
 );
 PORT 

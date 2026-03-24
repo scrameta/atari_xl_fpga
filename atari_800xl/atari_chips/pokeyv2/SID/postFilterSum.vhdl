@@ -23,13 +23,13 @@ PORT
 
 	VOLUME : IN STD_LOGIC_VECTOR(3 downto 0);
 
-	CHANNEL_OUT : OUT STD_LOGIC_VECTOR(15 downto 0)
+	CHANNEL_OUT : OUT SIGNED(15 downto 0)
 );
 END SID_postFilterSum;
 
 ARCHITECTURE vhdl OF SID_postFilterSum IS
-	signal out_reg: std_logic_vector(15 downto 0);
-	signal out_next: std_logic_vector(15 downto 0);	
+	signal out_reg: signed(15 downto 0);
+	signal out_next: signed(15 downto 0);	
 	
 	function saturate(input : signed(17 downto 0)) return signed is
    		 variable ret : signed(15 downto 0);
@@ -66,7 +66,7 @@ BEGIN
 		variable volume_adj : signed(7 downto 0);
 
 		variable mult_res : signed(26 downto 0);
-		variable mult_res_un : unsigned(21 downto 6);
+		variable mult_res_saturated : signed(21 downto 6);
 	begin
 		filter_sel0ext := (others=>filter_sel(0));
 		filter_sel1ext := (others=>filter_sel(1));
@@ -85,8 +85,8 @@ BEGIN
 
 		-- Then apply volume
 		mult_res := sum * resize(volume_adj,9);
-		mult_res_un := unsigned(saturate(mult_res(23 downto 6)) + 32768);
-		out_next <= std_logic_vector(mult_res_un(21 downto 6));
+		mult_res_saturated := saturate(mult_res(23 downto 6));
+		out_next <= mult_res_saturated(21 downto 6);
 	end process;	
 
 	-- output

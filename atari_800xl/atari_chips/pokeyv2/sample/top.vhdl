@@ -28,8 +28,8 @@ ENTITY sample_top IS
 		DI : in std_logic_vector(7 downto 0);
 
 		DO : out std_logic_vector(7 downto 0);
-		AUDIO0 : out std_logic_vector(15 downto 0);
-		AUDIO1 : out std_logic_vector(15 downto 0);
+		AUDIO0 : out signed(15 downto 0);
+		AUDIO1 : out signed(15 downto 0);
 		IRQ : out std_logic;
 
 		RAM_ADDR : out std_logic_vector(15 downto 0);
@@ -145,7 +145,8 @@ BEGIN
 
 	process(addr_decoded5,CH0_REG,CH1_REG,CH2_REG,CH3_REG,
 		ram_cpu_addr_reg, ram_data, 
-		irq_en_reg,irq_active_reg
+		irq_en_reg,irq_active_reg,
+		adpcm_reg,bits8_reg
 		)
 	begin
 		DO <= (others=>'0');
@@ -212,19 +213,17 @@ BEGIN
 		store_data <= (others=>'0');
 		case store_source is
 			when "0001"|"0011"|"0101"|"0111"|"1001"|"1011"|"1101"|"1111" =>
-				store_data(12 downto 5) <= di;
+				store_data(12) <= not(di(7));
+				store_data(11 downto 5) <= di(6 downto 0);
 			when "0110"|"1110" =>
 				store_data <= adpcm_decoded(15 downto 3);
 			when "1100" =>
-				store_data(12) <= not(ram_data(7));
-				store_data(11 downto 5) <= ram_data(6 downto 0);
+				store_data(12 downto 5) <= ram_data(7 downto 0);
 			when "0100" =>
 				if (data_nibble='0') then
-					store_data(12) <= not(ram_data(7));
-					store_data(11 downto 9) <= ram_data(6 downto 4);
+					store_data(12 downto 9) <= ram_data(7 downto 4);
 				else
-					store_data(12) <= not(ram_data(3));
-					store_data(11 downto 9) <= ram_data(2 downto 0);
+					store_data(12 downto 9) <= ram_data(3 downto 0);
 				end if;
 
 			when others=>
@@ -539,16 +538,16 @@ BEGIN
 	
 	process (ch0_reg,ch1_reg,ch2_reg,ch3_reg,
 		ch0_volume_reg,ch1_volume_reg,ch2_volume_reg,ch3_volume_reg)
-		variable l : unsigned(26 downto 0);
-		variable r : unsigned(26 downto 0);
+		variable l : signed(26 downto 0);
+		variable r : signed(26 downto 0);
 	begin
-		l :=     resize(unsigned(CH0_REG),18)*resize(unsigned(ch0_volume_reg),9);
-		l := l + resize(unsigned(CH3_REG),18)*resize(unsigned(ch3_volume_reg),9);
-		r :=     resize(unsigned(CH1_REG),18)*resize(unsigned(ch1_volume_reg),9);
-	        r := r + resize(unsigned(CH2_REG),18)*resize(unsigned(ch2_volume_reg),9);
+		l :=     resize(signed(CH0_REG),18)*resize(signed('0'&ch0_volume_reg),9);
+		l := l + resize(signed(CH3_REG),18)*resize(signed('0'&ch3_volume_reg),9);
+		r :=     resize(signed(CH1_REG),18)*resize(signed('0'&ch1_volume_reg),9);
+	        r := r + resize(signed(CH2_REG),18)*resize(signed('0'&ch2_volume_reg),9);
 		-- TODO: probably need to register here?
-		AUDIO0 <= std_logic_vector(l(19 downto 4));
-		AUDIO1 <= std_logic_vector(r(19 downto 4));
+		AUDIO0(15 downto 0) <= l(19 downto 4);
+		AUDIO1(15 downto 0) <= r(19 downto 4);
 	
 		-- TODO: modulation?
 		-- TODO: samples from rom and put in voice samples after core?

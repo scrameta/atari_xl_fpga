@@ -21,7 +21,7 @@ PORT
 	select_channel : out std_logic_vector(1 downto 0); -- ask for current data for this channel
 
 	store : OUT std_logic;
-	data_out : OUT std_logic_vector(15 downto 0);    -- current output
+	data_out : OUT std_logic_vector(15 downto 0);    -- current output (signed)
 
 	dirty : IN STD_LOGIC_VECTOR(3 downto 0);         -- channel needs updating
 
@@ -365,8 +365,7 @@ BEGIN
 		decstep_next <= unsigned(decstepnext(6 downto 0));			
 	end process;
 
-	data_out(15) <= not(acc_mux(15));
-	data_out(14 downto 0) <= std_logic_vector(acc_mux(14 downto 0));
+	data_out <= std_logic_vector(acc_mux);
 
 	select_channel <= sel;
 	step_addr <= std_logic_vector(decstep_mux);
