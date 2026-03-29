@@ -417,6 +417,16 @@
 	)
 	(wire
 		(pts
+			(xy 251.46 68.58) (xy 160.02 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b90b0983-16c3-4a21-9a20-292ffaebd3ba")
+	)
+	(wire
+		(pts
 			(xy 180.34 118.11) (xy 180.34 95.25)
 		)
 		(stroke
@@ -424,6 +434,16 @@
 			(type default)
 		)
 		(uuid "bbf21d1a-0f17-494e-b65b-e15d94587a58")
+	)
+	(wire
+		(pts
+			(xy 250.19 91.44) (xy 251.46 91.44)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bf873a1c-a76f-428d-9793-5d3b8bd68f97")
 	)
 	(bus
 		(pts
@@ -557,6 +577,26 @@
 	)
 	(wire
 		(pts
+			(xy 251.46 91.44) (xy 251.46 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "faceb4cd-4513-4624-a878-4305d1fe4079")
+	)
+	(wire
+		(pts
+			(xy 160.02 68.58) (xy 160.02 74.93)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fb01391a-324d-454d-8924-6565f0aa8818")
+	)
+	(wire
+		(pts
 			(xy 254 93.98) (xy 254 60.96)
 		)
 		(stroke
@@ -647,6 +687,16 @@
 					(size 1.27 1.27)
 				)
 				(justify left)
+			)
+		)
+		(pin "AUD_VBIAS" output
+			(at 250.19 91.44 0)
+			(uuid "80333f7f-3c89-4d98-aa44-16a64c686fea")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
 			)
 		)
 		(instances
@@ -1112,6 +1162,16 @@
 		(pin "ADC_TX" output
 			(at 175.26 77.47 0)
 			(uuid "6d14292e-3815-49b5-8a06-403d022ff295")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(pin "AUD_VBIAS" output
+			(at 160.02 74.93 90)
+			(uuid "02183b8a-7e7f-403d-8932-f1fa1741c932")
 			(effects
 				(font
 					(size 1.27 1.27)

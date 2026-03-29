@@ -4568,7 +4568,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "484b04e2-cf77-4e61-bacb-9318c0a1bb69")
-		(property "Reference" "R22"
+		(property "Reference" "R28"
 			(at 48.26 111.7599 0)
 			(effects
 				(font
@@ -4622,7 +4622,7 @@
 		(instances
 			(project ""
 				(path "/f8f92944-710a-49a0-a698-f840e5f20e15/473fb442-f6a6-4f3e-b077-9a313beb11d5"
-					(reference "R22")
+					(reference "R28")
 					(unit 1)
 				)
 			)
@@ -5122,7 +5122,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "eafe1245-30e0-4389-986e-9f996e0b1e66")
-		(property "Reference" "R23"
+		(property "Reference" "R29"
 			(at 163.83 109.2199 0)
 			(effects
 				(font
@@ -5176,7 +5176,7 @@
 		(instances
 			(project "pokeymax4_5"
 				(path "/f8f92944-710a-49a0-a698-f840e5f20e15/473fb442-f6a6-4f3e-b077-9a313beb11d5"
-					(reference "R23")
+					(reference "R29")
 					(unit 1)
 				)
 			)

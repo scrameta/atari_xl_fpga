@@ -8,11 +8,18 @@
       "Power_2"
     ],
     "hidden_nets": [
-      "GND",
-      "+3.3V",
-      "+5V",
+      "+5VA",
+      "unconnected-(U4-IO_UNUSED-PadE1)_25",
+      "unconnected-(U4-IO_UNUSED-PadE1)_19",
+      "unconnected-(U4-IO_UNUSED-PadE1)_6",
+      "unconnected-(U4-IO_UNUSED-PadE1)_5",
+      "unconnected-(U4-IO_UNUSED-PadE1)_4",
+      "+3.3VA",
       "+2V5",
-      "+3.3VA"
+      "+5V",
+      "+3.3V",
+      "GND",
+      "Net-(U2-OUT2)"
     ],
     "high_contrast_mode": 0,
     "net_color_mode": 1,
@@ -58,7 +65,7 @@
       "conflict_shadows",
       "shapes"
     ],
-    "visible_layers": "00000000_00000000_000030f4_82000027",
+    "visible_layers": "00000000_00000000_000030f4_82000025",
     "zone_display_mode": 0
   },
   "git": {

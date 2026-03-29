@@ -496,6 +496,18 @@
 		)
 	)
 	(junction
+		(at 80.01 133.35)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "21631f2b-ea1d-4654-ab94-ad8b0ac9d72c")
+	)
+	(junction
+		(at 33.02 92.71)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "4ef47c11-44a7-4950-adbb-0784ad5650ce")
+	)
+	(junction
 		(at 80.01 134.62)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -518,12 +530,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "e2de462b-c113-4a94-9b74-4d9c4b42f9e5")
-	)
-	(junction
-		(at 45.72 92.71)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "e794da8a-d2b8-41d0-8da9-18dc768224e9")
 	)
 	(junction
 		(at 68.58 92.71)
@@ -563,6 +569,16 @@
 	)
 	(wire
 		(pts
+			(xy 33.02 120.65) (xy 33.02 134.62)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2a6d8a40-fc64-4bbd-81f1-1d09406cd6f3")
+	)
+	(wire
+		(pts
 			(xy 80.01 100.33) (xy 68.58 100.33)
 		)
 		(stroke
@@ -583,7 +599,17 @@
 	)
 	(wire
 		(pts
-			(xy 80.01 100.33) (xy 80.01 134.62)
+			(xy 80.01 133.35) (xy 104.14 133.35)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "43cc5791-0b6b-4507-89d8-9a1fa2619005")
+	)
+	(wire
+		(pts
+			(xy 80.01 100.33) (xy 80.01 133.35)
 		)
 		(stroke
 			(width 0)
@@ -613,7 +639,7 @@
 	)
 	(wire
 		(pts
-			(xy 31.75 92.71) (xy 45.72 92.71)
+			(xy 31.75 92.71) (xy 33.02 92.71)
 		)
 		(stroke
 			(width 0)
@@ -633,6 +659,16 @@
 	)
 	(wire
 		(pts
+			(xy 33.02 92.71) (xy 33.02 113.03)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "874afdb7-5a98-4148-a5e0-d8bbbfebe2a6")
+	)
+	(wire
+		(pts
 			(xy 64.77 62.23) (xy 64.77 66.04)
 		)
 		(stroke
@@ -640,6 +676,16 @@
 			(type default)
 		)
 		(uuid "9a8bdc72-bcce-4b45-b6ba-f2b3e0cbceba")
+	)
+	(wire
+		(pts
+			(xy 80.01 133.35) (xy 80.01 134.62)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9e03f838-b990-470e-8b1f-697b4584db30")
 	)
 	(wire
 		(pts
@@ -713,7 +759,17 @@
 	)
 	(wire
 		(pts
-			(xy 45.72 92.71) (xy 58.42 92.71)
+			(xy 33.02 134.62) (xy 67.31 134.62)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c6fee73c-e9bd-47c4-b99a-aa2855b1074a")
+	)
+	(wire
+		(pts
+			(xy 33.02 92.71) (xy 58.42 92.71)
 		)
 		(stroke
 			(width 0)
@@ -803,6 +859,17 @@
 		)
 		(uuid "9ac4167d-c812-4cd6-a312-c1e6f6b895e8")
 	)
+	(hierarchical_label "AUD_VBIAS"
+		(shape output)
+		(at 104.14 133.35 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left)
+		)
+		(uuid "c5a1c357-bb65-401f-94e9-b89f32113b85")
+	)
 	(hierarchical_label "ADC_TX"
 		(shape output)
 		(at 31.75 31.75 180)
@@ -824,6 +891,76 @@
 			(justify right)
 		)
 		(uuid "db1fb264-23fa-4873-a117-03727fe5621e")
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 33.02 116.84 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "1a1ea1ff-eb7f-43f9-b853-7e9fe098ca8f")
+		(property "Reference" "R18"
+			(at 35.56 115.5699 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "220k"
+			(at 35.56 118.1099 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 31.242 116.84 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 33.02 116.84 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 33.02 116.84 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "8966611b-4ba7-41af-9d12-87eb05aad483")
+		)
+		(pin "2"
+			(uuid "5014b0bd-7223-4f11-92ba-38a5ee190a70")
+		)
+		(instances
+			(project "pokeymax4_5"
+				(path "/f8f92944-710a-49a0-a698-f840e5f20e15/1dc50d40-2acd-4c26-808b-1819716fc764"
+					(reference "R18")
+					(unit 1)
+				)
+			)
+		)
 	)
 	(symbol
 		(lib_id "power:+2V5")
@@ -901,7 +1038,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "780f7e9c-b61e-412a-8623-462f256e1770")
-		(property "Reference" "R25"
+		(property "Reference" "R5"
 			(at 69.85 121.9199 0)
 			(effects
 				(font
@@ -955,77 +1092,7 @@
 		(instances
 			(project "pokeymax4_5"
 				(path "/f8f92944-710a-49a0-a698-f840e5f20e15/1dc50d40-2acd-4c26-808b-1819716fc764"
-					(reference "R25")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:R")
-		(at 45.72 96.52 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "7bda38c4-a233-458d-ba2a-b1d80e160058")
-		(property "Reference" "R24"
-			(at 48.26 95.2499 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "10k"
-			(at 48.26 97.7899 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
-			(at 43.942 96.52 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 45.72 96.52 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Resistor"
-			(at 45.72 96.52 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "a013ff97-fa20-483e-9717-a93fcc4d5895")
-		)
-		(pin "2"
-			(uuid "c72d604b-6adb-4caa-9647-00eabf2e4d4a")
-		)
-		(instances
-			(project "pokeymax4_5"
-				(path "/f8f92944-710a-49a0-a698-f840e5f20e15/1dc50d40-2acd-4c26-808b-1819716fc764"
-					(reference "R24")
+					(reference "R5")
 					(unit 1)
 				)
 			)
@@ -1041,7 +1108,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "93ed9da9-f80a-47d2-935c-b25dac6ec717")
-		(property "Reference" "R27"
+		(property "Reference" "R3"
 			(at 71.12 95.2499 0)
 			(effects
 				(font
@@ -1050,7 +1117,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "10k"
+		(property "Value" "47k"
 			(at 71.12 97.7899 0)
 			(effects
 				(font
@@ -1095,7 +1162,7 @@
 		(instances
 			(project "pokeymax4_5"
 				(path "/f8f92944-710a-49a0-a698-f840e5f20e15/1dc50d40-2acd-4c26-808b-1819716fc764"
-					(reference "R27")
+					(reference "R3")
 					(unit 1)
 				)
 			)
@@ -1111,7 +1178,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "93fcf6e1-b585-468f-9553-649934a95976")
-		(property "Reference" "C20"
+		(property "Reference" "C1"
 			(at 62.23 85.09 90)
 			(effects
 				(font
@@ -1119,7 +1186,7 @@
 				)
 			)
 		)
-		(property "Value" "2.2uF"
+		(property "Value" "2.2uF C0G"
 			(at 62.23 87.63 90)
 			(effects
 				(font
@@ -1163,7 +1230,7 @@
 		(instances
 			(project "pokeymax4_5"
 				(path "/f8f92944-710a-49a0-a698-f840e5f20e15/1dc50d40-2acd-4c26-808b-1819716fc764"
-					(reference "C20")
+					(reference "C1")
 					(unit 1)
 				)
 			)
@@ -1245,7 +1312,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "971f0099-318a-42a4-aee4-8740ef73c374")
-		(property "Reference" "R19"
+		(property "Reference" "R24"
 			(at 67.31 43.1799 0)
 			(effects
 				(font
@@ -1263,7 +1330,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
 			(at 62.992 44.45 90)
 			(effects
 				(font
@@ -1299,7 +1366,7 @@
 		(instances
 			(project ""
 				(path "/f8f92944-710a-49a0-a698-f840e5f20e15/1dc50d40-2acd-4c26-808b-1819716fc764"
-					(reference "R19")
+					(reference "R24")
 					(unit 1)
 				)
 			)
@@ -1315,7 +1382,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "abe35a00-08d8-443a-9731-b3df85251e37")
-		(property "Reference" "C12"
+		(property "Reference" "C17"
 			(at 68.58 57.1499 0)
 			(effects
 				(font
@@ -1333,7 +1400,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
 			(at 65.7352 62.23 0)
 			(effects
 				(font
@@ -1369,7 +1436,7 @@
 		(instances
 			(project ""
 				(path "/f8f92944-710a-49a0-a698-f840e5f20e15/1dc50d40-2acd-4c26-808b-1819716fc764"
-					(reference "C12")
+					(reference "C17")
 					(unit 1)
 				)
 			)
@@ -1385,7 +1452,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "c3c3bbbc-294d-4968-9488-9b11e95ea663")
-		(property "Reference" "C21"
+		(property "Reference" "C5"
 			(at 83.82 142.2399 0)
 			(effects
 				(font
@@ -1439,7 +1506,7 @@
 		(instances
 			(project "pokeymax4_5"
 				(path "/f8f92944-710a-49a0-a698-f840e5f20e15/1dc50d40-2acd-4c26-808b-1819716fc764"
-					(reference "C21")
+					(reference "C5")
 					(unit 1)
 				)
 			)
@@ -1455,7 +1522,7 @@
 		(dnp no)
 		(fields_autoplaced yes)
 		(uuid "d58023cd-ad79-4965-b5d1-74dbf1093308")
-		(property "Reference" "R26"
+		(property "Reference" "R4"
 			(at 69.85 142.2399 0)
 			(effects
 				(font
@@ -1509,7 +1576,7 @@
 		(instances
 			(project "pokeymax4_5"
 				(path "/f8f92944-710a-49a0-a698-f840e5f20e15/1dc50d40-2acd-4c26-808b-1819716fc764"
-					(reference "R26")
+					(reference "R4")
 					(unit 1)
 				)
 			)
@@ -1576,72 +1643,6 @@
 			(project "pokeymax4_5"
 				(path "/f8f92944-710a-49a0-a698-f840e5f20e15/1dc50d40-2acd-4c26-808b-1819716fc764"
 					(reference "#PWR037")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 45.72 100.33 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(fields_autoplaced yes)
-		(uuid "ec6f1641-61f9-4d8b-92ac-1a0d96e5d648")
-		(property "Reference" "#PWR041"
-			(at 45.72 106.68 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Value" "GND"
-			(at 45.72 105.41 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 45.72 100.33 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" ""
-			(at 45.72 100.33 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 45.72 100.33 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "a304e755-c770-4150-9aaa-f12635f5e094")
-		)
-		(instances
-			(project "pokeymax4_5"
-				(path "/f8f92944-710a-49a0-a698-f840e5f20e15/1dc50d40-2acd-4c26-808b-1819716fc764"
-					(reference "#PWR041")
 					(unit 1)
 				)
 			)

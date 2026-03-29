@@ -1389,16 +1389,16 @@
 		(uuid "356ca94b-0986-4e53-861a-9c1fd84e9ae2")
 	)
 	(junction
+		(at 266.7 76.2)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "5a3a98da-41a4-49c8-ae98-a5e110cf1e81")
+	)
+	(junction
 		(at 151.13 102.87)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "5e800b7d-3aa3-4e6f-9933-ab9b1141d0d1")
-	)
-	(junction
-		(at 266.7 74.93)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "60067b09-2028-4fc1-8e52-ce8985fa8a81")
 	)
 	(junction
 		(at 35.56 102.87)
@@ -2121,15 +2121,6 @@
 			(type default)
 		)
 		(uuid "c7f8c560-7f08-46eb-aa5a-acc577ea6f74")
-	)
-	(bus_entry
-		(at 256.54 87.63)
-		(size 2.54 2.54)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ca0ba367-db6a-4a38-a3bd-1ad788d876de")
 	)
 	(bus_entry
 		(at 45.72 123.19)
@@ -2944,6 +2935,16 @@
 	)
 	(wire
 		(pts
+			(xy 257.81 88.9) (xy 273.05 88.9)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "40e49bcc-777b-4261-8d3b-d86d70759138")
+	)
+	(wire
+		(pts
 			(xy 173.99 123.19) (xy 184.15 123.19)
 		)
 		(stroke
@@ -3074,6 +3075,16 @@
 	)
 	(wire
 		(pts
+			(xy 266.7 76.2) (xy 266.7 102.87)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5064c736-4d8e-4163-8c39-56cfb751f7b1")
+	)
+	(wire
+		(pts
 			(xy 245.11 107.95) (xy 256.54 107.95)
 		)
 		(stroke
@@ -3134,17 +3145,17 @@
 	)
 	(wire
 		(pts
-			(xy 259.08 87.63) (xy 256.54 87.63)
+			(xy 257.81 74.93) (xy 257.81 76.2)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "560c6154-a2c6-43d7-b5e2-f3318e73fc74")
+		(uuid "53e24872-e362-4d6d-8c90-2759f5cddefb")
 	)
 	(wire
 		(pts
-			(xy 245.11 87.63) (xy 256.54 87.63)
+			(xy 245.11 87.63) (xy 257.81 87.63)
 		)
 		(stroke
 			(width 0)
@@ -3192,16 +3203,6 @@
 		)
 		(uuid "57f1d24d-5ff0-4563-9ff9-c9f715883557")
 	)
-	(wire
-		(pts
-			(xy 266.7 74.93) (xy 266.7 102.87)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5fdc1c01-e57f-4072-82a7-369322b4d118")
-	)
 	(bus
 		(pts
 			(xy 160.02 22.86) (xy 160.02 24.13)
@@ -3244,6 +3245,16 @@
 	)
 	(wire
 		(pts
+			(xy 257.81 76.2) (xy 266.7 76.2)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "65b01b74-2e45-4dc5-b7d0-fdd9133d2200")
+	)
+	(wire
+		(pts
 			(xy 119.38 118.11) (xy 130.81 118.11)
 		)
 		(stroke
@@ -3281,6 +3292,16 @@
 			(type default)
 		)
 		(uuid "66bbfa31-e631-4c37-90e6-0c2bbf6cf100")
+	)
+	(wire
+		(pts
+			(xy 257.81 87.63) (xy 257.81 88.9)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "67231edf-68ca-4025-9265-4b89f199ea50")
 	)
 	(bus
 		(pts
@@ -3704,7 +3725,7 @@
 	)
 	(bus
 		(pts
-			(xy 259.08 87.63) (xy 259.08 90.17)
+			(xy 259.08 87.63) (xy 259.08 92.71)
 		)
 		(stroke
 			(width 0)
@@ -3794,7 +3815,7 @@
 	)
 	(wire
 		(pts
-			(xy 266.7 59.69) (xy 266.7 74.93)
+			(xy 266.7 59.69) (xy 266.7 76.2)
 		)
 		(stroke
 			(width 0)
@@ -3914,7 +3935,7 @@
 	)
 	(wire
 		(pts
-			(xy 245.11 74.93) (xy 259.08 74.93)
+			(xy 245.11 74.93) (xy 257.81 74.93)
 		)
 		(stroke
 			(width 0)
@@ -3941,16 +3962,6 @@
 			(type default)
 		)
 		(uuid "ab3bd8cf-df9c-4590-b9aa-758dbbe43cb2")
-	)
-	(wire
-		(pts
-			(xy 259.08 74.93) (xy 266.7 74.93)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "acf5e29d-55f1-48cf-ba65-dedbe4a23801")
 	)
 	(wire
 		(pts
@@ -4172,16 +4183,6 @@
 		)
 		(uuid "be46c78b-365a-48c0-89ce-4021f9ee1ba8")
 	)
-	(bus
-		(pts
-			(xy 259.08 90.17) (xy 259.08 92.71)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "bf12d046-3dbf-49b2-8a1b-279442e30c14")
-	)
 	(wire
 		(pts
 			(xy 245.11 85.09) (xy 256.54 85.09)
@@ -4231,16 +4232,6 @@
 			(type default)
 		)
 		(uuid "c5318622-d067-4680-836e-2edded378fb5")
-	)
-	(wire
-		(pts
-			(xy 273.05 87.63) (xy 259.08 87.63)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c5ea3131-e709-4e5e-940c-de62a423fd03")
 	)
 	(wire
 		(pts
@@ -4494,7 +4485,7 @@
 	)
 	(wire
 		(pts
-			(xy 273.05 162.56) (xy 273.05 87.63)
+			(xy 273.05 162.56) (xy 273.05 88.9)
 		)
 		(stroke
 			(width 0)
@@ -5741,16 +5732,6 @@
 			(justify left bottom)
 		)
 		(uuid "f59fe543-b595-4ab5-b9fb-6b6280e6a339")
-	)
-	(label "LOUT2.B10"
-		(at 247.65 87.63 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "fa0df7d7-724b-43a5-b266-f3941594f158")
 	)
 	(label "LIN2.A6"
 		(at 177.8 72.39 0)
