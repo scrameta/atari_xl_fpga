@@ -25,8 +25,8 @@ ENTITY covox_top IS
 		DI : in std_logic_vector(7 downto 0);
 
 		DO : out std_logic_vector(7 downto 0);
-		AUDIO0 : out std_logic_vector(15 downto 0);
-		AUDIO1 : out std_logic_vector(15 downto 0)
+		AUDIO0 : out signed(15 downto 0);
+		AUDIO1 : out signed(15 downto 0)
 	);
 END covox_top;		
 		
@@ -79,8 +79,10 @@ BEGIN
 		
 		l := resize(unsigned(CH0_REG),9) + resize(unsigned(CH3_REG),9);
 		r := resize(unsigned(CH1_REG),9) + resize(unsigned(CH2_REG),9);
-		AUDIO0 <= std_logic_vector(l)&"0000000";
-		AUDIO1 <= std_logic_vector(r)&"0000000";
+		AUDIO0(15) <= not(l(8));
+		AUDIO0(14 downto 0) <= signed(std_logic_vector(l(7 downto 0))&"0000000");
+		AUDIO1(15) <= not(r(8));
+		AUDIO1(14 downto 0) <= signed(std_logic_vector(r(7 downto 0))&"0000000");
 	
 		
 		if (WRITE_ENABLE='1') then
