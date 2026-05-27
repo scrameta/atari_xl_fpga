@@ -350,11 +350,17 @@ BEGIN
 
 		acc_sum := resize(acc_mux,17) + vlue8;
 		oflow := acc_sum(16)/=acc_sum(15);
-		if (oflow) then
-			acc_next <= resize(acc_sum(16 downto 16),16);
-		else
-			acc_next <= acc_sum(15 downto 0);
-		end if;
+		if oflow then
+                    if acc_sum(16) = '0' then
+                    -- positive overflow
+                        acc_next <= to_signed(32767, 16);
+                    else
+                    -- negative overflow
+                        acc_next <= to_signed(-32768, 16);
+                    end if;
+                else
+                    acc_next <= acc_sum(15 downto 0);
+                end if;
 
 		decstepnext := resize(stepadj_fn(code_reg(2 downto 0)),8) + signed(resize(decstep_mux,8));
 		if (decstepnext>88) then
