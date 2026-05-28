@@ -1362,7 +1362,7 @@ begin
 			DO_MUX <= SID_DO(1);
 			DRIVE_DO_MUX <= SID_DRIVE_DO(1);
 			SID_WRITE_ENABLE(1) <= writereq_s;
-			SID_READ_ENABLE(0) <= readreq_s;
+			SID_READ_ENABLE(1) <= readreq_s;
 		when "1000"|"1001" =>
 			enable_region := RESTRICT_CAPABILITY_REG(4);
 			DO_MUX <= SAMPLE_DO;								
