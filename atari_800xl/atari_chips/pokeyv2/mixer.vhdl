@@ -246,6 +246,21 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 				dc_cur   := dc_reg(ch_idx);
 				err      := x_ext - dc_cur;
 				adj      := shift_right(err, DC_K);
+
+				-- shift_right on signed rounds toward -inf, so any err in
+				-- (0, 2^DC_K) truncates adj to 0 and dc_reg gets stuck.
+				-- Concretely: with x_ext=0 and dc_cur in [-1023,0], err is
+				-- in [0,1023], adj=0, dc_new_v=dc_cur (frozen), and the
+				-- output y_new = -dc_cur sits at a non-zero plateau forever.
+				-- Force a unit step in err's direction whenever the natural
+				-- decay would round to zero.  This guarantees monotonic
+				-- convergence of dc_reg toward x_ext for any input.
+				if err > 0 and adj = 0 then
+					adj := to_signed(1, DC_ACC_WIDTH);
+				elsif err < 0 and adj = 0 then
+					adj := to_signed(-1, DC_ACC_WIDTH);
+				end if;
+
 				dc_new_v := dc_cur + adj;
 				y_new    := x_ext - dc_new_v;
 
