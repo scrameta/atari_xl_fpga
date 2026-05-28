@@ -1796,9 +1796,15 @@ end generate;
 
 -------------------------------------------------------
 -- AUDIO mixing
--- TODO:  FJC told me that GTIA volume is wrong, test it!
-GTIA_AUDIO_SIGNED(15) <= not(GTIA_AUDIO_OUT);
-GTIA_AUDIO_SIGNED(14 downto 0) <= to_signed(0,15);
+process(GTIA_AUDIO_OUT) is
+begin
+	if GTIA_AUDIO_OUT='1' then
+		GTIA_AUDIO_SIGNED <= to_signed(5120,16);
+	else
+		GTIA_AUDIO_SIGNED <= to_signed(-5120,16);
+	end if;
+end process;
+
 mixer1 : entity work.mixer
 PORT MAP
 (
