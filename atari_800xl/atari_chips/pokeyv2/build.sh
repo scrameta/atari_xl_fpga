@@ -1193,7 +1193,12 @@ foreach my $typeboard (sort keys %variants)
 		
 			
 			`echo set_global_assignment -name DEVICE $fpga >> $type.qsf`;
-		
+
+			my $board_version = $board;
+			$board_version =~ s/v//;
+			$board_version = int($board_version*10);
+			`echo 'set_parameter -name board $board_version' >> $type.qsf`;
+
 			foreach my $key (sort keys %$spec)
 			{
 				my $val = $spec->{$key};

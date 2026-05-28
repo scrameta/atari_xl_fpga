@@ -63,7 +63,8 @@ ENTITY pokeymax IS
 
 		ext_clk_enable : integer := 0; -- Use PADDLE(6) for sid clk enable, PADDLE(7) for psg
 
-   		version : STRING  := "DEVELOPR" -- 8 char string atascii
+   		version : STRING  := "DEVELOPR"; -- 8 char string atascii
+   		board : integer  := 00 -- $MAJOR$MINOR
 	);
 	PORT
 	(
@@ -357,7 +358,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal GTIA_ENABLE_REG : std_logic_vector(3 downto 0);
 	signal ADC_VOLUME_REG : std_logic_vector(1 downto 0);
 	signal SIO_DATA_VOLUME_REG : std_logic_vector(1 downto 0);
-	signal VERSION_LOC_REG : std_logic_vector(2 downto 0);
+	signal VERSION_LOC_REG : std_logic_vector(3 downto 0);
 	signal PAL_REG : std_logic;
 	
 	signal DETECT_RIGHT_NEXT : std_logic;
@@ -368,7 +369,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal GTIA_ENABLE_NEXT : std_logic_vector(3 downto 0);
 	signal ADC_VOLUME_NEXT : std_logic_vector(1 downto 0);
 	signal SIO_DATA_VOLUME_NEXT : std_logic_vector(1 downto 0);
-	signal VERSION_LOC_NEXT : std_logic_vector(2 downto 0);
+	signal VERSION_LOC_NEXT : std_logic_vector(3 downto 0);
 	signal PAL_NEXT : std_logic;
 	
 		--config infra
@@ -1565,7 +1566,7 @@ begin
 		end if;		
 
 		if (addr_decoded4(4)='1') then
-			VERSION_LOC_NEXT <= WRITE_DATA(2 downto 0);
+			VERSION_LOC_NEXT <= WRITE_DATA(3 downto 0);
 		end if;
 		
 		if (addr_decoded4(5)='1') then
@@ -1708,23 +1709,25 @@ begin
 	
 	if (addr_decoded4(4)='1') then
 		-- version
-		case VERSION_LOC_REG(2 downto 0) is			
-			when "000" => 
+		case VERSION_LOC_REG(3 downto 0) is			
+			when "0000" => 
 				CONFIG_DO <= getByte(version,1);
-			when "001" =>
+			when "0001" =>
 				CONFIG_DO <= getByte(version,2);
-			when "010" =>
+			when "0010" =>
 				CONFIG_DO <= getByte(version,3);
-			when "011" =>
+			when "0011" =>
 				CONFIG_DO <= getByte(version,4);
-			when "100" => 
+			when "0100" => 
 				CONFIG_DO <= getByte(version,5);
-			when "101" =>
+			when "0101" =>
 				CONFIG_DO <= getByte(version,6);
-			when "110" =>
+			when "0110" =>
 				CONFIG_DO <= getByte(version,7);
-			when "111" =>
+			when "0111" =>
 				CONFIG_DO <= getByte(version,8);
+			when "1000" =>
+				CONFIG_DO <= std_logic_vector(to_unsigned(board/10,4))&std_logic_vector(to_unsigned(board mod 10,4));
 			when others =>
 		end case;		
 	end if;
@@ -1793,6 +1796,7 @@ end generate;
 
 -------------------------------------------------------
 -- AUDIO mixing
+-- TODO:  FJC told me that GTIA volume is wrong, test it!
 GTIA_AUDIO_SIGNED(15) <= not(GTIA_AUDIO_OUT);
 GTIA_AUDIO_SIGNED(14 downto 0) <= to_signed(0,15);
 mixer1 : entity work.mixer
