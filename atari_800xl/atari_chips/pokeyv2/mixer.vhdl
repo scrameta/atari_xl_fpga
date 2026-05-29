@@ -160,7 +160,7 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 
 
 	process(state_reg,RIGHT_REG,out_ch_reg,acc_reg,volume,dc_reg,dc_corrected_reg,
-	POST_DIVIDE,SATURATED,include_in_output)
+	POST_DIVIDE,SATURATED,include_in_output,enable_cycle)
 		variable postdivide  : std_logic_vector(1 downto 0);
 		variable presaturate : signed(19 downto 0);
 		variable addAcc      : std_logic;
@@ -244,27 +244,16 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 				ch_idx   := to_integer(unsigned(out_ch_reg));
 				x_ext    := resize(presaturate, DC_ACC_WIDTH);
 				dc_cur   := dc_reg(ch_idx);
-				err      := x_ext - dc_cur;
-				adj      := shift_right(err, DC_K);
-
-				-- shift_right on signed rounds toward -inf, so any err in
-				-- (0, 2^DC_K) truncates adj to 0 and dc_reg gets stuck.
-				-- Concretely: with x_ext=0 and dc_cur in [-1023,0], err is
-				-- in [0,1023], adj=0, dc_new_v=dc_cur (frozen), and the
-				-- output y_new = -dc_cur sits at a non-zero plateau forever.
-				-- Force a unit step in err's direction whenever the natural
-				-- decay would round to zero.  This guarantees monotonic
-				-- convergence of dc_reg toward x_ext for any input.
-				if err > 0 and adj = 0 then
-					adj := to_signed(1, DC_ACC_WIDTH);
-				elsif err < 0 and adj = 0 then
-					adj := to_signed(-1, DC_ACC_WIDTH);
+				if ENABLE_CYCLE = '1' then
+					err      := x_ext - dc_cur;
+					adj      := shift_right(err, DC_K);
+					dc_new_v := dc_cur + adj;
+					dc_next(ch_idx)   <= dc_new_v;
+					y_new    := x_ext - dc_new_v;
+				else
+					y_new    := x_ext - dc_cur;
 				end if;
 
-				dc_new_v := dc_cur + adj;
-				y_new    := x_ext - dc_new_v;
-
-				dc_next(ch_idx)   <= dc_new_v;
 				dc_corrected_next <= resize(y_new, 20);
 				clearAcc          := '1';
 				state_next        <= state_clear;
