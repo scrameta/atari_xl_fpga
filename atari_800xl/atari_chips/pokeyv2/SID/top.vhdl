@@ -214,9 +214,8 @@ ARCHITECTURE vhdl OF SID_top IS
 	signal tapmatches : std_logic_vector(2 downto 0);
 
 	-- amplitude modulator
-	signal channel_a_modulated : signed(15 downto 0);
-	signal channel_b_modulated : signed(15 downto 0);
-	signal channel_c_modulated : signed(15 downto 0);
+	signal channel_mux_modulated : signed(15 downto 0);
+	signal channel_mux_sel : std_logic_vector(2 downto 0);
 	signal channel_d : signed(15 downto 0);
 
 	-- prefilter
@@ -787,43 +786,20 @@ decode_addr1 : entity work.complete_address_decoder
 	);		
 
 	-- volume
-	vol_a : entity work.SID_amplitudeModulator
+	vol_abc : entity work.SID_amplitudeModulator
 	PORT MAP
 	( 
-		CLK => clk,
-		RESET_N => reset_n,		
-		ENABLE => enable,
-		
-		WAVE => wave_a_reg,
-		ENVELOPE => envelope_a_reg,
-		
-		MODULATED => channel_a_modulated
-	);		
+		WAVE_A => wave_a_reg,
+		ENVELOPE_A => envelope_a_reg,
+		WAVE_B => wave_b_reg,
+		ENVELOPE_B => envelope_b_reg,
+		WAVE_C => wave_c_reg,
+		ENVELOPE_C => envelope_c_reg,
+		CHANNEL_D => channel_d,
 
-	vol_b : entity work.SID_amplitudeModulator
-	PORT MAP
-	( 
-		CLK => clk,
-		RESET_N => reset_n,		
-		ENABLE => enable,
+		CHANNEL_MUX_SEL => channel_mux_sel,
 		
-		WAVE => wave_b_reg,
-		ENVELOPE => envelope_b_reg,
-		
-		MODULATED => channel_b_modulated
-	);		
-
-	vol_c : entity work.SID_amplitudeModulator
-	PORT MAP
-	( 
-		CLK => clk,
-		RESET_N => reset_n,		
-		ENABLE => enable,
-		
-		WAVE => wave_c_reg,
-		ENVELOPE => envelope_c_reg,
-		
-		MODULATED => channel_c_modulated
+		MODULATED => channel_mux_modulated
 	);		
 
 	prefilter: entity work.SID_preFilterSum
@@ -835,13 +811,11 @@ decode_addr1 : entity work.complete_address_decoder
 
 		BIAS_CHANNEL => sidtype,
 
-		CHANNEL_A => channel_a_modulated,
-		CHANNEL_B => channel_b_modulated,
-		CHANNEL_C => channel_c_modulated,
+		CHANNEL_MUX => channel_mux_modulated,
 		CHANNEL_C_CUTDIRECT => ch3silent_reg,
-		CHANNEL_D => channel_d,
 		FILTER_EN => filter_en_reg,
 
+		CHANNEL_MUX_SEL => channel_mux_sel,
 		PREFILTER_OUT => channel_prefilter,
 		DIRECT_OUT => channel_directsum
 	);
@@ -1087,7 +1061,7 @@ decode_addr1 : entity work.complete_address_decoder
 
 	DEBUG_EV1 <= unsigned(envelope_a_reg);
 	DEBUG_WV1 <= unsigned(wave_a_reg);
-	DEBUG_AM1 <= channel_a_modulated;
+	DEBUG_AM1 <= channel_mux_modulated;
 
 	FILTER_BP_OUT <= filter_bp(17 downto 8);
 	FILTER_HP_OUT <= filter_hp(17 downto 8);

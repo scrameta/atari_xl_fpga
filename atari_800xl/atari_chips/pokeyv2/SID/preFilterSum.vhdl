@@ -18,13 +18,11 @@ PORT
 
 	BIAS_CHANNEL : IN STD_LOGIC;
 	
-	CHANNEL_A : IN SIGNED(15 downto 0);
-	CHANNEL_B : IN SIGNED(15 downto 0);
-	CHANNEL_C : IN SIGNED(15 downto 0);
+	CHANNEL_MUX : IN SIGNED(15 downto 0);
 	CHANNEL_C_CUTDIRECT : IN STD_LOGIC;
-	CHANNEL_D : IN SIGNED(15 downto 0);
 	FILTER_EN : IN STD_LOGIC_VECTOR(3 downto 0);
 
+	CHANNEL_MUX_SEL : OUT STD_LOGIC_VECTOR(2 downto 0);
 	PREFILTER_OUT : OUT SIGNED(15 downto 0); 
 	DIRECT_OUT : OUT SIGNED(15 downto 0)     -- Only chdis/4 amplitude
 );
@@ -40,7 +38,6 @@ ARCHITECTURE vhdl OF SID_preFilterSum IS
 	signal phase_reg : unsigned(2 downto 0);
 	signal phase_next : unsigned(2 downto 0);
 	
-	signal channel_mux : signed(15 downto 0);
 	signal channel_sel : std_logic_vector(2 downto 0);
 
 	function logic_to_unsigned(a : std_logic; b : integer) return unsigned is
@@ -68,7 +65,7 @@ BEGIN
 	end process;
 	
 	-- next state
-	process(phase_reg,acc_reg,prefilter_reg,direct_reg,enable,channel_c_cutdirect,filter_en,channel_mux,bias_channel,channel_d)
+	process(phase_reg,acc_reg,prefilter_reg,direct_reg,enable,channel_c_cutdirect,filter_en,channel_mux,bias_channel)
 		variable filter_en0_ext : std_logic_vector(2 downto 0);
 		variable filter_en1_ext : std_logic_vector(2 downto 0);
 		variable filter_en2_ext : std_logic_vector(2 downto 0);
@@ -133,24 +130,9 @@ BEGIN
 		end case;		
 		
 	end process;	
-	
-	process(channel_sel,channel_a,channel_b,channel_c,channel_d)
-	begin
-		channel_mux <= (others=>'0');
-		case channel_sel is
-		when "001" =>
-			channel_mux <= channel_a;
-		when "010" =>
-			channel_mux <= channel_b;
-		when "011" =>
-			channel_mux <= channel_c;
-		when "100" =>
-			channel_mux <= channel_d;
-		when others =>
-		end case;
-	end process;
 		
 	-- output
+	CHANNEL_MUX_SEL <= channel_sel;
 	prefilter_out <= prefilter_reg;
 	direct_out <= direct_reg;
 		

@@ -12,44 +12,55 @@ use ieee.numeric_std.all;
 ENTITY SID_amplitudeModulator IS
 PORT 
 ( 
-	CLK : IN STD_LOGIC;
-	RESET_N : IN STD_LOGIC;
-	ENABLE : IN STD_LOGIC;
-	
-	WAVE : IN STD_LOGIC_VECTOR(11 downto 0);
-	ENVELOPE : IN STD_LOGIC_VECTOR(7 downto 0);
+	WAVE_A : IN STD_LOGIC_VECTOR(11 downto 0);
+	ENVELOPE_A : IN STD_LOGIC_VECTOR(7 downto 0);
+	WAVE_B : IN STD_LOGIC_VECTOR(11 downto 0);
+	ENVELOPE_B : IN STD_LOGIC_VECTOR(7 downto 0);
+	WAVE_C : IN STD_LOGIC_VECTOR(11 downto 0);
+	ENVELOPE_C : IN STD_LOGIC_VECTOR(7 downto 0);
+	CHANNEL_D : IN SIGNED(15 downto 0);
+
+	CHANNEL_MUX_SEL : IN STD_LOGIC_VECTOR(2 downto 0);
 	
 	MODULATED : OUT SIGNED(15 downto 0)
 );
 END SID_amplitudeModulator;
 
 ARCHITECTURE vhdl OF SID_amplitudeModulator IS
-	signal mod_reg: signed(15 downto 0);
-	signal mod_next: signed(15 downto 0);
+	signal WAVE : STD_LOGIC_VECTOR(11 downto 0);
+	signal ENVELOPE : STD_LOGIC_VECTOR(7 downto 0);
+	signal CHANNEL_ABC : SIGNED(15 downto 0);
 BEGIN
-	-- register
-	process(clk, reset_n)
+        process(
+		wave_a,envelope_a,wave_b,envelope_b,wave_c,envelope_c,
+		channel_d,
+		channel_mux_sel)
 	begin
-		if (reset_n = '0') then
-			mod_reg <= (others=>'0');
-		elsif (clk'event and clk='1') then
-			mod_reg <= mod_next;
-		end if;
+		MODULATED <= (others=>'0');
+		case channel_mux_sel is
+		when "001" =>
+			wave <= wave_a;
+			envelope <= envelope_a;
+			MODULATED <= channel_abc;
+		when "010" =>
+			wave <= wave_b;
+			envelope <= envelope_b;
+			MODULATED <= channel_abc;
+		when "011" =>
+			wave <= wave_c;
+			envelope <= envelope_c;
+			MODULATED <= channel_abc;
+		when "100" =>
+			MODULATED <= channel_d;
+		when others =>
+		end case;
 	end process;
-	
-	-- next state
-	process(mod_reg,enable,wave,envelope)
+
+	process(wave,envelope)
 		variable multres : signed(26 downto 0);
 	begin
-		mod_next <= mod_reg;
-		
-		if (enable = '1') then
-			multres := signed("0"&envelope)*(signed(resize(unsigned(wave),18))-2048);
-			mod_next <= multres(19 downto 4);
-		end if;
+		multres := signed("0"&envelope)*(signed(resize(unsigned(wave),18))-2048);
+		channel_abc <= multres(19 downto 4);
 	end process;	
-		
-	-- output
-	modulated <= mod_reg;
 		
 END vhdl;
