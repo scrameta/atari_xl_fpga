@@ -38,6 +38,7 @@ ENTITY pokeymax IS
 
 		adc_audio_detect : integer := 0;  -- Detect 0 crossing/amplitude etc, otherwise silence
 		adc_fir_filter_v4 : integer := 0;    -- Filter out interference from keyboard scan etc
+		sigmadelta_implementation : integer := 4; -- 4 is dithered 2nd order (recommended if it fits), 2 is 2nd order without dithering
 
 		ext_bits : integer := 3; 
 		pll_v2 : integer := 1;
@@ -58,11 +59,14 @@ ENTITY pokeymax IS
 	
 		sid_wave_base : integer := 42496; --to_integer(unsigned(x"a600"));
 
+		sample_ram_size : integer := 43008; --to_integer(unsigned(x"a600"));
+
 		flash_addr_bits : integer := 16;
 
 		ext_clk_enable : integer := 0; -- Use PADDLE(6) for sid clk enable, PADDLE(7) for psg
 
-   		version : STRING  := "DEVELOPR" -- 8 char string atascii
+   		version : STRING  := "DEVELOPR"; -- 8 char string atascii
+   		board : integer  := 00 -- $MAJOR$MINOR
 	);
 	PORT
 	(
@@ -239,20 +243,18 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal WRITE_DATA : std_logic_vector(7 downto 0);
 	signal DEVICE_ADDR : std_logic_vector(3 downto 0);
 
-	signal POKEY_AUDIO_0 : unsigned(15 downto 0);
-	signal POKEY_AUDIO_1 : unsigned(15 downto 0);
-	signal POKEY_AUDIO_2 : unsigned(15 downto 0);
-	signal POKEY_AUDIO_3 : unsigned(15 downto 0);
+	signal POKEY_AUDIO_UNSIGNED : UNSIGNED_AUDIO_TYPE(3 downto 0);	
 	
-	signal AUDIO_0_UNSIGNED : unsigned(15 downto 0);
-	signal AUDIO_1_UNSIGNED : unsigned(15 downto 0);
-	signal AUDIO_2_UNSIGNED : unsigned(15 downto 0);
-	signal AUDIO_3_UNSIGNED : unsigned(15 downto 0);	
+	signal AUDIO_MIXED_SIGNED : SIGNED_AUDIO_TYPE(3 downto 0);
 	
 	signal AUDIO_0_SIGMADELTA : std_logic;
 	signal AUDIO_1_SIGMADELTA : std_logic;
 	signal AUDIO_2_SIGMADELTA : std_logic;
 	signal AUDIO_3_SIGMADELTA : std_logic;
+	signal SIGMADELTA_DITHER1 : std_logic_vector(15 downto 0);
+	signal SIGMADELTA_DITHER2 : std_logic_vector(15 downto 0);
+	signal SIGMADELTA_DITHER3 : std_logic_vector(15 downto 0);
+	signal SIGMADELTA_DITHER4 : std_logic_vector(15 downto 0);
 
 	signal KEYBOARD_SCAN : std_logic_vector(5 downto 0);
 	signal IOX_KEYBOARD_RESPONSE : std_logic_vector(1 downto 0);
@@ -267,7 +269,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 
 	-- SID
 	signal SID_CLK_ENABLE : std_logic;
-	signal SID_AUDIO : SID_AUDIO_TYPE(1 downto 0);
+	signal SID_AUDIO_SIGNED : SIGNED_AUDIO_TYPE(1 downto 0);
 	signal SID_FLASH1_ADDR : std_logic_vector(16 downto 0);
         signal SID_FLASH1_ROMREQUEST : std_logic;
         signal SID_FLASH1_ROMREADY : std_logic;
@@ -293,7 +295,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal PSG_ENABLE_2Mhz : std_logic;
 	signal PSG_ENABLE_1Mhz : std_logic;
 	signal PSG_ENABLE : std_logic;
-	signal PSG_AUDIO : PSG_AUDIO_TYPE(1 downto 0);	
+	signal PSG_AUDIO_UNSIGNED : UNSIGNED_AUDIO_TYPE(1 downto 0);	
 
 	signal PSG_CHANNEL : PSG_CHANNEL_TYPE(5 downto 0);	
 	signal PSG_CHANGED : std_logic_vector(1 downto 0);
@@ -345,7 +347,8 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal FANCY_ENABLE : std_logic;
 	signal FANCY_SWITCH : std_logic;
 	signal A4_DETECTED : std_logic;
-	signal GTIA_AUDIO : std_logic;
+	signal GTIA_AUDIO_OUT : std_logic;
+	signal GTIA_AUDIO_SIGNED : signed(15 downto 0);
 
 	signal EXT_INT : std_logic_vector(20 downto 0);
 
@@ -359,7 +362,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal GTIA_ENABLE_REG : std_logic_vector(3 downto 0);
 	signal ADC_VOLUME_REG : std_logic_vector(1 downto 0);
 	signal SIO_DATA_VOLUME_REG : std_logic_vector(1 downto 0);
-	signal VERSION_LOC_REG : std_logic_vector(2 downto 0);
+	signal VERSION_LOC_REG : std_logic_vector(3 downto 0);
 	signal PAL_REG : std_logic;
 	
 	signal DETECT_RIGHT_NEXT : std_logic;
@@ -370,7 +373,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal GTIA_ENABLE_NEXT : std_logic_vector(3 downto 0);
 	signal ADC_VOLUME_NEXT : std_logic_vector(1 downto 0);
 	signal SIO_DATA_VOLUME_NEXT : std_logic_vector(1 downto 0);
-	signal VERSION_LOC_NEXT : std_logic_vector(2 downto 0);
+	signal VERSION_LOC_NEXT : std_logic_vector(3 downto 0);
 	signal PAL_NEXT : std_logic;
 	
 		--config infra
@@ -379,7 +382,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal CONFIG_ENABLE_NEXT: std_logic;
 	
 	-- SAMPLE/COVOX
-	signal SAMPLE_AUDIO : SAMPLE_AUDIO_TYPE(1 downto 0);
+	signal SAMPLE_AUDIO_SIGNED : SIGNED_AUDIO_TYPE(1 downto 0);	
 	signal SAMPLE_IRQ : std_logic;
 	signal SAMPLE_RAM_ADDRESS : std_logic_vector(15 downto 0);
 	signal SAMPLE_RAM_WRITE_ENABLE : std_logic;
@@ -482,7 +485,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal fir_data_address :std_logic_vector(9 downto 0);
 	signal fir_data_ready :std_logic;
 
-	signal SIO_AUDIO : unsigned(15 downto 0);	
+	signal SIO_AUDIO_UNSIGNED : unsigned(15 downto 0);	
 
 	-- paddles
 	signal PADDLE_ADJ : std_logic_vector(7 downto 0);
@@ -500,6 +503,22 @@ ARCHITECTURE vhdl OF pokeymax IS
 	  else return RIGHT;
 	  end if;
 	end function min;
+
+	function unsigned_to_signed(audio_in : unsigned(15 downto 0)) return signed is
+   		 variable ret : std_logic_vector(15 downto 0);
+	begin
+	        ret(15) := not(audio_in(15));
+	        ret(14 downto 0) := std_logic_vector(audio_in(14 downto 0));
+	    return signed(ret);
+	end function unsigned_to_signed;
+
+	function signed_to_unsigned(audio_in : signed(15 downto 0)) return unsigned is
+   		 variable ret : std_logic_vector(15 downto 0);
+	begin
+	        ret(15) := not(audio_in(15));
+	        ret(14 downto 0) := std_logic_vector(audio_in(14 downto 0));
+	    return unsigned(ret);
+	end function signed_to_unsigned;
 	
 BEGIN
 	EXT <= (others=>'Z');
@@ -639,7 +658,7 @@ end generate;
 	EXT_INT(ext_bits downto 1) <= EXT;
 
         synchronizer_gtia_audio : entity work.synchronizer
-                port map (clk=>clk, raw=>EXT_INT(gtia_audio_bit), sync=>GTIA_AUDIO);
+                port map (clk=>clk, raw=>EXT_INT(gtia_audio_bit), sync=>GTIA_AUDIO_OUT);
         synchronizer_fancy_enable : entity work.synchronizer
 		port map (clk=>clk, raw=>EXT_INT(fancy_switch_bit), sync=>FANCY_SWITCH);
 
@@ -802,10 +821,10 @@ PORT MAP(CLK => CLK,
 		 CHANNEL_1 => CHANNEL1SUM_REG,
 		 CHANNEL_2 => CHANNEL2SUM_REG,
 		 CHANNEL_3 => CHANNEL3SUM_REG,
-		 VOLUME_OUT_0 => POKEY_AUDIO_0,
-		 VOLUME_OUT_1 => POKEY_AUDIO_1,
-		 VOLUME_OUT_2 => POKEY_AUDIO_2,
-		 VOLUME_OUT_3 => POKEY_AUDIO_3,
+		 VOLUME_OUT_0 => POKEY_AUDIO_UNSIGNED(0),
+		 VOLUME_OUT_1 => POKEY_AUDIO_UNSIGNED(1),
+		 VOLUME_OUT_2 => POKEY_AUDIO_UNSIGNED(2),
+		 VOLUME_OUT_3 => POKEY_AUDIO_UNSIGNED(3),
 		 PROFILE_ADDR => POKEY_PROFILE_ADDR,
 		 PROFILE_REQUEST => POKEY_PROFILE_REQUEST,
 		 PROFILE_READY => POKEY_PROFILE_READY,
@@ -920,8 +939,8 @@ end generate sidpsg_on;
 -- SID
 --------------------------------------------------------
 sid_off : if enable_sid=0 generate 
-	SID_AUDIO(0) <= (others=>'0');
-	SID_AUDIO(1) <= (others=>'0');
+	SID_AUDIO_SIGNED(0) <= to_signed(0,16);
+	SID_AUDIO_SIGNED(1) <= to_signed(0,16);
 	SID_DO(0) <= (others=>'0');
 	SID_DO(1) <= (others=>'0');
 	SID_DRIVE_DO(0) <= '0';
@@ -987,7 +1006,7 @@ PORT MAP(
 	--POT_X => (others=>'0'),
 	--POT_Y => (others=>'0'),
 	--EXTFILTER_EN => '0',
-	AUDIO => SID_AUDIO(0), 
+	AUDIO => SID_AUDIO_SIGNED(0), 
 
 	SIDTYPE => SID_FILTER1_REG(0),
 	EXT => "0"&SID_FILTER1_REG(1),
@@ -1027,7 +1046,7 @@ PORT MAP(
 	--POT_X => (others=>'0'),
 	--POT_Y => (others=>'0'),
 	--EXTFILTER_EN => '0',
-	AUDIO => SID_AUDIO(1),
+	AUDIO => SID_AUDIO_SIGNED(1),
 
 	SIDTYPE => SID_FILTER2_REG(0),
 	EXT => "0"&SID_FILTER2_REG(1),
@@ -1052,8 +1071,8 @@ end generate sid_on;
 -- PSG
 --------------------------------------------------------
 psg_off : if enable_psg=0 generate 
-	PSG_AUDIO(0) <= (others=>'0');
-	PSG_AUDIO(1) <= (others=>'0');
+	PSG_AUDIO_UNSIGNED(0) <= to_unsigned(0,16);
+	PSG_AUDIO_UNSIGNED(1) <= to_unsigned(0,16);
 	PSG_DO(0) <= (others=>'0');
 	PSG_DO(1) <= (others=>'0');
 end generate psg_off;
@@ -1166,8 +1185,8 @@ PSG_2 : entity work.PSG_top
 		CHANNEL_MASK_1=>PSG_MIX1, --LABC:RABC
 		CHANNEL_MASK_2=>PSG_MIX2,
 
-		AUDIO_OUT_1 => PSG_AUDIO(0),
-		AUDIO_OUT_2 => PSG_AUDIO(1),
+		AUDIO_OUT_1 => PSG_AUDIO_UNSIGNED(0),
+		AUDIO_OUT_2 => PSG_AUDIO_UNSIGNED(1),
 
 		--PROFILE_SELECT=>PSG_PROFILESEL_REG,
 		PROFILE_ADDR => PSG_PROFILE_ADDR,
@@ -1184,8 +1203,8 @@ end generate psg_on;
 covox_off : if enable_covox=0 generate 
 	SAMPLE_IRQ <= '0';
 	SAMPLE_DO <= (others=>'0');
-	SAMPLE_AUDIO(0) <= (others=>'0');
-	SAMPLE_AUDIO(1) <= (others=>'0');
+	SAMPLE_AUDIO_SIGNED(0) <= to_signed(0,16);
+	SAMPLE_AUDIO_SIGNED(1) <= to_signed(0,16);
 	ADPCM_STEP_REQUEST <= '0';
 end generate covox_off;
 
@@ -1202,8 +1221,8 @@ covox_on : if enable_covox=1 and enable_sample=0 generate
 		ADDR => ADDR_IN(1 downto 0),
 		DI => WRITE_DATA(7 downto 0),
 		DO => SAMPLE_DO,
-		AUDIO0 => SAMPLE_AUDIO(0),
-		AUDIO1 => SAMPLE_AUDIO(1) 
+		AUDIO0 => SAMPLE_AUDIO_SIGNED(0),
+		AUDIO1 => SAMPLE_AUDIO_SIGNED(1) 
 	);
 end generate covox_on;
 
@@ -1223,8 +1242,8 @@ sample_on : if enable_sample=1 generate
 		ADDR => ADDR_IN(4 downto 0),
 		DI => WRITE_DATA(7 downto 0),
 		DO => SAMPLE_DO,
-		AUDIO0 => SAMPLE_AUDIO(0),
-		AUDIO1 => SAMPLE_AUDIO(1),
+		AUDIO0 => SAMPLE_AUDIO_SIGNED(0),
+		AUDIO1 => SAMPLE_AUDIO_SIGNED(1),
 		IRQ => SAMPLE_IRQ,
 		
 		RAM_ADDR => SAMPLE_RAM_ADDRESS,
@@ -1237,11 +1256,48 @@ sample_on : if enable_sample=1 generate
 		ADPCM_STEP_VALUE => FLASH_DO_SLOW(14 downto 0)
 	);
 
+packed_ram45 : if sample_ram_size=46080 generate 
+	sample_ram_inst : entity work.m9k_grouped
+	GENERIC MAP
+	(
+		 NUM_GROUPS        => 5,
+		 --EXTRA_RAM_BLOCKS => 3
+		 EXTRA_RAM_BLOCKS  => 0
+	)
+	PORT MAP
+	(
+	        clock => clk,
+		reset_n => reset_n,
+		data => write_data,
+		address => sample_ram_address,
+		we => sample_ram_write_enable,
+		q => sample_ram_data
+	);
+end generate;
+
+packed_ram64 : if sample_ram_size=65536 generate 
+	sample_ram_inst : entity work.m9k_grouped
+	--GENERIC MAP
+	--(
+	--	DATA_WIDTH => 8
+	--)
+	PORT MAP
+	(
+	        clock => clk,
+		reset_n => reset_n,
+		data => write_data,
+		address => sample_ram_address,
+		we => sample_ram_write_enable,
+		q => sample_ram_data
+	);
+end generate;
+
+normal_ram : if not(sample_ram_size=65536 or sample_ram_size=46080) generate 
 	sample_ram_inst : entity work.generic_ram_infer
 	GENERIC MAP
 	(
 		ADDRESS_WIDTH => 16,
-		SPACE => 43008,
+		SPACE => SAMPLE_RAM_SIZE,
 		DATA_WIDTH => 8
 	)
 	PORT MAP
@@ -1253,6 +1309,7 @@ sample_on : if enable_sample=1 generate
 		we => sample_ram_write_enable,
 		q => sample_ram_data
 	);
+end generate;
 
 end generate sample_on;
 		
@@ -1347,7 +1404,7 @@ begin
 			DO_MUX <= SID_DO(1);
 			DRIVE_DO_MUX <= SID_DRIVE_DO(1);
 			SID_WRITE_ENABLE(1) <= writereq_s;
-			SID_READ_ENABLE(0) <= readreq_s;
+			SID_READ_ENABLE(1) <= readreq_s;
 		when "1000"|"1001" =>
 			enable_region := RESTRICT_CAPABILITY_REG(4);
 			DO_MUX <= SAMPLE_DO;								
@@ -1551,7 +1608,7 @@ begin
 		end if;		
 
 		if (addr_decoded4(4)='1') then
-			VERSION_LOC_NEXT <= WRITE_DATA(2 downto 0);
+			VERSION_LOC_NEXT <= WRITE_DATA(3 downto 0);
 		end if;
 		
 		if (addr_decoded4(5)='1') then
@@ -1666,6 +1723,9 @@ begin
 	end if;			
 	if (enable_sample=1) then
 		ACTUAL_CAPABILITY(5) := '1';
+		if sample_ram_size=65536 then
+			ACTUAL_CAPABILITY(7) := '1';
+		end if;
 	else
 		ACTUAL_CAPABILITY(5) := '0';
 	end if;					
@@ -1694,23 +1754,25 @@ begin
 	
 	if (addr_decoded4(4)='1') then
 		-- version
-		case VERSION_LOC_REG(2 downto 0) is			
-			when "000" => 
+		case VERSION_LOC_REG(3 downto 0) is			
+			when "0000" => 
 				CONFIG_DO <= getByte(version,1);
-			when "001" =>
+			when "0001" =>
 				CONFIG_DO <= getByte(version,2);
-			when "010" =>
+			when "0010" =>
 				CONFIG_DO <= getByte(version,3);
-			when "011" =>
+			when "0011" =>
 				CONFIG_DO <= getByte(version,4);
-			when "100" => 
+			when "0100" => 
 				CONFIG_DO <= getByte(version,5);
-			when "101" =>
+			when "0101" =>
 				CONFIG_DO <= getByte(version,6);
-			when "110" =>
+			when "0110" =>
 				CONFIG_DO <= getByte(version,7);
-			when "111" =>
+			when "0111" =>
 				CONFIG_DO <= getByte(version,8);
+			when "1000" =>
+				CONFIG_DO <= std_logic_vector(to_unsigned(board/10,4))&std_logic_vector(to_unsigned(board mod 10,4));
 			when others =>
 		end case;		
 	end if;
@@ -1779,6 +1841,15 @@ end generate;
 
 -------------------------------------------------------
 -- AUDIO mixing
+process(GTIA_AUDIO_OUT) is
+begin
+	if GTIA_AUDIO_OUT='1' then
+		GTIA_AUDIO_SIGNED <= to_signed(5120,16);
+	else
+		GTIA_AUDIO_SIGNED <= to_signed(-5120,16);
+	end if;
+end process;
+
 mixer1 : entity work.mixer
 PORT MAP
 (
@@ -1790,36 +1861,46 @@ PORT MAP
 	POST_DIVIDE => POST_DIVIDE_REG,
 	DETECT_RIGHT => DETECT_RIGHT_REG,	
 	FANCY_ENABLE => FANCY_ENABLE,
-	GTIA_EN => GTIA_ENABLE_REG,
-	ADC_EN => "1100",
+	B_CH0_EN => GTIA_ENABLE_REG,
+	B_CH1_EN => "1100",
 
-	CH0 => POKEY_AUDIO_0,
-	CH1 => POKEY_AUDIO_1,
-	CH2 => POKEY_AUDIO_2,
-	CH3 => POKEY_AUDIO_3,
-	CH4 => unsigned(SAMPLE_AUDIO(0)),
-	CH5 => unsigned(SAMPLE_AUDIO(1)),
-	CH6 => unsigned(SID_AUDIO(0)),
-	CH7 => unsigned(SID_AUDIO(1)),	
-	CH8 => unsigned(PSG_AUDIO(0)),
-	CH9 => unsigned(PSG_AUDIO(1)),		
-	CHA(14 downto 0) => (others=>'0'),
-	CHA(15) => GTIA_AUDIO,			
-	CHB => SIO_AUDIO,			
+	L_CH0 => unsigned_to_signed(POKEY_AUDIO_UNSIGNED(0)),
+	R_CH0 => unsigned_to_signed(POKEY_AUDIO_UNSIGNED(1)),
+	L_CH1 => unsigned_to_signed(POKEY_AUDIO_UNSIGNED(2)),
+	R_CH1 => unsigned_to_signed(POKEY_AUDIO_UNSIGNED(3)),
+	L_CH2 => SAMPLE_AUDIO_SIGNED(0),
+	R_CH2 => SAMPLE_AUDIO_SIGNED(1),
+	L_CH3 => SID_AUDIO_SIGNED(0),
+	R_CH3 => SID_AUDIO_SIGNED(1),	
+	L_CH4 => unsigned_to_signed(PSG_AUDIO_UNSIGNED(0)),
+	R_CH4 => unsigned_to_signed(PSG_AUDIO_UNSIGNED(1)),		
+	B_CH0 => GTIA_AUDIO_SIGNED,
+	B_CH1 => unsigned_to_signed(SIO_AUDIO_UNSIGNED),			
 	
-	AUDIO_0_UNSIGNED => AUDIO_0_UNSIGNED,
-	AUDIO_1_UNSIGNED => AUDIO_1_UNSIGNED,
-	AUDIO_2_UNSIGNED => AUDIO_2_UNSIGNED,
-	AUDIO_3_UNSIGNED => AUDIO_3_UNSIGNED
+	AUDIO_0_SIGNED => AUDIO_MIXED_SIGNED(0),
+	AUDIO_1_SIGNED => AUDIO_MIXED_SIGNED(1),
+	AUDIO_2_SIGNED => AUDIO_MIXED_SIGNED(2),
+	AUDIO_3_SIGNED => AUDIO_MIXED_SIGNED(3)
+);
+
+dac_dithergen : entity work.sigmadelta_dither 
+port map
+(
+  reset_n => reset_n,
+  clk => clk,
+  ENABLE => ENABLE_CYCLE,
+  DITHER_OUT1 => SIGMADELTA_DITHER1,
+  DITHER_OUT2 => SIGMADELTA_DITHER2,
+  DITHER_OUT3 => SIGMADELTA_DITHER3,
+  DITHER_OUT4 => SIGMADELTA_DITHER4
 );
 
 --approx line level by using 5V/4 -> ok 1.25V, should be ok approx
 dac_0 : entity work.filtered_sigmadelta  --pin37
 GENERIC MAP
 (
-	IMPLEMENTATION => 4,
-	LOWPASS => lowpass,
-	LFSR_SEED => x"ACE2"
+	IMPLEMENTATION => sigmadelta_implementation,
+	LOWPASS => lowpass
 )
 port map
 (
@@ -1827,7 +1908,8 @@ port map
   clk => clk,
   clk2 => CLK116,
   ENABLE_179 => ENABLE_CYCLE,
-  audin => AUDIO_0_UNSIGNED,
+  DITHER_IN => SIGMADELTA_DITHER1,
+  audin => signed_to_unsigned(AUDIO_MIXED_SIGNED(0)),
   AUDOUT => AUDIO_0_SIGMADELTA
 );
 
@@ -1836,9 +1918,8 @@ audout2_on : if enable_audout2=1 generate
 dac_1 : entity work.filtered_sigmadelta
 GENERIC MAP
 (
-	IMPLEMENTATION => 4,
-	LOWPASS => lowpass,
-	LFSR_SEED => x"1D2B"
+	IMPLEMENTATION => sigmadelta_implementation,
+	LOWPASS => lowpass
 )
 port map
 (
@@ -1846,7 +1927,8 @@ port map
   clk => clk,
   clk2 => CLK106,
   ENABLE_179 => ENABLE_CYCLE,
-  audin => AUDIO_1_UNSIGNED,
+  DITHER_IN => SIGMADELTA_DITHER2,
+  audin => signed_to_unsigned(AUDIO_MIXED_SIGNED(1)),
   AUDOUT => AUDIO_1_SIGMADELTA
 );
 
@@ -1859,9 +1941,8 @@ end generate audout2_off;
 dac_2 : entity work.filtered_sigmadelta
 GENERIC MAP
 (
-	IMPLEMENTATION => 4,
-	LOWPASS => lowpass,
-	LFSR_SEED => x"BEEF"
+	IMPLEMENTATION => sigmadelta_implementation,
+	LOWPASS => lowpass
 )
 port map
 (
@@ -1869,16 +1950,16 @@ port map
   clk => clk,
   clk2 => CLK116,
   ENABLE_179 => ENABLE_CYCLE,
-  audin => AUDIO_2_UNSIGNED,
+  DITHER_IN => SIGMADELTA_DITHER3,
+  audin => signed_to_unsigned(AUDIO_MIXED_SIGNED(2)),
   AUDOUT => AUDIO_2_SIGMADELTA
 );
 
 dac_3 : entity work.filtered_sigmadelta
 GENERIC MAP
 (
-	IMPLEMENTATION => 4,
-	LOWPASS => lowpass,
-	LFSR_SEED => x"5A3C"
+	IMPLEMENTATION => sigmadelta_implementation,
+	LOWPASS => lowpass
 )
 port map
 (
@@ -1886,7 +1967,8 @@ port map
   clk => clk,
   clk2 => CLK106,
   ENABLE_179 => ENABLE_CYCLE,
-  audin => AUDIO_3_UNSIGNED,
+  DITHER_IN => SIGMADELTA_DITHER4,
+  audin => signed_to_unsigned(AUDIO_MIXED_SIGNED(3)),
   AUDOUT => AUDIO_3_SIGMADELTA
 );
 
@@ -1897,7 +1979,7 @@ filter_left : entity work.simple_low_pass_filter
 PORT MAP 
 ( 
 	CLK => clk,
-	AUDIO_IN => audio_2_unsigned,
+	AUDIO_IN => signed_to_unsigned(AUDIO_MIXED_SIGNED(2)),
 	SAMPLE_IN => enable_cycle,
 	AUDIO_OUT => audio_2_filtered
 );
@@ -1906,7 +1988,7 @@ filter_right : entity work.simple_low_pass_filter
 PORT MAP 
 ( 
 	CLK => clk,
-	AUDIO_IN => audio_3_unsigned,
+	AUDIO_IN => signed_to_unsigned(AUDIO_MIXED_SIGNED(3)),
 	SAMPLE_IN => enable_cycle,
 	AUDIO_OUT => audio_3_filtered
 );
@@ -2104,7 +2186,7 @@ fir_off : if adc_fir_filter_v4=0 generate
 	adc_out_signed <= adc_in_signed;
 end generate fir_off;
 
-	SIO_AUDIO <= unsigned(not(adc_use_reg(15))&adc_use_reg(14 downto 0));
+	SIO_AUDIO_UNSIGNED <= unsigned(not(adc_use_reg(15))&adc_use_reg(14 downto 0));
 
 process(adc_reg,adc_output,adc_valid,ADC_VOLUME_REG)
 	variable adc_shrunk : signed(19 downto 0);
@@ -2167,15 +2249,15 @@ end generate adc_on;
 adc_off : if enable_adc=0 generate 
 	process(SIO_DATA_VOLUME_REG)
 	begin
-		SIO_AUDIO(15 downto 0) <= (others=>'0');
+		SIO_AUDIO_UNSIGNED(15 downto 0) <= (others=>'0');
 
 		case SIO_DATA_VOLUME_REG is
 			when "01" =>
-				SIO_AUDIO(10) <= SIO_RXD_ADC;
+				SIO_AUDIO_UNSIGNED(10) <= SIO_RXD_ADC;
 			when "10" =>
-				SIO_AUDIO(11) <= SIO_RXD_ADC;
+				SIO_AUDIO_UNSIGNED(11) <= SIO_RXD_ADC;
 			when "11" =>
-				SIO_AUDIO(12) <= SIO_RXD_ADC;
+				SIO_AUDIO_UNSIGNED(12) <= SIO_RXD_ADC;
 			when others =>
 		end case;
 	end process;
@@ -2207,12 +2289,12 @@ SIO_RXD <= SID;
 
 
 --1->pin37
-AUD(1) <= AUDIO_0_SIGMADELTA when CHANNEL_EN_REG(0)='1' else '0';
+AUD(1) <= AUDIO_0_SIGMADELTA when CHANNEL_EN_REG(0)='1' else '0'; --L (internal)
 
 -- ext AUD pins:
-AUD(2) <= AUDIO_1_SIGMADELTA when CHANNEL_EN_REG(1)='1' else '0';
-AUD(3) <= AUDIO_2_SIGMADELTA when CHANNEL_EN_REG(2)='1' else '0';
-AUD(4) <= AUDIO_3_SIGMADELTA when CHANNEL_EN_REG(3)='1' else '0';
+AUD(2) <= AUDIO_1_SIGMADELTA when CHANNEL_EN_REG(1)='1' else '0'; --R (external version of internal, if present on board)
+AUD(3) <= AUDIO_2_SIGMADELTA when CHANNEL_EN_REG(2)='1' else '0'; --L
+AUD(4) <= AUDIO_3_SIGMADELTA when CHANNEL_EN_REG(3)='1' else '0'; --R
 
 IRQ <= '0' when (IRQ_EN_REG='1' and (and_reduce(POKEY_IRQ)='0')) or (IRQ_EN_REG='0' and POKEY_IRQ(0)='0') or (SAMPLE_IRQ='1')  else 'Z';
 
