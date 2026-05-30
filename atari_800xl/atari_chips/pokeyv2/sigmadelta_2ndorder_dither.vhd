@@ -14,8 +14,7 @@ use IEEE.STD_LOGIC_MISC.all;
 ENTITY sigmadelta_2ndorder_dither IS
 GENERIC (
   DITHER_ENABLE : integer := 1;              -- 0/1
-  DITHER_BITS   : integer := 3;              -- 1..4; start small
-  LFSR_SEED     : unsigned(15 downto 0) := x"ACE1"
+  DITHER_BITS   : integer := 3               -- 1..4; start small
 );
 PORT 
 ( 
@@ -23,6 +22,7 @@ PORT
 	RESET_N : IN STD_LOGIC;
 
 	ENABLE : IN STD_LOGIC := '1';
+        DITHER_IN : IN STD_LOGIC_VECTOR(15 downto 0);
 	
 	AUDIN : IN UNSIGNED(15 downto 0);
 	AUDOUT : OUT std_logic
@@ -33,8 +33,6 @@ architecture vhdl of sigmadelta_2ndorder_dither is
   signal ttl1_reg : signed(21 downto 1) := (others => '0');
   signal ttl2_reg : signed(23 downto 1) := (others => '0');
   signal out_reg  : std_logic := '0';
-
-  signal lfsr : unsigned(15 downto 0) := LFSR_SEED;
 
   function sat_add(a, b : signed) return signed is
     variable aw  : integer := a'length;
@@ -73,21 +71,17 @@ begin
       ttl1_reg <= (others => '0');
       ttl2_reg <= (others => '0');
       out_reg  <= '0';
-      lfsr     <= LFSR_SEED;
     elsif rising_edge(CLK) then
       if ENABLE = '1' then
-
-        -- 16-bit Galois LFSR taps: 16,14,13,11
-        lfsr <= lfsr(14 downto 0) & (lfsr(15) xor lfsr(13) xor lfsr(12) xor lfsr(10));
 
         -- Keep your original input shaping
         audinadj := resize(AUDIN, 17) + to_unsigned(4096, 17) - resize(AUDIN(15 downto 3), 17);
 
         -- Build tiny threshold dither (default ~±1..3 LSB at the *threshold* domain)
         if DITHER_ENABLE = 1 then
-          u1 := resize(signed('0' & lfsr(DITHER_BITS-1 downto 0)), DITHER_BITS+1)
+          u1 := resize(signed('0' & DITHER_IN(DITHER_BITS-1 downto 0)), DITHER_BITS+1)
                 - to_signed(2**(DITHER_BITS-1), DITHER_BITS+1);
-          u2 := resize(signed('0' & lfsr(2*DITHER_BITS-1 downto DITHER_BITS)), DITHER_BITS+1)
+          u2 := resize(signed('0' & DITHER_IN(2*DITHER_BITS-1 downto DITHER_BITS)), DITHER_BITS+1)
                 - to_signed(2**(DITHER_BITS-1), DITHER_BITS+1);
           dith23 := resize(resize(u1 - u2, 23), 23);
         else

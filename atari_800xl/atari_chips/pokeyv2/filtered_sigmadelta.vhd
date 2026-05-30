@@ -14,8 +14,7 @@ ENTITY filtered_sigmadelta IS
 GENERIC
 (
 	implementation : integer :=1; --1:my 1st order, 2:my 2nd order, 3:3rd order (not mine)
-	lowpass : integer :=1; -- simple low pass. Was made for HDMI so can be turned off here with little impact to save resources. 
-        LFSR_SEED     : unsigned(15 downto 0) := x"ACE1"
+	lowpass : integer :=1 -- simple low pass. Was made for HDMI so can be turned off here with little impact to save resources. 
 );
 PORT 
 ( 
@@ -24,6 +23,8 @@ PORT
 	RESET_N : IN STD_LOGIC;
 
 	ENABLE_179 : IN STD_LOGIC;
+
+	DITHER_IN : IN STD_LOGIC_VECTOR(15 downto 0);
 
 	AUDIN : IN UNSIGNED(15 downto 0);
 	AUDOUT : OUT std_logic
@@ -103,15 +104,12 @@ end generate;
 gen_2ndorder_dither_on : if implementation=4 generate	
 
 dac_2nd_dither : entity work.sigmadelta_2ndorder_dither
-generic map
-(
-	LFSR_SEED=>LFSR_SEED
-)
 port map
 (
   reset_n => reset_n,
   clk => clk,
   audin => AUDIO_FILTERED,
+  DITHER_IN => DITHER_IN,
   AUDOUT => AUDOUT
 );
 end generate;

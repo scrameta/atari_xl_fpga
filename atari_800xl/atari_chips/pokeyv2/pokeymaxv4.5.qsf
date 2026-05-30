@@ -208,6 +208,7 @@ set_global_assignment -name VHDL_FILE wide_delay_line.vhdl
 set_global_assignment -name VHDL_FILE latch_delay_line.vhdl
 set_global_assignment -name VHDL_FILE sigmadelta_1storder.vhd
 set_global_assignment -name VHDL_FILE sigmadelta_2ndorder.vhd
+set_global_assignment -name VHDL_FILE sigmadelta_dither.vhd
 set_global_assignment -name VHDL_FILE sigmadelta_2ndorder_dither.vhd
 set_global_assignment -name VHDL_FILE filtered_sigmadelta.vhd
 set_global_assignment -name VHDL_FILE fir_filter.vhdl
