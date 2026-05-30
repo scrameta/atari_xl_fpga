@@ -1725,6 +1725,9 @@ begin
 	end if;			
 	if (enable_sample=1) then
 		ACTUAL_CAPABILITY(5) := '1';
+		if sample_ram_size=65536 then
+			ACTUAL_CAPABILITY(7) := '1';
+		end if;
 	else
 		ACTUAL_CAPABILITY(5) := '0';
 	end if;					
