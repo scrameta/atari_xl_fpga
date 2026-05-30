@@ -171,8 +171,6 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 		variable dc_cur   : dc_acc_t;
 		variable err      : dc_acc_t;
 		variable adj      : dc_acc_t;
-		variable dc_new_v : dc_acc_t;
-		variable y_new    : dc_acc_t;
 	begin
 		state_next        <= state_reg;
 		out_ch_next       <= out_ch_reg;
@@ -244,17 +242,21 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 				ch_idx   := to_integer(unsigned(out_ch_reg));
 				x_ext    := resize(presaturate, DC_ACC_WIDTH);
 				dc_cur   := dc_reg(ch_idx);
+
+				-- Cheap DC blocker:
+				--   y  = x - dc_old
+				--   dc = dc_old + (y / 2**DC_K)
+				--
+				-- The previous version output x - dc_new, which costs an
+				-- extra subtractor and differs only by y/2**DC_K.
+				err := x_ext - dc_cur;
+
 				if ENABLE_CYCLE = '1' then
-					err      := x_ext - dc_cur;
-					adj      := shift_right(err, DC_K);
-					dc_new_v := dc_cur + adj;
-					dc_next(ch_idx)   <= dc_new_v;
-					y_new    := x_ext - dc_new_v;
-				else
-					y_new    := x_ext - dc_cur;
+					adj := shift_right(err, DC_K);
+					dc_next(ch_idx) <= dc_cur + adj;
 				end if;
 
-				dc_corrected_next <= resize(y_new, 20);
+				dc_corrected_next <= resize(err, 20);
 				clearAcc          := '1';
 				state_next        <= state_clear;
 
