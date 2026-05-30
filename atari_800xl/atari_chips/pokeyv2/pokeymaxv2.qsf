@@ -183,6 +183,7 @@ set_global_assignment -name VHDL_FILE filtered_sigmadelta.vhd
 set_global_assignment -name VHDL_FILE fir_filter.vhdl
 set_global_assignment -name VHDL_FILE fir_rom.vhdl
 set_global_assignment -name VHDL_FILE generic_ram_infer.vhdl
+set_global_assignment -name VHDL_FILE m9k_grouped.vhdl
 set_global_assignment -name VHDL_FILE simple_low_pass_filter.vhdl
 set_global_assignment -name VHDL_FILE pokey/pokey_poly_17_9.vhdl
 set_global_assignment -name VHDL_FILE pokey/pokey_poly_5.vhdl

@@ -59,6 +59,8 @@ ENTITY pokeymax IS
 	
 		sid_wave_base : integer := 42496; --to_integer(unsigned(x"a600"));
 
+		sample_ram_size : integer := 43008; --to_integer(unsigned(x"a600"));
+
 		flash_addr_bits : integer := 16;
 
 		ext_clk_enable : integer := 0; -- Use PADDLE(6) for sid clk enable, PADDLE(7) for psg
@@ -251,6 +253,10 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal AUDIO_1_SIGMADELTA : std_logic;
 	signal AUDIO_2_SIGMADELTA : std_logic;
 	signal AUDIO_3_SIGMADELTA : std_logic;
+	signal SIGMADELTA_DITHER1 : std_logic_vector(15 downto 0);
+	signal SIGMADELTA_DITHER2 : std_logic_vector(15 downto 0);
+	signal SIGMADELTA_DITHER3 : std_logic_vector(15 downto 0);
+	signal SIGMADELTA_DITHER4 : std_logic_vector(15 downto 0);
 
 	signal KEYBOARD_SCAN : std_logic_vector(5 downto 0);
 	signal IOX_KEYBOARD_RESPONSE : std_logic_vector(1 downto 0);
@@ -1252,11 +1258,48 @@ sample_on : if enable_sample=1 generate
 		ADPCM_STEP_VALUE => FLASH_DO_SLOW(14 downto 0)
 	);
 
+packed_ram45 : if sample_ram_size=46080 generate 
+	sample_ram_inst : entity work.m9k_grouped
+	GENERIC MAP
+	(
+		 NUM_GROUPS        => 5,
+		 --EXTRA_RAM_BLOCKS => 3
+		 EXTRA_RAM_BLOCKS  => 0
+	)
+	PORT MAP
+	(
+	        clock => clk,
+		reset_n => reset_n,
+		data => write_data,
+		address => sample_ram_address,
+		we => sample_ram_write_enable,
+		q => sample_ram_data
+	);
+end generate;
+
+packed_ram64 : if sample_ram_size=65536 generate 
+	sample_ram_inst : entity work.m9k_grouped
+	--GENERIC MAP
+	--(
+	--	DATA_WIDTH => 8
+	--)
+	PORT MAP
+	(
+	        clock => clk,
+		reset_n => reset_n,
+		data => write_data,
+		address => sample_ram_address,
+		we => sample_ram_write_enable,
+		q => sample_ram_data
+	);
+end generate;
+
+normal_ram : if not(sample_ram_size=65536 or sample_ram_size=46080) generate 
 	sample_ram_inst : entity work.generic_ram_infer
 	GENERIC MAP
 	(
 		ADDRESS_WIDTH => 16,
-		SPACE => 43008,
+		SPACE => SAMPLE_RAM_SIZE,
 		DATA_WIDTH => 8
 	)
 	PORT MAP
@@ -1268,6 +1311,7 @@ sample_on : if enable_sample=1 generate
 		we => sample_ram_write_enable,
 		q => sample_ram_data
 	);
+end generate;
 
 end generate sample_on;
 		
@@ -1838,13 +1882,24 @@ PORT MAP
 	AUDIO_3_SIGNED => AUDIO_MIXED_SIGNED(3)
 );
 
+dac_dithergen : entity work.sigmadelta_dither 
+port map
+(
+  reset_n => reset_n,
+  clk => clk,
+  ENABLE => ENABLE_CYCLE,
+  DITHER_OUT1 => SIGMADELTA_DITHER1,
+  DITHER_OUT2 => SIGMADELTA_DITHER2,
+  DITHER_OUT3 => SIGMADELTA_DITHER3,
+  DITHER_OUT4 => SIGMADELTA_DITHER4
+);
+
 --approx line level by using 5V/4 -> ok 1.25V, should be ok approx
 dac_0 : entity work.filtered_sigmadelta  --pin37
 GENERIC MAP
 (
 	IMPLEMENTATION => sigmadelta_implementation,
-	LOWPASS => lowpass,
-	LFSR_SEED => x"ACE2"
+	LOWPASS => lowpass
 )
 port map
 (
@@ -1852,6 +1907,7 @@ port map
   clk => clk,
   clk2 => CLK116,
   ENABLE_179 => ENABLE_CYCLE,
+  DITHER_IN => SIGMADELTA_DITHER1,
   audin => signed_to_unsigned(AUDIO_MIXED_SIGNED(0)),
   AUDOUT => AUDIO_0_SIGMADELTA
 );
@@ -1862,8 +1918,7 @@ dac_1 : entity work.filtered_sigmadelta
 GENERIC MAP
 (
 	IMPLEMENTATION => sigmadelta_implementation,
-	LOWPASS => lowpass,
-	LFSR_SEED => x"1D2B"
+	LOWPASS => lowpass
 )
 port map
 (
@@ -1871,6 +1926,7 @@ port map
   clk => clk,
   clk2 => CLK106,
   ENABLE_179 => ENABLE_CYCLE,
+  DITHER_IN => SIGMADELTA_DITHER2,
   audin => signed_to_unsigned(AUDIO_MIXED_SIGNED(1)),
   AUDOUT => AUDIO_1_SIGMADELTA
 );
@@ -1885,8 +1941,7 @@ dac_2 : entity work.filtered_sigmadelta
 GENERIC MAP
 (
 	IMPLEMENTATION => sigmadelta_implementation,
-	LOWPASS => lowpass,
-	LFSR_SEED => x"BEEF"
+	LOWPASS => lowpass
 )
 port map
 (
@@ -1894,6 +1949,7 @@ port map
   clk => clk,
   clk2 => CLK116,
   ENABLE_179 => ENABLE_CYCLE,
+  DITHER_IN => SIGMADELTA_DITHER3,
   audin => signed_to_unsigned(AUDIO_MIXED_SIGNED(2)),
   AUDOUT => AUDIO_2_SIGMADELTA
 );
@@ -1902,8 +1958,7 @@ dac_3 : entity work.filtered_sigmadelta
 GENERIC MAP
 (
 	IMPLEMENTATION => sigmadelta_implementation,
-	LOWPASS => lowpass,
-	LFSR_SEED => x"5A3C"
+	LOWPASS => lowpass
 )
 port map
 (
@@ -1911,6 +1966,7 @@ port map
   clk => clk,
   clk2 => CLK106,
   ENABLE_179 => ENABLE_CYCLE,
+  DITHER_IN => SIGMADELTA_DITHER4,
   audin => signed_to_unsigned(AUDIO_MIXED_SIGNED(3)),
   AUDOUT => AUDIO_3_SIGMADELTA
 );
