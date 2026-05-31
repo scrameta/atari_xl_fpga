@@ -41,6 +41,21 @@ port (
   dac_out : out std_logic
 );
 end component;
+	function unsigned_to_signed(audio_in : unsigned(15 downto 0)) return signed is
+   		 variable ret : std_logic_vector(15 downto 0);
+	begin
+	        ret(15) := not(audio_in(15));
+	        ret(14 downto 0) := std_logic_vector(audio_in(14 downto 0));
+	    return signed(ret);
+	end function unsigned_to_signed;
+
+	function signed_to_unsigned(audio_in : signed(15 downto 0)) return unsigned is
+   		 variable ret : std_logic_vector(15 downto 0);
+	begin
+	        ret(15) := not(audio_in(15));
+	        ret(14 downto 0) := std_logic_vector(audio_in(14 downto 0));
+	    return unsigned(ret);
+	end function signed_to_unsigned;
 
 	signal AUDIO_FILTERED : unsigned(15 downto 0);
 --	
@@ -95,7 +110,7 @@ port map
   reset => not(reset_n),
   clk => clk,
   clk_ena => '1',
-  pcm_in(19 downto 4) => std_logic_vector(AUDIO_FILTERED),
+  pcm_in(19 downto 4) => std_logic_vector(unsigned_to_signed(AUDIO_FILTERED)),
   pcm_in(3 downto 0) => "0000",
   dac_out => AUDOUT
 );
