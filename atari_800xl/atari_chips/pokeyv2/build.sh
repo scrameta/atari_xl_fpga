@@ -1252,7 +1252,13 @@ foreach my $typeboard (sort keys %variants)
 			}
 			if (exists $spec->{"optimisearea"})
 			{
-				`echo 'set_global_assignment -name CYCLONEII_OPTIMIZATION_TECHNIQUE AREA' >>$type.qsf`;
+	#			`echo 'set_global_assignment -name CYCLONEII_OPTIMIZATION_TECHNIQUE AREA' >>$type.qsf`;
+				`echo 'set_global_assignment -name OPTIMIZATION_MODE "Aggressive Area"' >>$type.qsf`;
+				`echo 'set_global_assignment -name AUTO_RESOURCE_SHARING ON' >>$type.qsf`;
+			}
+			else
+			{
+				`echo 'set_global_assignment -name OPTIMIZATION_MODE BALANCED' >>$type.qsf`;
 			}
 		
 			#Synthesize

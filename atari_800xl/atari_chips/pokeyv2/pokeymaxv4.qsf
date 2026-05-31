@@ -263,7 +263,6 @@ set_instance_assignment -name CURRENT_STRENGTH_NEW "MINIMUM CURRENT" -to CLK_OUT
 set_instance_assignment -name IO_STANDARD "3.3 V SCHMITT TRIGGER" -to SID
 set_instance_assignment -name IO_STANDARD "3.3 V SCHMITT TRIGGER" -to BCLK
 
-set_global_assignment -name OPTIMIZATION_MODE BALANCED
 set_global_assignment -name VHDL_FILE audio_signal_detector.vhd
 set_global_assignment -name VHDL_FILE flash_controller.vhd
 set_global_assignment -name VHDL_FILE stereo_detect.vhd
