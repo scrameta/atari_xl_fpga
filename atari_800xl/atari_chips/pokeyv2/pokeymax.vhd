@@ -38,7 +38,8 @@ ENTITY pokeymax IS
 
 		adc_audio_detect : integer := 0;  -- Detect 0 crossing/amplitude etc, otherwise silence
 		adc_fir_filter_v4 : integer := 0;    -- Filter out interference from keyboard scan etc
-		sigmadelta_implementation : integer := 4; -- 4 is dithered 2nd order (recommended if it fits), 2 is 2nd order without dithering
+		--sigmadelta_implementation : integer := 4; -- 4 is dithered 2nd order (recommended if it fits), 2 is 2nd order without dithering
+		sigmadelta_implementation : integer := 2; -- 4 is dithered 2nd order (recommended if it fits), 2 is 2nd order without dithering
 
 		ext_bits : integer := 3; 
 		pll_v2 : integer := 1;
