@@ -1,5 +1,6 @@
 LIBRARY ieee;
 USE ieee.std_logic_1164.all; 
+use ieee.numeric_std.all;
 
 entity pll_reset_sync is
     generic (
@@ -14,7 +15,7 @@ end entity;
 
 architecture rtl of pll_reset_sync is
     signal locked_sync : std_logic_vector(1 downto 0) := (others => '0');
-    signal shreg       : std_logic_vector(RESET_CYCLES-1 downto 0) := (others => '0');
+    signal cnt : unsigned(5 downto 0) := (others => '0');  -- counts 0..63
 begin
     -- sync
     process(clk)
@@ -30,13 +31,13 @@ begin
     begin
         if rising_edge(clk) then
             if locked_sync(1) = '0' then
-                shreg <= (others => '0');
-            else
-                shreg <= shreg(RESET_CYCLES-2 downto 0) & '1';
+                cnt <= (others => '0');
+            elsif cnt /= RESET_CYCLES-1 then
+                cnt <= cnt + 1;
             end if;
         end if;
     end process;
 
-    reset_n <= shreg(RESET_CYCLES-1);
+    reset_n <= '1' when cnt = RESET_CYCLES-1 else '0';
 end architecture;
 
