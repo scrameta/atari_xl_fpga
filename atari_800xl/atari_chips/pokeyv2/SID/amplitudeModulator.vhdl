@@ -34,7 +34,8 @@ BEGIN
         process(
 		wave_a,envelope_a,wave_b,envelope_b,wave_c,envelope_c,
 		channel_d,
-		channel_mux_sel)
+		channel_mux_sel,
+		channel_abc)
 	begin
 		MODULATED <= (others=>'0');
 		envelope <= (others=>'0');
