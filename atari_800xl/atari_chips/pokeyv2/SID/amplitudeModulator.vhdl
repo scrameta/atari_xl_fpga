@@ -37,6 +37,8 @@ BEGIN
 		channel_mux_sel)
 	begin
 		MODULATED <= (others=>'0');
+		envelope <= (others=>'0');
+		wave <= (others=>'0');
 		case channel_mux_sel is
 		when "001" =>
 			wave <= wave_a;
