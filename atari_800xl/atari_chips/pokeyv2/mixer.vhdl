@@ -266,6 +266,7 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 				write       <= '1';
 				out_ch_next <= std_logic_vector(unsigned(out_ch_reg)+1);
 				state_next  <= state_CH0;
+				addAcc := '0';
 
 			when others =>
 				state_next <= state_CH0;
