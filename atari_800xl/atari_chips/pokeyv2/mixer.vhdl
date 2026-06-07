@@ -64,6 +64,8 @@ ARCHITECTURE vhdl OF mixer IS
 	signal RIGHT_REG : std_logic;
 	signal RIGHT_PLAYING_COUNT_NEXT : unsigned(23 downto 0);
 	signal RIGHT_PLAYING_COUNT_REG : unsigned(23 downto 0);
+	signal RIGHT_SNAP_REG : signed(19 downto 8);
+	signal RIGHT_SNAP_NEXT : signed(19 downto 8);
 
 	-- sums
 	signal audio0_reg : signed(15 downto 0);
@@ -117,6 +119,7 @@ process(clk,reset_n)
 begin
 	if (reset_n='0') then
 		RIGHT_REG <= '0';
+		RIGHT_SNAP_REG <= (others=>'0');
 		RIGHT_PLAYING_COUNT_REG <= (others=>'0');
 		audio0_reg <= (others=>'0');
 		audio1_reg <= (others=>'0');
@@ -131,6 +134,7 @@ begin
 		end loop;
 	elsif (clk'event and clk='1') then
 		RIGHT_REG <= RIGHT_NEXT;
+		RIGHT_SNAP_REG <= RIGHT_SNAP_NEXT;
 		RIGHT_PLAYING_COUNT_REG <= RIGHT_PLAYING_COUNT_NEXT;
 		audio0_reg <= audio0_next;
 		audio1_reg <= audio1_next;
@@ -159,7 +163,7 @@ end process;
 RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 
 
-	process(state_reg,RIGHT_REG,out_ch_reg,acc_reg,volume,dc_reg,dc_corrected_reg,
+	process(state_reg,RIGHT_REG,RIGHT_SNAP_REG,RIGHT_SNAP_NEXT,out_ch_reg,acc_reg,volume,dc_reg,dc_corrected_reg,
 	POST_DIVIDE,SATURATED,include_in_output,enable_cycle)
 		variable postdivide  : std_logic_vector(1 downto 0);
 		variable presaturate : signed(19 downto 0);
@@ -176,6 +180,7 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 		out_ch_next       <= out_ch_reg;
 		acc_next          <= acc_reg;
 		RIGHT_NEXT        <= RIGHT_REG;
+		RIGHT_SNAP_NEXT <= RIGHT_SNAP_REG;
 		dc_next           <= dc_reg;
 		dc_corrected_next <= dc_corrected_reg;
 
@@ -222,7 +227,10 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 				channelsel <= x"6";
 				state_next <= state_BCH1;
 				-- NEEDS DOING WITHOUT BCH* mixed, since those plays on all channels!!
-				RIGHT_NEXT <= (xor_reduce(std_logic_vector(acc_reg)) and out_ch_reg(0)) or (RIGHT_REG and not(out_ch_reg(0)));	
+				if out_ch_reg(0) = '1' then        -- right pass: acc_reg = clean right sum
+					RIGHT_SNAP_NEXT <= acc_reg(19 downto 8);
+					RIGHT_NEXT <= or_reduce(std_logic_vector(acc_reg(19 downto 8) xor RIGHT_SNAP_REG));
+				end if;
 			when state_BCH1 =>
 				channelsel <= x"7";
 				state_next <= state_dc;
