@@ -1081,6 +1081,8 @@ sample_on : if enable_sample=1 generate
 		DO => SAMPLE_DO,
 		AUDIO0 => SAMPLE_AUDIO_SIGNED(0),
 		AUDIO1 => SAMPLE_AUDIO_SIGNED(1),
+		AUDIO_IN0 => to_signed(0,16),
+		AUDIO_IN1 => to_signed(0,16),
 		IRQ => SAMPLE_IRQ,
 		
 		RAM_ADDR => SAMPLE_RAM_ADDRESS,
@@ -1718,6 +1720,8 @@ PORT MAP
 	R_CH4 => unsigned_to_signed(PSG_AUDIO_UNSIGNED(1)),		
 	B_CH0 => (others=>'0'),
 	B_CH1 => (others=>'0'),
+
+	MUTE_CHANNEL => '0',
 	
 	AUDIO_0_SIGNED => AUDIO_MIXED_SIGNED(0),
 	AUDIO_1_SIGNED => open,
