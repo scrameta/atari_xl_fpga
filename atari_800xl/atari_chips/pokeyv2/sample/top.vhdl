@@ -66,6 +66,7 @@ ARCHITECTURE vhdl OF sample_top IS
         signal ram_record_enabled_next : std_logic;
         signal ram_record_source_reg : std_logic;
         signal ram_record_source_next : std_logic;
+        signal data_to_write : std_logic_vector(7 downto 0);
 
 	signal ch0_start_addr_reg : std_logic_vector(15 downto 0);
 	signal ch0_start_addr_next : std_logic_vector(15 downto 0);
@@ -629,6 +630,18 @@ BEGIN
 			adpcm_data_ready_next <= '0';
 		end if;
 	end process;
+
+	process(ram_record_source_reg, request, DI, AUDIO_IN0, AUDIO_IN1)
+	begin
+		DATA_TO_WRITE <= DI;
+		if (request='0') then
+			if (ram_record_source_reg='1') then
+				DATA_TO_WRITE <= std_logic_vector(AUDIO_IN1(15 downto 8));
+			else
+				DATA_TO_WRITE <= std_logic_vector(AUDIO_IN0(15 downto 8));
+			end if;
+		end if;
+	end process;
 	
 	process(clk,reset_n)
 	begin
@@ -718,5 +731,5 @@ BEGIN
 
 	RAM_WRITE_ENABLE <= RAM_CPU_WRITE_ENABLE OR RAM_RECORD_WRITE_ENABLE;
 
-	RAM_WRITE_DATA <= std_logic_vector(AUDIO_IN1(15 downto 8)) when ram_record_source_reg='1' else std_logic_vector(AUDIO_IN0(15 downto 8));
+	RAM_WRITE_DATA <= DATA_TO_WRITE;
 END vhdl;
