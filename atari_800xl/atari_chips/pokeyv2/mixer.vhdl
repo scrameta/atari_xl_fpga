@@ -41,6 +41,13 @@ PORT
 	B_CH0 : IN SIGNED(15 downto 0);
 	B_CH1 : IN SIGNED(15 downto 0);
 
+	MUTE_CHANNEL : IN STD_LOGIC;
+
+	S_AUDIO : OUT SIGNED(15 downto 0);
+	S_LEFT : OUT STD_LOGIC;
+	S_RIGHT : OUT STD_LOGIC;
+	S_CHANNEL : OUT UNSIGNED(2 downto 0);
+
 	AUDIO_0_SIGNED : out signed(15 downto 0);
 	AUDIO_1_SIGNED : out signed(15 downto 0);
 	AUDIO_2_SIGNED : out signed(15 downto 0);
@@ -108,6 +115,8 @@ ARCHITECTURE vhdl OF mixer IS
 	signal left_on_right : std_logic;
 	
 	signal volume : signed(15 downto 0);
+	signal out_left_enable : std_logic;
+	signal out_right_enable : std_logic;
 	signal saturated : signed(15 downto 0);
 	
 	signal write : std_logic;
@@ -164,7 +173,7 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 
 
 	process(state_reg,RIGHT_REG,RIGHT_SNAP_REG,RIGHT_SNAP_NEXT,out_ch_reg,acc_reg,volume,dc_reg,dc_corrected_reg,
-	POST_DIVIDE,SATURATED,include_in_output,enable_cycle)
+	POST_DIVIDE,SATURATED,include_in_output,enable_cycle,mute_channel)
 		variable postdivide  : std_logic_vector(1 downto 0);
 		variable presaturate : signed(19 downto 0);
 		variable addAcc      : std_logic;
@@ -295,7 +304,7 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 		-- Accumulator update: clear takes priority over add
 		if clearAcc = '1' then
 			acc_next <= (others=>'0');
-		elsif addAcc = '1' then
+		elsif addAcc = '1' and mute_channel='0' then
 			acc_next <= acc_reg + resize(volume, 20);
 		end if;
 
@@ -309,6 +318,9 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 		)
 	begin
 		volume <= (others=>'0');
+		out_left_enable <= channelsel(3);
+		out_right_enable <= not(channelsel(3));
+
 			--left
 		include_in_output(0) <= not(channelsel(3)); 
 		include_in_output(2) <= not(channelsel(3));
@@ -339,10 +351,16 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 		when x"6"|x"e" =>
 			include_in_output <= B_CH0_EN;
 		        volume <= B_CH0;
+			out_left_enable <= '1';
+			out_right_enable <= '1';
 		when x"7"|x"f" =>
 			include_in_output <= B_CH1_EN;
 		        volume <= B_CH1;
+			out_left_enable <= '1';
+			out_right_enable <= '1';
 		when others =>
+			out_left_enable <= '0';
+			out_right_enable <= '0';
 		end case;
 	end process;
 	
@@ -397,6 +415,11 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 	end process;	
 	
 -- output
+	S_AUDIO <= VOLUME;
+	S_LEFT <= out_left_enable;
+	S_RIGHT <= out_right_enable;
+	S_CHANNEL <= unsigned(CHANNELSEL(2 downto 0));
+
 	AUDIO_0_SIGNED <= audio0_reg;
 	AUDIO_1_SIGNED <= audio1_reg;
 	AUDIO_2_SIGNED <= audio2_reg;
