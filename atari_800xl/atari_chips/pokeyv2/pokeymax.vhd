@@ -1946,12 +1946,12 @@ PORT MAP
 		if (std_logic_vector(mixer_audio_out_channel) = MIX_SEL_REG) then
 			if (mixer_l_enable='1') then
 				MIXER_SIGNED_NEXT(0) <= mixer_audio_out;
-				mixer_mute <= SID_FILTER1_REG(1);
+				mixer_mute <= SID_FILTER1_REG(2);
 			end if;
 	
 			if (mixer_r_enable='1') then
 				MIXER_SIGNED_NEXT(1) <= mixer_audio_out;
-				mixer_mute <= SID_FILTER2_REG(1);
+				mixer_mute <= SID_FILTER2_REG(2);
 			end if;
 		end if;
 	end process;
