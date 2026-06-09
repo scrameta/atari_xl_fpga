@@ -318,8 +318,8 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 		)
 	begin
 		volume <= (others=>'0');
-		out_left_enable <= channelsel(3);
-		out_right_enable <= not(channelsel(3));
+		out_left_enable <= not(channelsel(3));
+		out_right_enable <= channelsel(3);
 
 			--left
 		include_in_output(0) <= not(channelsel(3)); 
