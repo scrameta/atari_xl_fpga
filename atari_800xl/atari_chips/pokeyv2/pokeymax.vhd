@@ -247,6 +247,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal DEVICE_ADDR : std_logic_vector(3 downto 0);
 
 	signal POKEY_AUDIO_UNSIGNED : UNSIGNED_AUDIO_TYPE(3 downto 0);	
+	signal POKEY_AUDIO_SIGNED : SIGNED_AUDIO_TYPE(3 downto 0);	
 	
 	signal AUDIO_MIXED_SIGNED : SIGNED_AUDIO_TYPE(3 downto 0);
 	
@@ -300,6 +301,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal PSG_ENABLE_1Mhz : std_logic;
 	signal PSG_ENABLE : std_logic;
 	signal PSG_AUDIO_UNSIGNED : UNSIGNED_AUDIO_TYPE(1 downto 0);	
+	signal PSG_AUDIO_SIGNED : SIGNED_AUDIO_TYPE(1 downto 0);	
 
 	signal PSG_CHANNEL : PSG_CHANNEL_TYPE(5 downto 0);	
 	signal PSG_CHANGED : std_logic_vector(1 downto 0);
@@ -503,6 +505,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal fir_data_ready :std_logic;
 
 	signal SIO_AUDIO_UNSIGNED : unsigned(15 downto 0);	
+	signal SIO_AUDIO_SIGNED : signed(15 downto 0);	
 
 	-- paddles
 	signal PADDLE_ADJ : std_logic_vector(7 downto 0);
@@ -848,6 +851,47 @@ PORT MAP(CLK => CLK,
 		 PROFILE_DATA => flash_do_slow(15 downto 0)
 		 );
 
+pokey1_dc_blocker : entity work.dc_blocker
+PORT  MAP
+( 
+	CLK          => CLK,
+	RESET_N      => RESET_N,
+	ENABLE_CYCLE => ENABLE_CYCLE,
+
+	AUDIO_IN    => POKEY_AUDIO_UNSIGNED(0),
+	AUDIO_OUT   => POKEY_AUDIO_SIGNED(0)
+);
+pokey2_dc_blocker : entity work.dc_blocker
+PORT  MAP
+( 
+	CLK          => CLK,
+	RESET_N      => RESET_N,
+	ENABLE_CYCLE => ENABLE_CYCLE,
+
+	AUDIO_IN    => POKEY_AUDIO_UNSIGNED(1),
+	AUDIO_OUT   => POKEY_AUDIO_SIGNED(1)
+);
+pokey3_dc_blocker : entity work.dc_blocker
+PORT  MAP
+( 
+	CLK          => CLK,
+	RESET_N      => RESET_N,
+	ENABLE_CYCLE => ENABLE_CYCLE,
+
+	AUDIO_IN    => POKEY_AUDIO_UNSIGNED(2),
+	AUDIO_OUT   => POKEY_AUDIO_SIGNED(2)
+);
+pokey4_dc_blocker : entity work.dc_blocker
+PORT  MAP
+( 
+	CLK          => CLK,
+	RESET_N      => RESET_N,
+	ENABLE_CYCLE => ENABLE_CYCLE,
+
+	AUDIO_IN    => POKEY_AUDIO_UNSIGNED(3),
+	AUDIO_OUT   => POKEY_AUDIO_SIGNED(3)
+);
+
 flash_off : if enable_flash=0 generate 
 	shared_pokey_mixer : entity work.pokey_mixer
 	port map
@@ -1088,8 +1132,8 @@ end generate sid_on;
 -- PSG
 --------------------------------------------------------
 psg_off : if enable_psg=0 generate 
-	PSG_AUDIO_UNSIGNED(0) <= to_unsigned(0,16);
-	PSG_AUDIO_UNSIGNED(1) <= to_unsigned(0,16);
+	PSG_AUDIO_SIGNED(0) <= to_signed(0,16);
+	PSG_AUDIO_SIGNED(1) <= to_signed(0,16);
 	PSG_DO(0) <= (others=>'0');
 	PSG_DO(1) <= (others=>'0');
 end generate psg_off;
@@ -1211,6 +1255,27 @@ PSG_2 : entity work.PSG_top
 		PROFILE_READY => PSG_PROFILE_READY,
 		PROFILE_DATA => flash_do_slow(15 downto 0)
 	);	
+
+psg1_dc_blocker : entity work.dc_blocker
+PORT  MAP
+( 
+	CLK          => CLK,
+	RESET_N      => RESET_N,
+	ENABLE_CYCLE => ENABLE_CYCLE,
+
+	AUDIO_IN    => PSG_AUDIO_UNSIGNED(0),
+	AUDIO_OUT   => PSG_AUDIO_SIGNED(0)
+);
+psg2_dc_blocker : entity work.dc_blocker
+PORT  MAP
+( 
+	CLK          => CLK,
+	RESET_N      => RESET_N,
+	ENABLE_CYCLE => ENABLE_CYCLE,
+
+	AUDIO_IN    => PSG_AUDIO_UNSIGNED(1),
+	AUDIO_OUT   => PSG_AUDIO_SIGNED(1)
+);
 
 end generate psg_on;		
 	
@@ -1903,18 +1968,18 @@ PORT MAP
 	B_CH0_EN => GTIA_ENABLE_REG,
 	B_CH1_EN => "1100",
 
-	L_CH0 => unsigned_to_signed(POKEY_AUDIO_UNSIGNED(0)),
-	R_CH0 => unsigned_to_signed(POKEY_AUDIO_UNSIGNED(1)),
-	L_CH1 => unsigned_to_signed(POKEY_AUDIO_UNSIGNED(2)),
-	R_CH1 => unsigned_to_signed(POKEY_AUDIO_UNSIGNED(3)),
+	L_CH0 => POKEY_AUDIO_SIGNED(0),
+	R_CH0 => POKEY_AUDIO_SIGNED(1),
+	L_CH1 => POKEY_AUDIO_SIGNED(2),
+	R_CH1 => POKEY_AUDIO_SIGNED(3),
 	L_CH2 => SAMPLE_AUDIO_SIGNED(0),
 	R_CH2 => SAMPLE_AUDIO_SIGNED(1),
 	L_CH3 => SID_AUDIO_SIGNED(0),
 	R_CH3 => SID_AUDIO_SIGNED(1),	
-	L_CH4 => unsigned_to_signed(PSG_AUDIO_UNSIGNED(0)),
-	R_CH4 => unsigned_to_signed(PSG_AUDIO_UNSIGNED(1)),		
+	L_CH4 => PSG_AUDIO_SIGNED(0),
+	R_CH4 => PSG_AUDIO_SIGNED(1),		
 	B_CH0 => GTIA_AUDIO_SIGNED,
-	B_CH1 => unsigned_to_signed(SIO_AUDIO_UNSIGNED),			
+	B_CH1 => SIO_AUDIO_SIGNED,			
 
 	MUTE_CHANNEL => mixer_mute,
 
@@ -2265,6 +2330,17 @@ fir_off : if adc_fir_filter_v4=0 generate
 end generate fir_off;
 
 	SIO_AUDIO_UNSIGNED <= unsigned(not(adc_use_reg(15))&adc_use_reg(14 downto 0));
+
+sio_audio_dc_blocker : entity work.dc_blocker 
+PORT  MAP
+( 
+	CLK          => CLK,
+	RESET_N      => RESET_N,
+	ENABLE_CYCLE => ENABLE_CYCLE,
+
+	AUDIO_IN    => SIO_AUDIO_UNSIGNED,
+	AUDIO_OUT   => SIO_AUDIO_SIGNED
+);
 
 process(adc_reg,adc_output,adc_valid,ADC_VOLUME_REG)
 	variable adc_shrunk : signed(19 downto 0);

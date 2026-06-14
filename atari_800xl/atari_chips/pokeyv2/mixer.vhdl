@@ -57,13 +57,6 @@ END mixer;
 		
 ARCHITECTURE vhdl OF mixer IS
 
-	-- DC blocker constants
-	constant DC_EXTRA_BITS : integer := 4;
-	constant DC_ACC_WIDTH  : integer := 16 + DC_EXTRA_BITS; -- 20 bits
-	constant DC_K          : integer := 10;
-
-	subtype dc_acc_t is signed(DC_ACC_WIDTH-1 downto 0);
-	type dc_arr_t is array (0 to 3) of dc_acc_t;
 
 	-- DETECT RIGHT PLAYING
 	signal RIGHT_PLAYING_RECENTLY : std_logic;
@@ -87,13 +80,9 @@ ARCHITECTURE vhdl OF mixer IS
 	signal acc_reg : signed(19 downto 0);
 	signal acc_next : signed(19 downto 0);
 
-	-- DC blocker per-channel state
-	signal dc_reg  : dc_arr_t;
-	signal dc_next : dc_arr_t;
-
-	-- Pipeline register: holds dc-corrected divided value between state_dc and state_clear
-	signal dc_corrected_reg  : signed(19 downto 0);
-	signal dc_corrected_next : signed(19 downto 0);
+	-- Pipeline register: holds divided value between state_divide and state_clear
+	signal divided_reg  : signed(19 downto 0);
+	signal divided_next : signed(19 downto 0);
 
 	signal out_ch_reg : std_logic_vector(1 downto 0);
 	signal out_ch_next : std_logic_vector(1 downto 0);
@@ -107,7 +96,7 @@ ARCHITECTURE vhdl OF mixer IS
 	constant state_CH4    : unsigned(3 downto 0) := "0100";
 	constant state_BCH0   : unsigned(3 downto 0) := "0101";
 	constant state_BCH1   : unsigned(3 downto 0) := "0110";
-	constant state_dc     : unsigned(3 downto 0) := "0111";  -- divide + dc block
+	constant state_divide : unsigned(3 downto 0) := "0111";  -- divide
 	constant state_clear  : unsigned(3 downto 0) := "1000";  -- saturate + write output
 
 	signal channelsel : std_logic_vector(3 downto 0);
@@ -136,11 +125,8 @@ begin
 		audio3_reg <= (others=>'0');
 		acc_reg <= (others=>'0');
 		out_ch_reg <= (others=>'0');
-		dc_corrected_reg <= (others=>'0');
+		divided_reg <= (others=>'0');
 		state_reg <= state_CH0;
-		for i in 0 to 3 loop
-			dc_reg(i) <= (others=>'0');
-		end loop;
 	elsif (clk'event and clk='1') then
 		RIGHT_REG <= RIGHT_NEXT;
 		RIGHT_SNAP_REG <= RIGHT_SNAP_NEXT;
@@ -151,8 +137,7 @@ begin
 		audio3_reg <= audio3_next;
 		acc_reg <= acc_next;
 		out_ch_reg <= out_ch_next;
-		dc_reg <= dc_next;
-		dc_corrected_reg <= dc_corrected_next;
+		divided_reg <= divided_next;
 		state_reg <= state_next;
 	end if;
 end process;
@@ -172,26 +157,19 @@ end process;
 RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 
 
-	process(state_reg,RIGHT_REG,RIGHT_SNAP_REG,RIGHT_SNAP_NEXT,out_ch_reg,acc_reg,volume,dc_reg,dc_corrected_reg,
+	process(state_reg,RIGHT_REG,RIGHT_SNAP_REG,RIGHT_SNAP_NEXT,out_ch_reg,acc_reg,volume,divided_reg,
 	POST_DIVIDE,SATURATED,include_in_output,enable_cycle,mute_channel)
 		variable postdivide  : std_logic_vector(1 downto 0);
 		variable presaturate : signed(19 downto 0);
 		variable addAcc      : std_logic;
 		variable clearAcc    : std_logic;
-		-- DC blocker datapath variables
-		variable ch_idx   : integer range 0 to 3;
-		variable x_ext    : dc_acc_t;
-		variable dc_cur   : dc_acc_t;
-		variable err      : dc_acc_t;
-		variable adj      : dc_acc_t;
 	begin
 		state_next        <= state_reg;
 		out_ch_next       <= out_ch_reg;
 		acc_next          <= acc_reg;
 		RIGHT_NEXT        <= RIGHT_REG;
 		RIGHT_SNAP_NEXT <= RIGHT_SNAP_REG;
-		dc_next           <= dc_reg;
-		dc_corrected_next <= dc_corrected_reg;
+		divided_next      <= divided_reg;
 
 		write      <= '0';
 		channelsel <= (others=>'0');
@@ -242,43 +220,25 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 				end if;
 			when state_BCH1 =>
 				channelsel <= x"7";
-				state_next <= state_dc;
+				state_next <= state_divide;
 
-			when state_dc =>
-				-- Divide accumulator and run dc blocker.
-				-- Result registered into dc_corrected_reg, accumulator cleared.
-				-- Critical path: shift + subtract + shift_right(K) + add + subtract
+			when state_divide =>
+				-- Divide accumulator only. DC removal has been extracted to dc_blocker.
+				-- Result registered into divided_reg, accumulator cleared.
 				case postdivide is
 					when "00" => presaturate := resize(acc_reg(19 downto 0), 20);
 					when "01" => presaturate := resize(acc_reg(19 downto 1), 20);
 					when "10" => presaturate := resize(acc_reg(19 downto 2), 20);
 					when "11" => presaturate := resize(acc_reg(19 downto 3), 20);
-					when others =>
+					when others => presaturate := acc_reg;
 				end case;
 
-				ch_idx   := to_integer(unsigned(out_ch_reg));
-				x_ext    := resize(presaturate, DC_ACC_WIDTH);
-				dc_cur   := dc_reg(ch_idx);
-
-				-- Cheap DC blocker:
-				--   y  = x - dc_old
-				--   dc = dc_old + (y / 2**DC_K)
-				--
-				-- The previous version output x - dc_new, which costs an
-				-- extra subtractor and differs only by y/2**DC_K.
-				err := x_ext - dc_cur;
-
-				if ENABLE_CYCLE = '1' then
-					adj := shift_right(err, DC_K);
-					dc_next(ch_idx) <= dc_cur + adj;
-				end if;
-
-				dc_corrected_next <= resize(err, 20);
-				clearAcc          := '1';
-				state_next        <= state_clear;
+				divided_next <= presaturate;
+				clearAcc     := '1';
+				state_next   <= state_clear;
 
 			when state_clear =>
-				-- Saturate the registered dc-corrected value and write to output.
+				-- Saturate the registered divided value and write to output.
 				-- Critical path: just the saturation check + mux
 				write       <= '1';
 				out_ch_next <= std_logic_vector(unsigned(out_ch_reg)+1);
@@ -293,12 +253,12 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 
 		-- Saturation reads from the pipeline register, so only the
 		-- saturation check itself is on the state_clear critical path
-		if dc_corrected_reg(19 downto 15) /= "00000" and
-		   dc_corrected_reg(19 downto 15) /= "11111" then
-			saturated(14 downto 0) <= (others => not dc_corrected_reg(19));
-			saturated(15)          <= dc_corrected_reg(19);
+		if divided_reg(19 downto 15) /= "00000" and
+		   divided_reg(19 downto 15) /= "11111" then
+			saturated(14 downto 0) <= (others => not divided_reg(19));
+			saturated(15)          <= divided_reg(19);
 		else
-			saturated <= dc_corrected_reg(15 downto 0);
+			saturated <= divided_reg(15 downto 0);
 		end if;
 
 		-- Accumulator update: clear takes priority over add
