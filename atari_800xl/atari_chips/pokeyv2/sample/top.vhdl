@@ -157,7 +157,8 @@ BEGIN
 	process(addr_decoded5,CH0_REG,CH1_REG,CH2_REG,CH3_REG,
 		ram_cpu_addr_reg, ram_data, 
 		irq_en_reg,irq_active_reg,
-		adpcm_reg,bits8_reg
+		adpcm_reg,bits8_reg,
+		ram_record_enabled_reg, ram_record_source_reg
 		)
 	begin
 		DO <= (others=>'0');
@@ -197,6 +198,10 @@ BEGIN
 			DO(3 downto 0) <= adpcm_reg;
 			DO(7 downto 4) <= bits8_reg;
 		end if;
+ 		if (addr_decoded5(20)='1') then
+ 			DO(0) <= ram_record_enabled_reg;
+ 			DO(1) <= ram_record_source_reg;
+ 		end if;
 	end process;
 
 	process(adpcm_channel,adpcm_store,addr,bits8,dma_on,adpcm_on,write_enable)
