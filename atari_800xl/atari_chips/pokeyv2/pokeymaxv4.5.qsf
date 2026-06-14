@@ -227,6 +227,7 @@ set_global_assignment -name VHDL_FILE pokey/pokey.vhdl
 set_global_assignment -name VHDL_FILE phi_mult.vhdl
 set_global_assignment -name VHDL_FILE synchronizer.vhdl
 set_global_assignment -name VHDL_FILE audiotypes.vhdl
+set_global_assignment -name VHDL_FILE dc_blocker.vhdl
 set_global_assignment -name VHDL_FILE mixer.vhdl
 set_global_assignment -name VHDL_FILE clockgen.vhd
 set_global_assignment -name VHDL_FILE spdif_transmitter.vhdl
