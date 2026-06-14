@@ -851,47 +851,6 @@ PORT MAP(CLK => CLK,
 		 PROFILE_DATA => flash_do_slow(15 downto 0)
 		 );
 
-pokey1_dc_blocker : entity work.dc_blocker
-PORT  MAP
-( 
-	CLK          => CLK,
-	RESET_N      => RESET_N,
-	ENABLE_CYCLE => ENABLE_CYCLE,
-
-	AUDIO_IN    => POKEY_AUDIO_UNSIGNED(0),
-	AUDIO_OUT   => POKEY_AUDIO_SIGNED(0)
-);
-pokey2_dc_blocker : entity work.dc_blocker
-PORT  MAP
-( 
-	CLK          => CLK,
-	RESET_N      => RESET_N,
-	ENABLE_CYCLE => ENABLE_CYCLE,
-
-	AUDIO_IN    => POKEY_AUDIO_UNSIGNED(1),
-	AUDIO_OUT   => POKEY_AUDIO_SIGNED(1)
-);
-pokey3_dc_blocker : entity work.dc_blocker
-PORT  MAP
-( 
-	CLK          => CLK,
-	RESET_N      => RESET_N,
-	ENABLE_CYCLE => ENABLE_CYCLE,
-
-	AUDIO_IN    => POKEY_AUDIO_UNSIGNED(2),
-	AUDIO_OUT   => POKEY_AUDIO_SIGNED(2)
-);
-pokey4_dc_blocker : entity work.dc_blocker
-PORT  MAP
-( 
-	CLK          => CLK,
-	RESET_N      => RESET_N,
-	ENABLE_CYCLE => ENABLE_CYCLE,
-
-	AUDIO_IN    => POKEY_AUDIO_UNSIGNED(3),
-	AUDIO_OUT   => POKEY_AUDIO_SIGNED(3)
-);
-
 flash_off : if enable_flash=0 generate 
 	shared_pokey_mixer : entity work.pokey_mixer
 	port map
@@ -940,6 +899,16 @@ PORT MAP(CLK => CLK,
 		 keyboard_scan_enable => KEYBOARD_SCAN_ENABLE,
 		 keyboard_scan_update => KEYBOARD_SCAN_UPDATE
 		);
+pokey1_dc_blocker : entity work.dc_blocker
+PORT  MAP
+( 
+	CLK          => CLK,
+	RESET_N      => RESET_N,
+	ENABLE_CYCLE => ENABLE_CYCLE,
+
+	AUDIO_IN    => POKEY_AUDIO_UNSIGNED(0),
+	AUDIO_OUT   => POKEY_AUDIO_SIGNED(0)
+);
 
 --------------------------------------------------------		
 -- POKEY 2-4	 
@@ -952,6 +921,8 @@ PORT MAP(CLK => CLK,
 		POKEY_CHANNEL3(I) <= (others=>'0');
 		POKEY_IRQ(I) <= '1';
 		POKEY_DO(I) <= (others=>'0');
+
+	POKEY_AUDIO_SIGNED(I) <= to_signed(0,16);
    end generate POKEY_OFF;		
 
    POKEY_ON: 
@@ -976,6 +947,17 @@ PORT MAP(CLK => CLK,
 				 IRQ_N_OUT => POKEY_IRQ(I),
 				 keyboard_response => "00",
 				 pot_in=>"00000000");
+
+		pokey_dc_blockerx : entity work.dc_blocker
+		PORT  MAP
+		( 
+			CLK          => CLK,
+			RESET_N      => RESET_N,
+			ENABLE_CYCLE => ENABLE_CYCLE,
+        
+			AUDIO_IN    => POKEY_AUDIO_UNSIGNED(I),
+			AUDIO_OUT   => POKEY_AUDIO_SIGNED(I)
+		);
    end generate POKEY_ON;
 
 --------------
