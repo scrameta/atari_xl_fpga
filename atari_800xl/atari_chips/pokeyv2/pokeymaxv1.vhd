@@ -54,6 +54,7 @@ ENTITY pokeymax IS
 		enable_spdif: integer := 0;
 		enable_ps2: integer := 0;
 		enable_adc: integer := 0;
+		enable_routing: integer := 0;
 		paddle_lvds: integer := 0;
 		paddle_comp: integer := 1;
 		enable_iox: integer := 1;
@@ -66,8 +67,7 @@ ENTITY pokeymax IS
 
 		ext_clk_enable : integer := 0; -- Use PADDLE(6) for sid clk enable, PADDLE(7) for psg
 
-   		version : STRING  := "DEVELOPR"; -- 8 char string atascii
-   		board : integer  := 00 -- $MAJOR$MINOR
+   		version : STRING  := "DEVELOPR" -- 8 char string atascii
 	);
 	PORT
 	(
@@ -245,6 +245,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal DEVICE_ADDR : std_logic_vector(3 downto 0);
 
 	signal POKEY_AUDIO_UNSIGNED : UNSIGNED_AUDIO_TYPE(3 downto 0);	
+	signal POKEY_AUDIO_SIGNED : SIGNED_AUDIO_TYPE(3 downto 0);	
 	
 	signal AUDIO_MIXED_SIGNED : SIGNED_AUDIO_TYPE(3 downto 0);
 	
@@ -298,6 +299,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal PSG_ENABLE_1Mhz : std_logic;
 	signal PSG_ENABLE : std_logic;
 	signal PSG_AUDIO_UNSIGNED : UNSIGNED_AUDIO_TYPE(1 downto 0);	
+	signal PSG_AUDIO_SIGNED : SIGNED_AUDIO_TYPE(1 downto 0);	
 
 	signal PSG_CHANNEL : PSG_CHANNEL_TYPE(5 downto 0);	
 	signal PSG_CHANGED : std_logic_vector(1 downto 0);
@@ -364,7 +366,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal GTIA_ENABLE_REG : std_logic_vector(3 downto 0);
 	signal ADC_VOLUME_REG : std_logic_vector(1 downto 0);
 	signal SIO_DATA_VOLUME_REG : std_logic_vector(1 downto 0);
-	signal VERSION_LOC_REG : std_logic_vector(3 downto 0);
+	signal VERSION_LOC_REG : std_logic_vector(2 downto 0);
 	signal PAL_REG : std_logic;
 	
 	signal DETECT_RIGHT_NEXT : std_logic;
@@ -375,7 +377,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal GTIA_ENABLE_NEXT : std_logic_vector(3 downto 0);
 	signal ADC_VOLUME_NEXT : std_logic_vector(1 downto 0);
 	signal SIO_DATA_VOLUME_NEXT : std_logic_vector(1 downto 0);
-	signal VERSION_LOC_NEXT : std_logic_vector(3 downto 0);
+	signal VERSION_LOC_NEXT : std_logic_vector(2 downto 0);
 	signal PAL_NEXT : std_logic;
 	
 		--config infra
@@ -385,7 +387,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	
 	-- SAMPLE/COVOX
 	signal SAMPLE_AUDIO_SIGNED : SIGNED_AUDIO_TYPE(1 downto 0);	
-	signal SAMPLE_AUDIO_IN_SIGNED : SIGNED_AUDIO_TYPE(1 downto 0);
+	signal SAMPLE_AUDIO_IN_SIGNED : SIGNED_AUDIO_TYPE(3 downto 0);
 	signal SAMPLE_IRQ : std_logic;
 	signal SAMPLE_RAM_ADDRESS : std_logic_vector(15 downto 0);
 	signal SAMPLE_RAM_WRITE_ENABLE : std_logic;
@@ -402,10 +404,12 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal mixer_r_enable : std_logic;
 	signal mixer_audio_out_channel : unsigned(2 downto 0);
 	signal mixer_mute : std_logic;
-	signal MIXER_SIGNED_REG : SIGNED_AUDIO_TYPE(1 downto 0);
-	signal MIXER_SIGNED_NEXT : SIGNED_AUDIO_TYPE(1 downto 0);
-	signal MIX_SEL_NEXT : std_logic_vector(4 downto 0);
-	signal MIX_SEL_REG : std_logic_vector(4 downto 0);
+	signal MIXER_SIGNED_REG : SIGNED_AUDIO_TYPE(3 downto 0);
+	signal MIXER_SIGNED_NEXT : SIGNED_AUDIO_TYPE(3 downto 0);
+	signal MIX_SEL1_NEXT : std_logic_vector(2 downto 0);
+	signal MIX_SEL1_REG : std_logic_vector(2 downto 0);
+	signal MIX_SEL2_NEXT : std_logic_vector(2 downto 0);
+	signal MIX_SEL2_REG : std_logic_vector(2 downto 0);
 
 	-- FLASH
 	signal flash_do_slow : std_logic_vector(31 downto 0); --58Mhz
@@ -501,6 +505,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal fir_data_ready :std_logic;
 
 	signal SIO_AUDIO_UNSIGNED : unsigned(15 downto 0);	
+	signal SIO_AUDIO_SIGNED : signed(15 downto 0);	
 
 	-- paddles
 	signal PADDLE_ADJ : std_logic_vector(7 downto 0);
@@ -894,6 +899,16 @@ PORT MAP(CLK => CLK,
 		 keyboard_scan_enable => KEYBOARD_SCAN_ENABLE,
 		 keyboard_scan_update => KEYBOARD_SCAN_UPDATE
 		);
+pokey1_dc_blocker : entity work.dc_blocker
+PORT  MAP
+( 
+	CLK          => CLK,
+	RESET_N      => RESET_N,
+	ENABLE_CYCLE => ENABLE_CYCLE,
+
+	AUDIO_IN    => POKEY_AUDIO_UNSIGNED(0),
+	AUDIO_OUT   => POKEY_AUDIO_SIGNED(0)
+);
 
 --------------------------------------------------------		
 -- POKEY 2-4	 
@@ -906,6 +921,8 @@ PORT MAP(CLK => CLK,
 		POKEY_CHANNEL3(I) <= (others=>'0');
 		POKEY_IRQ(I) <= '1';
 		POKEY_DO(I) <= (others=>'0');
+
+	POKEY_AUDIO_SIGNED(I) <= to_signed(0,16);
    end generate POKEY_OFF;		
 
    POKEY_ON: 
@@ -930,6 +947,17 @@ PORT MAP(CLK => CLK,
 				 IRQ_N_OUT => POKEY_IRQ(I),
 				 keyboard_response => "00",
 				 pot_in=>"00000000");
+
+		pokey_dc_blockerx : entity work.dc_blocker
+		PORT  MAP
+		( 
+			CLK          => CLK,
+			RESET_N      => RESET_N,
+			ENABLE_CYCLE => ENABLE_CYCLE,
+        
+			AUDIO_IN    => POKEY_AUDIO_UNSIGNED(I),
+			AUDIO_OUT   => POKEY_AUDIO_SIGNED(I)
+		);
    end generate POKEY_ON;
 
 --------------
@@ -1086,8 +1114,8 @@ end generate sid_on;
 -- PSG
 --------------------------------------------------------
 psg_off : if enable_psg=0 generate 
-	PSG_AUDIO_UNSIGNED(0) <= to_unsigned(0,16);
-	PSG_AUDIO_UNSIGNED(1) <= to_unsigned(0,16);
+	PSG_AUDIO_SIGNED(0) <= to_signed(0,16);
+	PSG_AUDIO_SIGNED(1) <= to_signed(0,16);
 	PSG_DO(0) <= (others=>'0');
 	PSG_DO(1) <= (others=>'0');
 end generate psg_off;
@@ -1210,6 +1238,27 @@ PSG_2 : entity work.PSG_top
 		PROFILE_DATA => flash_do_slow(15 downto 0)
 	);	
 
+psg1_dc_blocker : entity work.dc_blocker
+PORT  MAP
+( 
+	CLK          => CLK,
+	RESET_N      => RESET_N,
+	ENABLE_CYCLE => ENABLE_CYCLE,
+
+	AUDIO_IN    => PSG_AUDIO_UNSIGNED(0),
+	AUDIO_OUT   => PSG_AUDIO_SIGNED(0)
+);
+psg2_dc_blocker : entity work.dc_blocker
+PORT  MAP
+( 
+	CLK          => CLK,
+	RESET_N      => RESET_N,
+	ENABLE_CYCLE => ENABLE_CYCLE,
+
+	AUDIO_IN    => PSG_AUDIO_UNSIGNED(1),
+	AUDIO_OUT   => PSG_AUDIO_SIGNED(1)
+);
+
 end generate psg_on;		
 	
 --------------------------------------------------------
@@ -1246,6 +1295,9 @@ end generate covox_on;
 sample_on : if enable_sample=1 generate 
 
 	sample1 : entity work.sample_top
+	GENERIC MAP(
+		enable_record => enable_routing
+	)
 	PORT MAP(
 		CLK => CLK,
 		RESET_N => RESET_N,
@@ -1263,6 +1315,8 @@ sample_on : if enable_sample=1 generate
 
 		AUDIO_IN0 => SAMPLE_AUDIO_IN_SIGNED(0),
 		AUDIO_IN1 => SAMPLE_AUDIO_IN_SIGNED(1),
+		AUDIO_IN2 => SAMPLE_AUDIO_IN_SIGNED(2),
+		AUDIO_IN3 => SAMPLE_AUDIO_IN_SIGNED(3),
 		
 		RAM_ADDR => SAMPLE_RAM_ADDRESS,
 		RAM_WRITE_ENABLE => SAMPLE_RAM_WRITE_ENABLE,
@@ -1477,17 +1531,26 @@ begin
 		CONFIG_ENABLE_REG <= '0';
 		VERSION_LOC_REG <= (others=>'0');
 		PAL_REG <= '1';
-		PSG_FREQ_REG <= "00"; --2MHz
-		PSG_STEREOMODE_REG <= "01"; --Polish
-		PSG_PROFILESEL_REG <= "00"; --Simple log
-		PSG_ENVELOPE16_REG <= '0'; --32 step
-		SID_FILTER1_REG <= "010"; -- 0=8580,1=6581,2=digifix
-		SID_FILTER2_REG <= "010"; -- 0=8580,1=6581,2=digifix
+		if (enable_psg=1) then
+			PSG_FREQ_REG <= "00"; --2MHz
+			PSG_STEREOMODE_REG <= "01"; --Polish
+			PSG_PROFILESEL_REG <= "00"; --Simple log
+			PSG_ENVELOPE16_REG <= '0'; --32 step
+		end if;
+		if (enable_sid=1) then
+			SID_FILTER1_REG <= "010"; -- 0=8580,1=6581,2=digifix
+			SID_FILTER2_REG <= "010"; -- 0=8580,1=6581,2=digifix
+		end if;
 		RESTRICT_CAPABILITY_REG <= (others=>'1');
 		CHANNEL_EN_REG <= (others=>'1');
-		MIXER_SIGNED_REG(0) <= to_signed(0,16);
-		MIXER_SIGNED_REG(1) <= to_signed(0,16);
-		MIX_SEL_REG <= (others=>'0');
+		if (enable_routing=1) then
+			MIXER_SIGNED_REG(0) <= to_signed(0,16);
+			MIXER_SIGNED_REG(1) <= to_signed(0,16);
+			MIXER_SIGNED_REG(2) <= to_signed(0,16);
+			MIXER_SIGNED_REG(3) <= to_signed(0,16);
+			MIX_SEL1_REG <= (others=>'0');
+			MIX_SEL2_REG <= (others=>'0');
+		end if;
 	elsif (clk'event and clk='1') then
 		DETECT_RIGHT_REG <= DETECT_RIGHT_NEXT;
 		IRQ_EN_REG <= IRQ_EN_NEXT;
@@ -1500,16 +1563,23 @@ begin
 		CONFIG_ENABLE_REG <= CONFIG_ENABLE_NEXT;
 		VERSION_LOC_REG <= VERSION_LOC_NEXT;
 		PAL_REG <= PAL_NEXT;
-		PSG_FREQ_REG <= PSG_FREQ_NEXT;
-		PSG_STEREOMODE_REG <= PSG_STEREOMODE_NEXT;
-		PSG_PROFILESEL_REG <= PSG_PROFILESEL_NEXT;
-		PSG_ENVELOPE16_REG <= PSG_ENVELOPE16_NEXT;
-		SID_FILTER1_REG <= SID_FILTER1_NEXT;
-		SID_FILTER2_REG <= SID_FILTER2_NEXT;
+		if (enable_psg=1) then
+			PSG_FREQ_REG <= PSG_FREQ_NEXT;
+			PSG_STEREOMODE_REG <= PSG_STEREOMODE_NEXT;
+			PSG_PROFILESEL_REG <= PSG_PROFILESEL_NEXT;
+			PSG_ENVELOPE16_REG <= PSG_ENVELOPE16_NEXT;
+		end if;
+		if (enable_sid=1) then
+			SID_FILTER1_REG <= SID_FILTER1_NEXT;
+			SID_FILTER2_REG <= SID_FILTER2_NEXT;
+		end if;
 		RESTRICT_CAPABILITY_REG <= RESTRICT_CAPABILITY_NEXT;
 		CHANNEL_EN_REG <= CHANNEL_EN_NEXT;
-		MIXER_SIGNED_REG <= MIXER_SIGNED_NEXT;
-		MIX_SEL_REG <= MIX_SEL_NEXT;
+		if (enable_routing=1) then
+			MIXER_SIGNED_REG <= MIXER_SIGNED_NEXT;
+			MIX_SEL1_REG <= MIX_SEL1_NEXT;
+			MIX_SEL2_REG <= MIX_SEL2_NEXT;
+		end if;
 	end if;
 end process;
 
@@ -1539,7 +1609,7 @@ process(CONFIG_WRITE_ENABLE, WRITE_DATA, addr_decoded4,
 	RESTRICT_CAPABILITY_REG,
 	CHANNEL_EN_REG,
 	PAL_REG,
-	MIX_SEL_REG
+	MIX_SEL1_REG, MIX_SEL2_REG
 )
 begin
 	SATURATE_NEXT <= SATURATE_REG;
@@ -1577,7 +1647,8 @@ begin
 
 	PAL_NEXT <= PAL_REG;
 
-	MIX_SEL_NEXT <= MIX_SEL_REG;
+	MIX_SEL1_NEXT <= MIX_SEL1_REG;
+	MIX_SEL2_NEXT <= MIX_SEL2_REG;
 
 	if (CPU_FLASH_COMPLETE='1') then
 		CPU_FLASH_DATA_NEXT <= flash_do_slow;
@@ -1611,7 +1682,8 @@ begin
 				RESTRICT_CAPABILITY_NEXT <= flash_do_slow(12 downto 8);
 				-- 13-15 reserved
 				-- 21-23 reserved (used in sidmax)
-				MIX_SEL_NEXT(4 downto 0) <= flash_do_slow(20 downto 16); -- (clash with sidmix)
+				MIX_SEL1_NEXT(2 downto 0) <= flash_do_slow(18 downto 16); -- (clash with sidmix)
+				MIX_SEL2_NEXT(2 downto 0) <= flash_do_slow(22 downto 20); -- (clash with sidmix)
 				CHANNEL_EN_NEXT <= flash_do_slow(28 downto 24);
 				-- 29-31 reserved
 			when others =>
@@ -1636,7 +1708,7 @@ begin
 		end if;		
 
 		if (addr_decoded4(4)='1') then
-			VERSION_LOC_NEXT <= WRITE_DATA(3 downto 0);
+			VERSION_LOC_NEXT <= WRITE_DATA(2 downto 0);
 		end if;
 		
 		if (addr_decoded4(5)='1') then
@@ -1655,8 +1727,11 @@ begin
 			RESTRICT_CAPABILITY_NEXT(4 downto 0) <= WRITE_DATA(4 downto 0);
 		end if;
 
-		if (addr_decoded4(8)='1') then
-			MIX_SEL_NEXT(4 downto 0) <= WRITE_DATA(4 downto 0);
+		if enable_routing=1 then 
+			if (addr_decoded4(8)='1') then
+				MIX_SEL1_NEXT <= WRITE_DATA(2 downto 0);
+				MIX_SEL2_NEXT <= WRITE_DATA(6 downto 4);
+			end if;
 		end if;
 
 		if (addr_decoded4(9)='1') then
@@ -1715,7 +1790,7 @@ CPU_FLASH_REQUEST_REG, CPU_FLASH_WRITE_N_REG,
 RESTRICT_CAPABILITY_REG,
 CHANNEL_EN_REG,
 PAL_REG,
-MIX_SEL_REG
+MIX_SEL1_REG, MIX_SEL2_REG
 )
 	variable ACTUAL_CAPABILITY : std_logic_vector(7 downto 0);
 begin
@@ -1756,9 +1831,6 @@ begin
 	end if;			
 	if (enable_sample=1) then
 		ACTUAL_CAPABILITY(5) := '1';
-		if sample_ram_size=65536 then
-			ACTUAL_CAPABILITY(7) := '1';
-		end if;
 	else
 		ACTUAL_CAPABILITY(5) := '0';
 	end if;					
@@ -1766,6 +1838,11 @@ begin
 		ACTUAL_CAPABILITY(6) := '1';
 	else
 		ACTUAL_CAPABILITY(6) := '0';
+	end if;					
+	if (enable_routing=1) then
+		ACTUAL_CAPABILITY(7) := '1';
+	else
+		ACTUAL_CAPABILITY(7) := '0';
 	end if;					
 	
 	if (addr_decoded4(1)='1') then
@@ -1787,51 +1864,56 @@ begin
 	
 	if (addr_decoded4(4)='1') then
 		-- version
-		case VERSION_LOC_REG(3 downto 0) is			
-			when "0000" => 
+		case VERSION_LOC_REG(2 downto 0) is			
+			when "000" => 
 				CONFIG_DO <= getByte(version,1);
-			when "0001" =>
+			when "001" =>
 				CONFIG_DO <= getByte(version,2);
-			when "0010" =>
+			when "010" =>
 				CONFIG_DO <= getByte(version,3);
-			when "0011" =>
+			when "011" =>
 				CONFIG_DO <= getByte(version,4);
-			when "0100" => 
+			when "100" => 
 				CONFIG_DO <= getByte(version,5);
-			when "0101" =>
+			when "101" =>
 				CONFIG_DO <= getByte(version,6);
-			when "0110" =>
+			when "110" =>
 				CONFIG_DO <= getByte(version,7);
-			when "0111" =>
+			when "111" =>
 				CONFIG_DO <= getByte(version,8);
-			when "1000" =>
-				CONFIG_DO <= std_logic_vector(to_unsigned(board/10,4))&std_logic_vector(to_unsigned(board mod 10,4));
 			when others =>
 		end case;		
 	end if;
 
-	if (addr_decoded4(5)='1') then
-		CONFIG_DO <= (others=>'0');
-		CONFIG_DO(1 downto 0) <= PSG_FREQ_REG;
-		CONFIG_DO(3 downto 2) <= PSG_STEREOMODE_REG;
-		CONFIG_DO(4) <= PSG_ENVELOPE16_REG;
-		CONFIG_DO(6 downto 5) <= PSG_PROFILESEL_REG;
+	if (enable_psg=1) then
+		if (addr_decoded4(5)='1') then
+			CONFIG_DO <= (others=>'0');
+			CONFIG_DO(1 downto 0) <= PSG_FREQ_REG;
+			CONFIG_DO(3 downto 2) <= PSG_STEREOMODE_REG;
+			CONFIG_DO(4) <= PSG_ENVELOPE16_REG;
+			CONFIG_DO(6 downto 5) <= PSG_PROFILESEL_REG;
+		end if;
 	end if;
 
-	if (addr_decoded4(6)='1') then -- different use on sidmax
-		CONFIG_DO <= (others=>'0');
-		CONFIG_DO(2 downto 0) <= SID_FILTER1_REG;
-		-- (3 downto 3) reserved in case we want more filter options
-		CONFIG_DO(6 downto 4) <= SID_FILTER2_REG;
-		-- (7 downto 7) reserved in case we want more filter options
+	if (enable_sid=1) then
+		if (addr_decoded4(6)='1') then -- different use on sidmax
+			CONFIG_DO <= (others=>'0');
+			CONFIG_DO(2 downto 0) <= SID_FILTER1_REG;
+			-- (3 downto 3) reserved in case we want more filter options
+			CONFIG_DO(6 downto 4) <= SID_FILTER2_REG;
+			-- (7 downto 7) reserved in case we want more filter options
+		end if;
 	end if;
 
 	if (addr_decoded4(7)='1') then
 		CONFIG_DO(4 downto 0) <= RESTRICT_CAPABILITY_REG(4 downto 0);
 	end if;
 
-	if (addr_decoded4(8)='1') then -- different use on sidmax
-		CONFIG_DO(4 downto 0) <= MIX_SEL_REG(4 downto 0); 
+	if (enable_routing=1) then
+		if (addr_decoded4(8)='1') then -- different use on sidmax
+			CONFIG_DO(2 downto 0) <= MIX_SEL1_REG;
+			CONFIG_DO(6 downto 4) <= MIX_SEL2_REG;
+		end if;
 	end if;
 
 	if (addr_decoded4(9)='1') then
@@ -1901,18 +1983,18 @@ PORT MAP
 	B_CH0_EN => GTIA_ENABLE_REG,
 	B_CH1_EN => "1100",
 
-	L_CH0 => unsigned_to_signed(POKEY_AUDIO_UNSIGNED(0)),
-	R_CH0 => unsigned_to_signed(POKEY_AUDIO_UNSIGNED(1)),
-	L_CH1 => unsigned_to_signed(POKEY_AUDIO_UNSIGNED(2)),
-	R_CH1 => unsigned_to_signed(POKEY_AUDIO_UNSIGNED(3)),
+	L_CH0 => POKEY_AUDIO_SIGNED(0),
+	R_CH0 => POKEY_AUDIO_SIGNED(1),
+	L_CH1 => POKEY_AUDIO_SIGNED(2),
+	R_CH1 => POKEY_AUDIO_SIGNED(3),
 	L_CH2 => SAMPLE_AUDIO_SIGNED(0),
 	R_CH2 => SAMPLE_AUDIO_SIGNED(1),
 	L_CH3 => SID_AUDIO_SIGNED(0),
 	R_CH3 => SID_AUDIO_SIGNED(1),	
-	L_CH4 => unsigned_to_signed(PSG_AUDIO_UNSIGNED(0)),
-	R_CH4 => unsigned_to_signed(PSG_AUDIO_UNSIGNED(1)),		
+	L_CH4 => PSG_AUDIO_SIGNED(0),
+	R_CH4 => PSG_AUDIO_SIGNED(1),		
 	B_CH0 => GTIA_AUDIO_SIGNED,
-	B_CH1 => unsigned_to_signed(SIO_AUDIO_UNSIGNED),			
+	B_CH1 => SIO_AUDIO_SIGNED,			
 
 	MUTE_CHANNEL => mixer_mute,
 
@@ -1927,6 +2009,7 @@ PORT MAP
 	AUDIO_3_SIGNED => AUDIO_MIXED_SIGNED(3)
 );
 
+routing_on : if enable_routing=1 generate 
 -- provide audio back to:
 -- sample enggine -> to record to ram
 -- sid ext        -> to use filter (mutes original output)
@@ -1935,27 +2018,46 @@ PORT MAP
 --	S_RIGHT => mixer_r_enable,
 --	S_CHANNEL => mixer_audio_out_channel,
 
-	process(MIXER_SIGNED_REG, mixer_l_enable, mixer_r_enable, mixer_audio_out, MIX_SEL_REG, mixer_audio_out_channel, SID_FILTER1_REG, SID_FILTER2_REG)
+	process(MIXER_SIGNED_REG, mixer_l_enable, mixer_r_enable, mixer_audio_out, MIX_SEL1_REG, MIX_SEL2_REG, mixer_audio_out_channel, SID_FILTER1_REG, SID_FILTER2_REG)
 	begin
 		MIXER_SIGNED_NEXT <= MIXER_SIGNED_REG;
 
 		mixer_mute <= '0';
 
-		if (std_logic_vector(mixer_audio_out_channel) = MIX_SEL_REG) then
+		if (std_logic_vector(mixer_audio_out_channel) = MIX_SEL1_REG) then
 			if (mixer_l_enable='1') then
 				MIXER_SIGNED_NEXT(0) <= mixer_audio_out;
-				mixer_mute <= SID_FILTER1_REG(1);
+				mixer_mute <= SID_FILTER1_REG(2);
 			end if;
 	
 			if (mixer_r_enable='1') then
 				MIXER_SIGNED_NEXT(1) <= mixer_audio_out;
-				mixer_mute <= SID_FILTER2_REG(1);
+				mixer_mute <= SID_FILTER2_REG(2);
+			end if;
+		end if;
+
+		if (std_logic_vector(mixer_audio_out_channel) = MIX_SEL2_REG) then
+			if (mixer_l_enable='1') then
+				MIXER_SIGNED_NEXT(2) <= mixer_audio_out;
+			end if;
+	
+			if (mixer_r_enable='1') then
+				MIXER_SIGNED_NEXT(3) <= mixer_audio_out;
 			end if;
 		end if;
 	end process;
 
 	SAMPLE_AUDIO_IN_SIGNED <= MIXER_SIGNED_REG;
-	SID_AUDIO_IN_SIGNED <= MIXER_SIGNED_REG;
+	SID_AUDIO_IN_SIGNED(0) <= MIXER_SIGNED_REG(0);
+	SID_AUDIO_IN_SIGNED(1) <= MIXER_SIGNED_REG(1);
+end generate routing_on;	
+
+routing_off : if enable_routing=1 generate 
+	SAMPLE_AUDIO_IN_SIGNED(0) <= to_signed(0,16);
+	SAMPLE_AUDIO_IN_SIGNED(1) <= to_signed(0,16);
+	SID_AUDIO_IN_SIGNED(0) <= to_signed(0,16);
+	SID_AUDIO_IN_SIGNED(1) <= to_signed(0,16);
+end generate routing_off;	
 
 -- sigma delta dither shared component (used in impl 4)
 
@@ -2265,6 +2367,17 @@ fir_off : if adc_fir_filter_v4=0 generate
 end generate fir_off;
 
 	SIO_AUDIO_UNSIGNED <= unsigned(not(adc_use_reg(15))&adc_use_reg(14 downto 0));
+
+sio_audio_dc_blocker : entity work.dc_blocker 
+PORT  MAP
+( 
+	CLK          => CLK,
+	RESET_N      => RESET_N,
+	ENABLE_CYCLE => ENABLE_CYCLE,
+
+	AUDIO_IN    => SIO_AUDIO_UNSIGNED,
+	AUDIO_OUT   => SIO_AUDIO_SIGNED
+);
 
 process(adc_reg,adc_output,adc_valid,ADC_VOLUME_REG)
 	variable adc_shrunk : signed(19 downto 0);
