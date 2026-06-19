@@ -15,6 +15,10 @@ use IEEE.STD_LOGIC_MISC.all;
 LIBRARY work;
 
 ENTITY sample_top IS 
+	GENERIC
+	(
+		enable_record : integer := 0
+	);
 	PORT
 	(
 		CLK : in std_logic;
@@ -34,6 +38,8 @@ ENTITY sample_top IS
 
 		AUDIO_IN0 : in signed(15 downto 0);
 		AUDIO_IN1 : in signed(15 downto 0);
+		AUDIO_IN2 : in signed(15 downto 0);
+		AUDIO_IN3 : in signed(15 downto 0);
 
 		RAM_ADDR : out std_logic_vector(15 downto 0);
 		RAM_WRITE_ENABLE : out std_logic;
@@ -62,10 +68,9 @@ ARCHITECTURE vhdl OF sample_top IS
         signal ram_cpu_write_enable : std_logic;
 
         signal ram_record_write_enable : std_logic;
-        signal ram_record_enabled_reg : std_logic;
-        signal ram_record_enabled_next : std_logic;
-        signal ram_record_source_reg : std_logic;
-        signal ram_record_source_next : std_logic;
+        signal ram_record_enabled_reg : std_logic_vector(3 downto 0);
+        signal ram_record_enabled_next : std_logic_vector(3 downto 0);
+	signal audio_record : signed(7 downto 0);
         signal data_to_write : std_logic_vector(7 downto 0);
 
 	signal ch0_start_addr_reg : std_logic_vector(15 downto 0);
@@ -158,7 +163,7 @@ BEGIN
 		ram_cpu_addr_reg, ram_data, 
 		irq_en_reg,irq_active_reg,
 		adpcm_reg,bits8_reg,
-		ram_record_enabled_reg, ram_record_source_reg
+		ram_record_enabled_reg
 		)
 	begin
 		DO <= (others=>'0');
@@ -198,9 +203,10 @@ BEGIN
 			DO(3 downto 0) <= adpcm_reg;
 			DO(7 downto 4) <= bits8_reg;
 		end if;
- 		if (addr_decoded5(20)='1') then
- 			DO(0) <= ram_record_enabled_reg;
- 			DO(1) <= ram_record_source_reg;
+		if (enable_record = 1) then
+ 			if (addr_decoded5(20)='1') then
+ 				DO(3 downto 0) <= ram_record_enabled_reg;
+ 			end if;
  		end if;
 	end process;
 
@@ -314,7 +320,7 @@ BEGIN
 	channel_reg,
 	irq_en_reg,irq_active_reg,irq_trigger,irq_clear_n,
 	adpcm_reg, bits8_reg,
-	ram_record_enabled_reg, ram_record_source_reg
+	ram_record_enabled_reg
 	)
 	begin
 		ram_cpu_write_enable <= '0';
@@ -352,7 +358,6 @@ BEGIN
 		adpcm_next <= adpcm_reg;
 
 		ram_record_enabled_next <= ram_record_enabled_reg;
-		ram_record_source_next <= ram_record_source_reg;
 
 		if (write_enable='1') then
 			if (addr_decoded5(4)='1') then
@@ -477,9 +482,10 @@ BEGIN
 				adpcm_next <= DI(3 downto 0); 
 				bits8_next <= DI(7 downto 4); 
 			end if;
-			if (addr_decoded5(20)='1') then
-				ram_record_enabled_next <= DI(0);
-				ram_record_source_next <= DI(1);
+			if (enable_record = 1) then
+				if (addr_decoded5(20)='1') then
+					ram_record_enabled_next <= DI(3 downto 0);
+				end if;
 			end if;
 		end if;
 	end process;
@@ -588,7 +594,7 @@ BEGIN
 		adpcm_reg,
 		bits8_reg,
 		adpcm_data_request,
-		ram_record_source_reg, ram_record_enabled_reg)
+		ram_record_enabled_reg)
 	begin
 		ram_addr <= (others=>'0');
 		data_nibble <= '0';
@@ -599,6 +605,8 @@ BEGIN
 
 		adpcm_data_ready_next <= adpcm_data_request;
 
+		AUDIO_RECORD <= to_signed(0,8);
+
 		case adpcm_channel is
 			when "00" =>
         			ram_addr <= ch0_addr(16 downto 1);			
@@ -606,8 +614,11 @@ BEGIN
 				adpcm_on <= adpcm_reg(0);
 				dma_on <= dma_on_reg(0);
 				bits8 <= bits8_reg(0);
-				if (ram_record_enabled_reg ='1') then
-					ram_record_write_enable <= '1';
+				if (enable_record=1) then
+					if (ram_record_enabled_reg(0) ='1') then
+						ram_record_write_enable <= '1';
+					end if;
+					AUDIO_RECORD <= AUDIO_IN0(15 downto 8);
 				end if;
 			when "01" =>
         			ram_addr <= ch1_addr(16 downto 1);			
@@ -615,18 +626,36 @@ BEGIN
 				adpcm_on <= adpcm_reg(1);
 				dma_on <= dma_on_reg(1);
 				bits8 <= bits8_reg(1);
+				if (enable_record=1) then
+					if (ram_record_enabled_reg(1) ='1') then
+						ram_record_write_enable <= '1';
+					end if;
+					AUDIO_RECORD <= AUDIO_IN1(15 downto 8);
+				end if;
 			when "10" =>
         			ram_addr <= ch2_addr(16 downto 1);			
 				data_nibble <= ch2_addr(0);
 				adpcm_on <= adpcm_reg(2);
 				dma_on <= dma_on_reg(2);
 				bits8 <= bits8_reg(2);
+				if (enable_record=1) then
+					if (ram_record_enabled_reg(2) ='1') then
+						ram_record_write_enable <= '1';
+					end if;
+					AUDIO_RECORD <= AUDIO_IN2(15 downto 8);
+				end if;
 			when "11" =>
         			ram_addr <= ch3_addr(16 downto 1);			
 				data_nibble <= ch3_addr(0);
 				adpcm_on <= adpcm_reg(3);
 				dma_on <= dma_on_reg(3);
 				bits8 <= bits8_reg(3);
+				if (enable_record=1) then
+					if (ram_record_enabled_reg(3) ='1') then
+						ram_record_write_enable <= '1';
+					end if;
+					AUDIO_RECORD <= AUDIO_IN3(15 downto 8);
+				end if;
 			when others =>
 		end case;
 	
@@ -636,15 +665,11 @@ BEGIN
 		end if;
 	end process;
 
-	process(ram_record_source_reg, request, DI, AUDIO_IN0, AUDIO_IN1)
+	process(request, DI, AUDIO_RECORD)
 	begin
 		DATA_TO_WRITE <= DI;
 		if (request='0') then
-			if (ram_record_source_reg='1') then
-				DATA_TO_WRITE <= std_logic_vector(AUDIO_IN1(15 downto 8));
-			else
-				DATA_TO_WRITE <= std_logic_vector(AUDIO_IN0(15 downto 8));
-			end if;
+			DATA_TO_WRITE <= std_logic_vector(AUDIO_RECORD);
 		end if;
 	end process;
 	
@@ -687,8 +712,9 @@ BEGIN
 
 			bits8_reg <= (others=>'1');
 
-			ram_record_enabled_reg  <= '0';
-			ram_record_source_reg  <= '0';
+			if (enable_record = 1) then
+				ram_record_enabled_reg  <= (others=>'0');
+			end if;
 	
 		elsif (clk'event and clk='1') then
 			CH0_REG <= CH0_NEXT;
@@ -727,8 +753,9 @@ BEGIN
 
 			bits8_reg <= bits8_next;
         		 
-			ram_record_enabled_reg <= ram_record_enabled_next;
-			ram_record_source_reg  <= ram_record_source_next;
+			if (enable_record = 1) then
+				ram_record_enabled_reg <= ram_record_enabled_next;
+			end if;
 		end if;
 	end process;
 	

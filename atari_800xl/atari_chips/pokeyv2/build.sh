@@ -8,7 +8,7 @@ my $name="eclaireXL";
 #Added like this to the generated qsf
 #set_parameter -name TV 1
 
-my $version = "131";
+my $version = "31";
 
 my %variants = 
 (
@@ -1161,8 +1161,12 @@ foreach my $typeboard (sort keys %variants)
 			{
 				die "Unknown type";
 			}
+
+			my $board_version = $board;
+			$board_version =~ s/v//;
+			$board_version = sprintf("%02d",int($board_version*10));
 		
-			my $versioncode = "${version}M$fpgasize$code1$code2";
+			my $versioncode = "${version}${board_version}$fpgasize$code1$code2";
 			$spec->{"version"} = $versioncode;
 	
 			my $bus = "";
@@ -1239,11 +1243,6 @@ foreach my $typeboard (sort keys %variants)
 		
 			
 			`echo set_global_assignment -name DEVICE $fpga >> $type.qsf`;
-
-			my $board_version = $board;
-			$board_version =~ s/v//;
-			$board_version = int($board_version*10);
-			`echo 'set_parameter -name board $board_version' >> $type.qsf`;
 
 			foreach my $key (sort keys %$spec)
 			{
