@@ -2054,7 +2054,8 @@ routing_on : if enable_routing=1 generate
 	SID_AUDIO_IN_SIGNED(1) <= MIXER_SIGNED_REG(1);
 end generate routing_on;	
 
-routing_off : if enable_routing=1 generate 
+routing_off : if enable_routing=0 generate 
+	mixer_mute <= '0';
 	SAMPLE_AUDIO_IN_SIGNED(0) <= to_signed(0,16);
 	SAMPLE_AUDIO_IN_SIGNED(1) <= to_signed(0,16);
 	SID_AUDIO_IN_SIGNED(0) <= to_signed(0,16);
