@@ -51,6 +51,7 @@ ENTITY pokeymax IS
 		enable_sample : integer := 0;
 		enable_flash : integer := 0;
 		enable_audout2: integer := 1;
+		audout2_on_audout3 : integer := 0;
 		enable_spdif: integer := 0;
 		enable_ps2: integer := 0;
 		enable_adc: integer := 0;
@@ -250,6 +251,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal POKEY_AUDIO_SIGNED : SIGNED_AUDIO_TYPE(3 downto 0);	
 	
 	signal AUDIO_MIXED_SIGNED : SIGNED_AUDIO_TYPE(3 downto 0);
+	signal AUDIO_MIXED_UNSIGNED2 : unsigned(15 downto 0);
 	
 	signal AUDIO_0_SIGMADELTA : std_logic;
 	signal AUDIO_1_SIGMADELTA : std_logic;
@@ -2119,6 +2121,8 @@ audout2_off : if enable_audout2=0 generate
 	AUDIO_1_SIGMADELTA <= '0';
 end generate audout2_off;
 
+AUDIO_MIXED_UNSIGNED2 <= signed_to_unsigned(AUDIO_MIXED_SIGNED(2-audout2_on_audout3));
+
 dac_2 : entity work.filtered_sigmadelta
 GENERIC MAP
 (
@@ -2132,7 +2136,7 @@ port map
   clk2 => CLK116,
   ENABLE_179 => ENABLE_CYCLE,
   DITHER_IN => SIGMADELTA_DITHER3,
-  audin => signed_to_unsigned(AUDIO_MIXED_SIGNED(2)),
+  audin => AUDIO_MIXED_UNSIGNED2,
   AUDOUT => AUDIO_2_SIGMADELTA
 );
 
