@@ -1,0 +1,13 @@
+90d89
+< 		CS0_N : IN STD_LOGIC;
+110d108
+< 		POTRESET_N : OUT STD_LOGIC;
+677c675
+< 	EXT_INT(18) <= CS0_N;
+---
+> 	--EXT_INT(18) <= CS0_N;
+2228a2227,2228
+> 		pot_reset=>potreset,
+> 
+2470d2469
+< 	POTRESET_N <= not(POTRESET) when ext_clk_enable=0 else '1';

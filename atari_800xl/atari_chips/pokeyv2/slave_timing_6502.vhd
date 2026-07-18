@@ -4,13 +4,16 @@ USE ieee.numeric_std.all;
 use IEEE.STD_LOGIC_MISC.all;
 
 ENTITY slave_timing_6502 IS
+	GENERIC (
+		address_bits : integer
+	);
 	PORT (
 				CLK: in std_logic;
 				RESET_N: in std_logic;
 				
 				-- input from the cart port
 				PHI2 : in std_logic; -- async to our clk (ish):-(
-				bus_addr : in std_logic_vector(4 downto 0);
+				bus_addr : in std_logic_vector(address_bits-1 downto 0);
 				bus_data : in std_logic_vector(7 downto 0);
 				bus_cs : in std_logic;
 				bus_rw_n : in std_logic;
@@ -21,14 +24,16 @@ ENTITY slave_timing_6502 IS
 
 				-- request for a memory bus cycle (read or write)
 				BUS_REQUEST: out std_logic;
-				ADDR_IN: out std_logic_vector(4 downto 0);
+				ADDR_IN: out std_logic_vector(address_bits-1 downto 0);
 				DATA_IN: out std_logic_vector(7 downto 0);
 				RW_N: out std_logic;
 				CS : out std_logic;
 
 				ENABLE_CYCLE : out std_logic;
+				ENABLE_DOUBLE_CYCLE : out std_logic;
 
-				DATA_OUT: in std_logic_vector(7 downto 0) -- read_data
+				DATA_OUT: in std_logic_vector(7 downto 0); -- read_data
+				DRIVE_DATA_OUT: in std_logic 
 			);
 END slave_timing_6502;
 
@@ -54,12 +59,15 @@ ARCHITECTURE vhdl OF slave_timing_6502 IS
 	signal internal_memory_request : std_logic;
 	signal registered_read_data_next : std_logic_vector(7 downto 0);
 	signal registered_read_data_reg : std_logic_vector(7 downto 0);
+	signal registered_drive_bus_next : std_logic;
+	signal registered_drive_bus_reg : std_logic;
 
 	signal phi2_falling_edge : std_logic;
 	signal phi2_rising_edge : std_logic;
 	signal phi2_falling_edge_reg : std_logic;
+	signal phi2_either_edge_reg : std_logic;
 
-	signal phi_addr_reg : std_logic_vector(4 downto 0);
+	signal phi_addr_reg : std_logic_vector(address_bits-1 downto 0);
 	signal phi_cs_reg : std_logic;
 	signal phi_rw_n_reg : std_logic;
 	signal phi_data_reg : std_logic_vector(7 downto 0);
@@ -97,8 +105,10 @@ begin
 			bus_drive_reg <= '0';
 
 			registered_read_data_reg <= (others=>'0');
+			registered_drive_bus_reg <= '0';
 
 			phi2_falling_edge_reg <= '0';
+			phi2_either_edge_reg <= '0';
 
 			state_reg <= state_wait_addrctl;
 		elsif (clk'event and clk='1') then
@@ -107,8 +117,10 @@ begin
 			bus_drive_reg <= bus_drive_next;
 
 			registered_read_data_reg <= registered_read_data_next;
+			registered_drive_bus_reg <= registered_drive_bus_next;
 
 			phi2_falling_edge_reg <= phi2_falling_edge;
+			phi2_either_edge_reg <= phi2_falling_edge or phi2_rising_edge;
 
 			state_reg <= state_next;
 		end if;
@@ -123,9 +135,12 @@ begin
 	phi2_rising_edge <= not(phi_edge_prev_reg) and phi2_sync;
 
 	process(registered_read_data_reg, data_out,
+		registered_drive_bus_reg, drive_data_out,
 		bus_drive_reg,bus_data_out_reg, 
 		phi2_rising_edge,
 		phi2_falling_edge,
+		phi_cs_reg,
+		phi_rw_n_reg,
 		state_reg)
 	begin
 		-- maintain snap (only read bus when safe!)
@@ -134,6 +149,7 @@ begin
 		bus_drive_next <= bus_drive_reg;
 
 		registered_read_data_next <= registered_read_data_reg;
+		registered_drive_bus_next <= registered_drive_bus_reg;
 
 		-- TODO: Drive off rise/fall of phi2
 		-- delays should be based off tsu/th times from data shet
@@ -183,11 +199,12 @@ begin
 		state_next <= state_reg;
 		case (state_reg) is
 			when state_wait_addrctl =>
+				registered_read_data_next <= data_out;
+				registered_drive_bus_next <= drive_data_out;
 				if (phi2_rising_edge='1' and phi_cs_reg='1') then
 					-- snap control signals, should be stable by now
 					if (phi_rw_n_reg='1') then -- read
 						internal_memory_request <= '1';
-						registered_read_data_next <= data_out;
 						state_next <= state_read_output;
 					else
 						state_next <= state_write_request;
@@ -200,7 +217,7 @@ begin
 				end if;
 			when state_read_output =>
 				bus_data_out_next <= registered_read_data_reg;
-				bus_drive_next <= not(phi2_falling_edge);
+				bus_drive_next <= not(phi2_falling_edge) and registered_drive_bus_reg;
 				if (phi2_falling_edge='1') then
 					state_next <= state_wait_addrctl;
 				end if;
@@ -218,5 +235,6 @@ begin
 	CS <= phi_cs_reg;
 
 	enable_cycle <= phi2_falling_edge_reg;
+	enable_double_cycle <= phi2_either_edge_reg;
 
 end vhdl;

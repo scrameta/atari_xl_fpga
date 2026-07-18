@@ -1,0 +1,5 @@
+(version 2)
+(rule track_to_edge_clearance
+    (constraint edge_clearance  (min 0.10mm))
+    (condition "A.Type == 'Track'")
+)
