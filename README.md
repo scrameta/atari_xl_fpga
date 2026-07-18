@@ -120,8 +120,21 @@ If you're specifically after PokeyMAX rather than the FPGA computer, that work
 has taken on a life of its own — see [64kib.com](https://www.64kib.com/) and the
 [ABBUC](https://www.abbuc.de/) community.
 
+## Downstream forks
+
+- **[Atari800_MiSTer](https://github.com/MiSTer-devel/Atari800_MiSTer)** — the
+  MiSTer port. It forked this project by copying the SVN repository and has
+  broadly kept the core the same, while adding newer features of its own — for
+  example VBXE and PokeyMAX support integrated into the full 800XL FPGA core.
+  It's actively maintained by the MiSTer community and is a good place to look
+  if you want a well-supported, feature-rich build on MiSTer hardware.
+
 ## Related work
 
+- **[tonnere](https://github.com/scrameta/tonnere)** — Project Thunder
+  (*tonnere* is French for thunder), the successor board to the EclaireXL
+  (itself named for lightning), now being renamed **MegaXE**. An Atari XL/XE
+  FPGA board carrying this lineage forward.
 - **`ultimate_cart`** — Veronica, a separate 65816 upgrade project for the
   800XL (not a board port of this core).
 
