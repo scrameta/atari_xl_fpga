@@ -24,7 +24,8 @@ ENTITY atari800core_eclaireXL IS
 		internal_ram : integer := 16384;  -- at start of memory map
 		sid : integer := 0;
 		enable_area_scaler : integer := 1;
-		enable_polyphasic_scaler : integer := 0
+		enable_polyphasic_scaler : integer := 0;
+		enable_ps2 : integer := 0
 	);
 	PORT
 	(
@@ -107,7 +108,10 @@ ENTITY atari800core_eclaireXL IS
 		USB1DP: INOUT STD_LOGIC;
 		
 		ADC_SDA: INOUT STD_LOGIC;
-		ADC_SCL: INOUT STD_LOGIC
+		ADC_SCL: INOUT STD_LOGIC;
+
+	        PS2CLK_IN: IN STD_LOGIC_VECTOR(enable_ps2 downto 1);
+	        PS2DAT_IN: IN STD_LOGIC_VECTOR(enable_ps2 downto 1)
 	);
 END atari800core_eclaireXL;
 
@@ -588,6 +592,10 @@ end component;
 	signal scaler_slave_sda_wen : std_logic;
 	signal scaler_slave_scl_wen : std_logic;	
 	
+	-- PS2
+	signal ps2_clk : std_logic;
+	signal ps2_dat : std_logic;
+
 function to_std_logic(i : in integer) return std_logic is
 begin
     if i = 0 then
@@ -1035,6 +1043,15 @@ PORT MAP(refclk => CLOCK_50,
 		 outclk_1 => GCLOCK_54,
 		 locked => open);
 
+gen_ps2_on : if enable_ps2=1 generate
+	PS2_CLK <= PS2CLK_IN(1);
+	PS2_DAT <= PS2DAT_IN(1);
+end generate gen_ps2_on;
+gen_ps2_off : if enable_ps2=0 generate
+	PS2_CLK <= '1'; --NO PS2
+	PS2_DAT <= '1';
+end generate gen_ps2_off;
+
 
 -- PS2 to pokey
 keyboard_map1 : entity work.ps2_to_atari800
@@ -1047,8 +1064,8 @@ keyboard_map1 : entity work.ps2_to_atari800
 	( 
 		CLK => clk,
 		RESET_N => reset_n,
-		PS2_CLK => '1', -- No PS2...
-		PS2_DAT => '1', -- No PS2...
+		PS2_CLK => PS2_CLK,
+		PS2_DAT => PS2_DAT,
 
 		INPUT => zpu_out4,
 		

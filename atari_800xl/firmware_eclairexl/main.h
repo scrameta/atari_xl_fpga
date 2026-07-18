@@ -176,11 +176,12 @@ void memset32(void * address, int value, int length)
 		*mem++=value;
 }
 
-void clear_main_ram()
+void clear_main_ram(int clear_cart)
 {
 	memset8(SRAM_BASE, 0, 1024); // SRAM, if present (TODO)
 	memset32(SDRAM_BASE, 0, 1024/4);
-	*atari_cartswitch = 0;
+	if (clear_cart)
+		*atari_cartswitch = 0;
 }
 
 void
@@ -190,7 +191,7 @@ reboot(int cold)
 	if (cold)
 	{
 		set_freezer_enable(0);
-		clear_main_ram();
+		clear_main_ram(cold==1);
 		set_freezer_enable(freezer_rom_present);
 	}
 	set_reset_6502(1);

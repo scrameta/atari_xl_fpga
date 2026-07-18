@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<simPackage>
+ <file path="pll_ntsc_sim/pll_ntsc.vo" type="VERILOG" />
+ <topLevel name="pll_ntsc" />
+ <deviceFamily name="cyclonev" />
+</simPackage>

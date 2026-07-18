@@ -52,6 +52,14 @@ my %variants =
 		"enable_polyphasic_scaler" => 1,
 		"enable_area_scaler" => 1
 	},
+	"A2EBAprotorom" =>
+	{
+		"internal_ram" => 65536,
+		"internal_rom" => 1,
+		"fpga" => "5CEBA2F23C8",
+		"postfix" => "proto",
+		"sid" => 0
+	},
 #	"A2EBAproto" =>
 #	{
 #		"internal_ram" => 0,
@@ -164,6 +172,10 @@ foreach my $variant (sort keys %variants)
 	`quartus_sh --flow compile atari800core_eclaireXL$postfix > build.log 2> build.err`;
 
 	`quartus_cpf --convert ../convert$convertpostfix.cof`;
+	if ($convertpostfix eq "proto")
+	{
+		`quartus_cpf --convert ../convertprotosmall.cof`;
+	}
 	
 	chdir "..";
 }

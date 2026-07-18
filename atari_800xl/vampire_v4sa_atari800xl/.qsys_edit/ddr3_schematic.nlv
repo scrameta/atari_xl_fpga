@@ -1,0 +1,45 @@
+# # File gsaved with Nlview version 6.3.8  2013-12-19 bk=1.2992 VDI=34 GEI=35
+# 
+preplace inst ddr3.reset_bridge_0 -pg 1 -lvl 2 -y 410
+preplace inst ddr3.mem_if_ddr3_emif_0.s0 -pg 1
+preplace inst ddr3.mem_if_ddr3_emif_0 -pg 1 -lvl 3 -y 140
+preplace inst ddr3.mem_if_ddr3_emif_0.c0 -pg 1
+preplace inst ddr3.mem_if_ddr3_emif_0.pll_ref_clk -pg 1
+preplace inst ddr3.mem_if_ddr3_emif_0.oct0 -pg 1
+preplace inst ddr3.mm_clock_crossing_bridge_0 -pg 1 -lvl 2 -y 160
+preplace inst ddr3.mem_if_ddr3_emif_0.afi_clk -pg 1
+preplace inst ddr3.clk_0 -pg 1 -lvl 1 -y 220
+preplace inst ddr3.mem_if_ddr3_emif_0.pll_bridge -pg 1
+preplace inst ddr3.clk_1 -pg 1 -lvl 4 -y 340
+preplace inst ddr3.mem_if_ddr3_emif_0.mp_cmd_reset_n_0 -pg 1
+preplace inst ddr3.mem_if_ddr3_emif_0.p0 -pg 1
+preplace inst ddr3.mem_if_ddr3_emif_0.afi_half_clk -pg 1
+preplace inst ddr3.mem_if_ddr3_emif_0.mp_cmd_clk_0 -pg 1
+preplace inst ddr3.mem_if_ddr3_emif_0.pll0 -pg 1
+preplace inst ddr3.mem_if_ddr3_emif_0.afi_reset -pg 1
+preplace inst ddr3.mem_if_ddr3_emif_0.as0 -pg 1
+preplace inst ddr3.mem_if_ddr3_emif_0.global_reset -pg 1
+preplace inst ddr3.mem_if_ddr3_emif_0.dll0 -pg 1
+preplace inst ddr3.mem_if_ddr3_emif_0.afi_reset_export -pg 1
+preplace inst ddr3.mem_if_ddr3_emif_0.soft_reset -pg 1
+preplace inst ddr3 -pg 1 -lvl 1 -y 40 -regy -20
+preplace netloc POINT_TO_POINT<net_container>ddr3</net_container>(MASTER)clk_1.clk_reset,(SLAVE)mm_clock_crossing_bridge_0.m0_reset) 1 1 4 330 290 NJ 480 NJ 310 1370
+preplace netloc POINT_TO_POINT<net_container>ddr3</net_container>(SLAVE)clk_1.clk_in_reset,(MASTER)mem_if_ddr3_emif_0.afi_reset_export) 1 3 1 1090
+preplace netloc POINT_TO_POINT<net_container>ddr3</net_container>(SLAVE)mem_if_ddr3_emif_0.avl_0,(MASTER)mm_clock_crossing_bridge_0.m0) 1 2 1 640
+preplace netloc FAN_OUT<net_container>ddr3</net_container>(SLAVE)mem_if_ddr3_emif_0.mp_rfifo_reset_n_0,(SLAVE)mem_if_ddr3_emif_0.mp_wfifo_reset_n_0,(SLAVE)mem_if_ddr3_emif_0.soft_reset,(MASTER)reset_bridge_0.out_reset,(SLAVE)mem_if_ddr3_emif_0.mp_cmd_reset_n_0) 1 2 1 700
+preplace netloc POINT_TO_POINT<net_container>ddr3</net_container>(SLAVE)mm_clock_crossing_bridge_0.m0_clk,(MASTER)clk_1.clk) 1 1 4 310 310 NJ 500 NJ 330 1350
+preplace netloc EXPORT<net_container>ddr3</net_container>(SLAVE)ddr3.ddrrefclk,(SLAVE)mem_if_ddr3_emif_0.pll_ref_clk) 1 0 3 NJ 130 NJ 90 NJ
+preplace netloc EXPORT<net_container>ddr3</net_container>(SLAVE)mem_if_ddr3_emif_0.oct,(SLAVE)ddr3.ddroct) 1 0 3 NJ 330 NJ 330 NJ
+preplace netloc EXPORT<net_container>ddr3</net_container>(SLAVE)ddr3.ddrpll,(SLAVE)mem_if_ddr3_emif_0.pll_sharing) 1 0 3 NJ 110 NJ 50 NJ
+preplace netloc FAN_OUT<net_container>ddr3</net_container>(SLAVE)mem_if_ddr3_emif_0.mp_cmd_clk_0,(SLAVE)mem_if_ddr3_emif_0.mp_wfifo_clk_0,(MASTER)mem_if_ddr3_emif_0.afi_half_clk,(SLAVE)mem_if_ddr3_emif_0.mp_rfifo_clk_0,(SLAVE)clk_1.clk_in,(SLAVE)reset_bridge_0.clk) 1 1 3 330 400 680 520 1130
+preplace netloc EXPORT<net_container>ddr3</net_container>(SLAVE)ddr3.ddrint,(SLAVE)mm_clock_crossing_bridge_0.s0) 1 0 2 NJ 210 NJ
+preplace netloc POINT_TO_POINT<net_container>ddr3</net_container>(SLAVE)mm_clock_crossing_bridge_0.s0_clk,(MASTER)clk_0.clk) 1 1 1 N
+preplace netloc EXPORT<net_container>ddr3</net_container>(SLAVE)ddr3.reset_n,(SLAVE)clk_0.clk_in_reset) 1 0 1 NJ
+preplace netloc EXPORT<net_container>ddr3</net_container>(SLAVE)mem_if_ddr3_emif_0.memory,(SLAVE)ddr3.ddrext) 1 0 3 NJ 90 NJ 30 NJ
+preplace netloc FAN_OUT<net_container>ddr3</net_container>(MASTER)clk_0.clk_reset,(SLAVE)mem_if_ddr3_emif_0.global_reset,(SLAVE)mm_clock_crossing_bridge_0.s0_reset) 1 1 2 290 150 620
+preplace netloc EXPORT<net_container>ddr3</net_container>(SLAVE)ddr3.ddrstatus,(SLAVE)mem_if_ddr3_emif_0.status) 1 0 3 NJ 360 NJ 360 NJ
+preplace netloc EXPORT<net_container>ddr3</net_container>(SLAVE)ddr3.clkatari,(SLAVE)clk_0.clk_in) 1 0 1 NJ
+preplace netloc EXPORT<net_container>ddr3</net_container>(SLAVE)ddr3.softreset_n,(SLAVE)reset_bridge_0.in_reset) 1 0 2 NJ 440 NJ
+preplace netloc EXPORT<net_container>ddr3</net_container>(SLAVE)mem_if_ddr3_emif_0.user_refresh,(SLAVE)ddr3.ddrrefresh) 1 0 3 NJ 380 NJ 380 NJ
+levelinfo -pg 1 0 80 1410
+levelinfo -hier ddr3 90 120 490 910 1180 1390

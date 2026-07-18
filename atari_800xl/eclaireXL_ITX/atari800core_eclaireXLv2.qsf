@@ -76,6 +76,8 @@ set_global_assignment -name QSYS_FILE clkctrl2.qsys
 set_global_assignment -name VHDL_FILE adc084.vhdl
 set_global_assignment -name VHDL_FILE gpio_debug.vhd
 
+set_global_assignment -name SDC_FILE atari800core_eclaireXLv2.sdc
+
 set_location_assignment PIN_H16 -to CLOCK_50
 
 set_location_assignment PIN_A5 -to HD_TX2P 
@@ -559,6 +561,24 @@ set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to HD_CLKN
 
 #set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SD_DAT2
 #set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SD_DAT1
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SD_DETECT
+set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SD_WRITEPROTECT
 
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to SER_RX
 
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to USB1DP
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to USB1DP
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to USB1DP
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to USB1DM
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to USB1DM
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to USB1DM
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to USB2DP
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to USB2DP
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to USB2DP
+set_instance_assignment -name FAST_OUTPUT_ENABLE_REGISTER ON -to USB2DM
+set_instance_assignment -name FAST_OUTPUT_REGISTER ON -to USB2DM
+set_instance_assignment -name CURRENT_STRENGTH_NEW 8MA -to USB2DM
+set_instance_assignment -name SLEW_RATE 0 -to USB1DM
+set_instance_assignment -name SLEW_RATE 0 -to USB1DP
+set_instance_assignment -name SLEW_RATE 0 -to USB2DM
+set_instance_assignment -name SLEW_RATE 0 -to USB2DP

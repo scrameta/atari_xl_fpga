@@ -389,7 +389,7 @@ void mainmenu()
 	sel_profile = 1;
 
 	init_drive_emulator();
-	reboot(1);
+	reboot(2);
 	run_drive_emulator();
 }
 

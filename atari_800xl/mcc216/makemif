@@ -1,6 +1,6 @@
 #!/bin/bash
 export TODAY=`date +'%Y%m%d'`
-export VERSION=`cat VERSION`
+export VERSION=`cat ../VERSION`
 echo "D:$TODAY:"
 echo "V:$VERSION:"
 cat ../firmware_eclairexl/MCC216.bin |sed -e "s/Date:YYYYMMDD Core:XX/Date:$TODAY Core:$VERSION/" > ../firmware_eclairexl/MCC216.bin_dated

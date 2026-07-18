@@ -89,6 +89,10 @@ int flashSectorSize()
 	{
 		sectorSize = 256*1024;
 	}
+	else if (id2==0x202015)
+	{
+		sectorSize = 64*1024;
+	}
 	else if (id2==0x012018)
 	{
 		sectorSize = 64*1024;
