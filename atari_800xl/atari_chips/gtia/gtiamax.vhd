@@ -37,7 +37,7 @@ ENTITY gtiamax IS
 		PAL :  IN STD_LOGIC; -- PAL clock (5/4...)
 
 		GPIO :  INOUT  STD_LOGIC_VECTOR(11 DOWNTO 0);
-		NC :  INOUT  STD_LOGIC_VECTOR(6 DOWNTO 1);
+		NC :  IN  STD_LOGIC_VECTOR(6 DOWNTO 1);
 		CAD3 : IN STD_LOGIC;
 
 		CSYNC : OUT STD_LOGIC;
@@ -62,6 +62,23 @@ ARCHITECTURE vhdl OF gtiamax IS
 			locked   : out std_logic
 		);
 	end component;
+	
+	component osc_in is
+		port (
+			inclock : in  std_logic                    := '0';
+			dout    : out std_logic_vector(1 downto 0);
+			pad_in  : in  std_logic_vector(0 downto 0) := (others => '0') 
+		);
+	end component osc_in;
+	
+	component osc_out is
+		port (
+			outclock : in  std_logic                    := '0'; 
+			din      : in  std_logic_vector(1 downto 0) := (others => '0'); 
+			pad_out  : out std_logic_vector(0 downto 0)                    
+		);
+	end component osc_out;	
+	
 
 	signal OSC_CLK : std_logic;
 	signal PHI2_6X : std_logic;
@@ -90,13 +107,17 @@ ARCHITECTURE vhdl OF gtiamax IS
 
 	signal PAL_NTSC_N : std_logic;
 
-	signal COLOUR_OSC : std_logic;
-	signal COLOUR_OSC_PHASED : std_logic;
+	signal COLOUR_OSC : std_logic_vector(1 downto 0);
+	signal COLOUR_OSC_PHASED : std_logic_vector(1 downto 0);
 
 	signal OSC_CLEAN : std_logic;
+	signal OSC_CLEAN_FAST : std_logic;
 	signal OSC_CLEAN_VIDEO : std_logic;
 	signal OSC_CLEAN_EVENT : std_logic;
+	signal OSC_CLEAN_FAST_EVENT : std_logic;
+	signal CC_FALLING_FAST : std_logic;
 	signal CC_FALLING : std_logic;
+	signal OSC_CLEAN_PREV_REG : std_logic;
 
 	signal S_OUT : std_logic_vector(3 downto 0);
 
@@ -115,17 +136,36 @@ ARCHITECTURE vhdl OF gtiamax IS
 	signal AN_DEL_REG : std_logic_vector(2 downto 0);
 	signal AN_DEL2_NEXT : std_logic_vector(2 downto 0);
 	signal AN_DEL2_REG : std_logic_vector(2 downto 0);
+	
+	signal ddr_pal : std_logic_vector(1 downto 0);
 BEGIN
-	NC <= (others=>'Z');
+	--NC <= (others=>'Z');
 	GPIO <= (others=>'Z');
 
+	pal_in : osc_in
+	port map
+	(
+		inclock => fast_clk,
+		dout => colour_osc,
+		pad_in(0)  => pal
+	);
+--colour_osc <= pal_clean when pal_ntsc_n='1' else osc_clean_video;
+
+	col_out : osc_out
+	port map 
+	(
+		outclock => fast_clk, 
+		din => colour_osc_phased,
+		pad_out(0)=> color
+	);		
+--COLOR <= colour_osc_phased;
+	
 	oscillator : int_osc
 	port map 
 	(
 		clkout => OSC_CLK, 
 		oscena => '1'
 	);
-
 
 	--phi_multiplier : entity work.phi_mult
 	--port map 
@@ -143,27 +183,18 @@ BEGIN
 			 c1 => FAST_CLK, -- 300MHz
 			 locked => RESET_N);
 
-	process(clk,reset_n)
+	process(cc_falling_fast,reset_n)
 	begin
 		if (reset_n='0') then
 			AN_DEL_REG <= (others=>'0');
 			AN_DEL2_REG <= (others=>'0');
-		elsif (clk'event and clk='1') then
+		elsif (cc_falling_fast'event and cc_falling_fast='1') then
 			AN_DEL_REG <= AN_DEL_NEXT;
 			AN_DEL2_REG <= AN_DEL2_NEXT;
 		end if;
 	end process;
-
-	process(AN,AN_DEL_REG,AN_DEL2_REG,CC_FALLING)
-	begin
-		AN_DEL_NEXT <= AN_DEL_REG;
-		AN_DEL2_NEXT <= AN_DEL2_REG;
-
-		if (CC_FALLING='1') then
-			AN_DEL_NEXT <= AN;
-			AN_DEL2_NEXT <= AN_DEL_REG;
-		end if;
-	end process;
+	AN_DEL_NEXT <= AN;
+	AN_DEL2_NEXT <= AN_DEL_REG;
 
 bus_adapt : entity work.slave_timing_6502
 	PORT MAP
@@ -218,13 +249,32 @@ PORT MAP(
 
 osc_cleaner : entity work.correct_duty
 PORT MAP(
-	CLK => CLK,
+	CLK => FAST_CLK,
 	RESET_N => RESET_N,
 	CLKIN => OSC,
-	CLKOUT => OSC_CLEAN,
-	CLKOUT_EVENT => OSC_CLEAN_EVENT
+	CLKOUT => OSC_CLEAN_FAST,
+	CLKOUT_EVENT => OSC_CLEAN_FAST_EVENT
+	);
+	CC_FALLING_FAST <= OSC_CLEAN_FAST_EVENT and not(OSC_CLEAN_FAST);
+
+	sync_clk : entity work.synchronizer
+	port map
+	(
+		CLK => CLK,
+		RAW => OSC_CLEAN_FAST,
+		SYNC => OSC_CLEAN
 	);
 
+	process(clk,reset_n)
+	begin
+		if (reset_n='0') then
+			OSC_CLEAN_PREV_REG <= '0';
+		elsif (clk'event and clk='1') then
+			OSC_CLEAN_PREV_REG <= OSC_CLEAN;
+		end if;
+	end process;
+
+	OSC_CLEAN_EVENT <= OSC_CLEAN_PREV_REG xor OSC_CLEAN;
 	CC_FALLING <= OSC_CLEAN_EVENT and not(OSC_CLEAN);
 
 	pal_ntsc_n <= '1'; -- TODO GPIO
@@ -272,8 +322,6 @@ PORT MAP(CLK => CLK,
 
 GTIA_WRITE_ENABLE <= NOT(WRITE_N) and REQUEST;
 
-colour_osc <= pal_clean when pal_ntsc_n='1' else osc_clean_video;
-
 col_phase : entity work.hue
 PORT MAP 
 ( 
@@ -301,9 +349,9 @@ S(2) <= '0' when S_OUT(2)='1' else 'Z';
 S(3) <= '0' when S_OUT(3)='1' else 'Z';
 
 CSYNC <= NOT(VIDEO_CSYNC);
-COLOR <= colour_osc_phased;
+--COLOR <= colour_osc_phased;
 LUM(3 downto 0) <= VIDEO_COLOUR(3 downto 0);
 
-FO0 <= OSC_CLEAN;
+FO0 <= OSC_CLEAN_FAST;
 
 END vhdl;

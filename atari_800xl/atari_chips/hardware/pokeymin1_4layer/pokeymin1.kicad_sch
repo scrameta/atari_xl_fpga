@@ -1,0 +1,464 @@
+(kicad_sch
+	(version 20250114)
+	(generator "eeschema")
+	(generator_version "9.0")
+	(uuid "f8f92944-710a-49a0-a698-f840e5f20e15")
+	(paper "A4")
+	(lib_symbols)
+	(wire
+		(pts
+			(xy 35.56 118.11) (xy 180.34 118.11)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "054503a3-5423-4a34-a505-b789d42eed42")
+	)
+	(wire
+		(pts
+			(xy 102.87 96.52) (xy 102.87 144.78)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "12346169-f42b-44bc-956d-dc9cc5b58e92")
+	)
+	(bus
+		(pts
+			(xy 106.68 90.17) (xy 115.57 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1edf23a9-516d-4020-94eb-a5b1d96e84db")
+	)
+	(bus
+		(pts
+			(xy 106.68 157.48) (xy 106.68 153.67)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2f38b76e-69e2-4490-a1a4-c2bc06402e8b")
+	)
+	(bus
+		(pts
+			(xy 39.37 127) (xy 106.68 127)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "52af45ff-b3f0-48e5-b53d-361f74883509")
+	)
+	(bus
+		(pts
+			(xy 43.18 154.94) (xy 39.37 154.94)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5f9c627a-3531-425b-a5ea-aa37253f919a")
+	)
+	(bus
+		(pts
+			(xy 39.37 127) (xy 39.37 154.94)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "640f65c7-0668-4c02-9f56-ccb837dbaedf")
+	)
+	(wire
+		(pts
+			(xy 180.34 95.25) (xy 175.26 95.25)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8ff809e9-c002-45e8-8b5f-0eaab4b1f0a1")
+	)
+	(bus
+		(pts
+			(xy 106.68 153.67) (xy 100.33 153.67)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9276822a-256b-40a6-a692-bad2ba49446e")
+	)
+	(wire
+		(pts
+			(xy 180.34 118.11) (xy 180.34 95.25)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bbf21d1a-0f17-494e-b65b-e15d94587a58")
+	)
+	(wire
+		(pts
+			(xy 35.56 96.52) (xy 35.56 118.11)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ccd311f9-8a1b-452f-aa57-2e75d6a5e229")
+	)
+	(wire
+		(pts
+			(xy 41.91 96.52) (xy 35.56 96.52)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d3610b34-285b-4f6f-bba1-ec2ec84b656c")
+	)
+	(bus
+		(pts
+			(xy 106.68 127) (xy 106.68 90.17)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d3ba9c01-e75a-4692-bf49-0efea6a251e7")
+	)
+	(wire
+		(pts
+			(xy 102.87 144.78) (xy 115.57 144.78)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e0c0ebee-23ee-42b5-8971-4db0c226e695")
+	)
+	(wire
+		(pts
+			(xy 100.33 96.52) (xy 102.87 96.52)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e28c0d98-78fc-4eb2-903c-d0cef0e18bf5")
+	)
+	(bus
+		(pts
+			(xy 115.57 157.48) (xy 106.68 157.48)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e9b46ba3-7642-4be6-9603-2ea67283b9a8")
+	)
+	(sheet
+		(at 115.57 135.89)
+		(size 57.15 34.29)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "473fb442-f6a6-4f3e-b077-9a313beb11d5")
+		(property "Sheetname" "pokey_pins"
+			(at 115.57 135.1784 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "pokey_pins.kicad_sch"
+			(at 115.57 170.7646 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "AUDINTOUT" input
+			(at 115.57 144.78 180)
+			(uuid "158a2f95-6873-4a5e-b629-78af387aa6d3")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "POKEY5{P[1..40]}" passive
+			(at 115.57 157.48 180)
+			(uuid "43cdfbef-8a1b-436b-a054-b81532a2a7d9")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(instances
+			(project "pokeymin1"
+				(path "/f8f92944-710a-49a0-a698-f840e5f20e15"
+					(page "7")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 41.91 74.93)
+		(size 58.42 35.56)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "82ba8f9b-a44c-4965-afdf-636054a8ceef")
+		(property "Sheetname" "Audio output"
+			(at 41.91 74.2184 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "audio_output.kicad_sch"
+			(at 41.91 111.0746 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "AUD_INT_OUT" passive
+			(at 100.33 96.52 0)
+			(uuid "e1d1fc6b-3e88-424a-8d27-263f7ca9cdda")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(pin "AUDINT" passive
+			(at 41.91 96.52 180)
+			(uuid "01f92669-8aa8-4ba2-a061-d6fb25fb4b0d")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(instances
+			(project "pokeymin1"
+				(path "/f8f92944-710a-49a0-a698-f840e5f20e15"
+					(page "3")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 43.18 134.62)
+		(size 57.15 35.56)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "9960f3de-f40f-4029-80a8-5406de02e1f2")
+		(property "Sheetname" "Level shifter"
+			(at 43.18 133.9084 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "level_shifters.kicad_sch"
+			(at 43.18 170.7646 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "POKEY3{P[1..40]}" passive
+			(at 43.18 154.94 180)
+			(uuid "30c43eaa-d54a-4495-b2a8-dbaa067b7884")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(pin "POKEY5{P[1..40]}" passive
+			(at 100.33 153.67 0)
+			(uuid "1e556a9f-1280-4851-b749-df957ac26d7b")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(instances
+			(project "pokeymin1"
+				(path "/f8f92944-710a-49a0-a698-f840e5f20e15"
+					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 41.91 17.78)
+		(size 57.15 35.56)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "b3c63cf3-5aec-4ac7-b511-941f39b58d95")
+		(property "Sheetname" "Power"
+			(at 41.91 17.0684 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "power.kicad_sch"
+			(at 41.91 53.9246 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "pokeymin1"
+				(path "/f8f92944-710a-49a0-a698-f840e5f20e15"
+					(page "5")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 115.57 74.93)
+		(size 59.69 35.56)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0.0000)
+		)
+		(uuid "ca19021e-142b-41f4-aacf-17c21d0aabf5")
+		(property "Sheetname" "FPGA"
+			(at 115.57 74.2184 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "fpga.kicad_sch"
+			(at 115.57 111.0746 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(pin "AUDINT" input
+			(at 175.26 95.25 0)
+			(uuid "69c3a79d-332e-4a1c-b0c4-d96238a7071c")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify right)
+			)
+		)
+		(pin "POKEY3{P[1..40]}" input
+			(at 115.57 90.17 180)
+			(uuid "4f9a2519-4627-4bb1-93db-f04ccc3d1892")
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(instances
+			(project "pokeymin1"
+				(path "/f8f92944-710a-49a0-a698-f840e5f20e15"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+	(embedded_fonts no)
+)

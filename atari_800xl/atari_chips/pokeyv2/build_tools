@@ -1,0 +1,6 @@
+gcc -Wall init.c -lm -o init && ./init
+gcc -Wall sidwavedata.c -lm -o sidwavedata && ./sidwavedata
+g++ -Wall find_offset.cpp -o find_offset
+gcc -Wall swapbits.c -o swapbits
+
+
