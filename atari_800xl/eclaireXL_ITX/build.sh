@@ -17,7 +17,9 @@ my %variants =
 		"fpga" => "5CEBA2F23C8",
 		"postfix" => "v3",
 		"convert" => "v3a",
-		"sid" => 0
+		"sid" => 0,
+		"enable_polyphasic_scaler" => 0,
+		"enable_area_scaler" => 1
 	},
 	"A4EBAv3rom" =>
 	{
@@ -26,7 +28,9 @@ my %variants =
 		"fpga" => "5CEBA4F23C8",
 		"postfix" => "v3",
 		"convert" => "v3b",
-		"sid" => 1
+		"sid" => 1,
+		"enable_polyphasic_scaler" => 0,
+		"enable_area_scaler" => 1
 	},
 	"A2EBArom" =>
 	{
@@ -34,7 +38,9 @@ my %variants =
 		"internal_rom" => 1,
 		"fpga" => "5CEBA2F23C8",
 		"postfix" => "v1",
-		"sid" => 0
+		"sid" => 0,
+		"enable_polyphasic_scaler" => 0,
+		"enable_area_scaler" => 1
 	},
 	"A4EBArom" =>
 	{
@@ -42,7 +48,9 @@ my %variants =
 		"internal_rom" => 1,
 		"fpga" => "5CEBA4F23C8",
 		"postfix" => "v2",
-		"sid" => 1
+		"sid" => 1,
+		"enable_polyphasic_scaler" => 1,
+		"enable_area_scaler" => 1
 	},
 	"A2EBAprotorom" =>
 	{
@@ -133,6 +141,7 @@ foreach my $variant (sort keys %variants)
 	`mkdir $dir/common/zpu`;
 	`mkdir $dir/svideo`;
  	`mkdir $dir/hdmi`;
+ 	`mkdir $dir/scaler`;
 	mkdir "./$dir/common/components/usbhostslave";
 	`cp ../common/components/usbhostslave/trunk/RTL/*/*.v ./$dir/common/components/usbhostslave`;
 	`cp ../common/a8core/* ./$dir/common/a8core`;
@@ -142,6 +151,7 @@ foreach my $variant (sort keys %variants)
 	`cp ../common/zpu/* ./$dir/common/zpu`;
 	`cp ./svideo/* ./$dir/svideo`;
  	`cp ./hdmi/* ./$dir/hdmi`;
+ 	`cp ./scaler/* ./$dir/scaler`;
  	`cp -r ./sfl/synthesis/* ./$dir/`;
 	`cp zpu_rom$postfix.mif build_$variant/zpu_rom.mif`;
 
@@ -149,7 +159,7 @@ foreach my $variant (sort keys %variants)
 
 	my $fpga = $variants{$variant}->{"fpga"};
 	
- 	`../makeqsf ../atari800core_eclaireXL$postfix.qsf ./hdmi ./svideo ./common/a8core ./common/a8core/sid8580 ./common/components ./common/zpu ./common/components/usbhostslave`;
+ 	`../makeqsf ../atari800core_eclaireXL$postfix.qsf ./hdmi ./scaler ./svideo ./common/a8core ./common/a8core/sid8580 ./common/components ./common/zpu ./common/components/usbhostslave`;
 
 	`echo set_global_assignment -name DEVICE $fpga >> atari800core_eclaireXL$postfix.qsf`;
 

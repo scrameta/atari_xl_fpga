@@ -7,6 +7,7 @@
 #include "joystick.h"
 #include "freeze.h"
 #include "vidi2c.h"
+#include "pll.h"
 
 #include "simpledir.h"
 #include "simplefile.h"
@@ -98,10 +99,12 @@ BIT_REG(,0x07,28,turbo_drive,zpu_out1)
 #endif
 BIT_REG(,0x01,31,turbo_6502_vblank_only,zpu_out1) 
 
-BIT_REG(,0x07,0,video,zpu_out6)
+BIT_REG(,0x07,0,video,zpu_out6) // 4 bits,3 used... what to do...
 BIT_REG(,0x01,4,tv,zpu_out6)
 BIT_REG(,0x01,5,scanlines,zpu_out6)
 BIT_REG(,0x01,6,csync,zpu_out6)
+BIT_REG(,0x07,7,resolution,zpu_out6)
+BIT_REG(,0x07,10,scaler,zpu_out6) // 3 bits to allow multiple polyphasic filters
 
 #ifdef DEBUG_SUPPORT
 BIT_REG(,0xffff,0,debug_addr,zpu_out7)
@@ -508,7 +511,21 @@ void load_settings(int profile)
 	*zpu_out6 = settings[1];
 		
 #ifdef PLL_SUPPORT
-	set_pll(get_tv()==TV_PAL, get_video()>=VIDEO_HDMI && get_video()<VIDEO_COMPOSITE);
+	if (get_video()>=VIDEO_HDMI && get_video()<VIDEO_COMPOSITE)
+	{
+		int mode = get_resolution();
+                if (get_tv()==TV_NTSC)
+                        mode = mode+4;
+
+                set_scaler_mode(mode);
+	}
+	else
+	{
+		if (get_tv()==TV_PAL)
+			set_pll(MODE_PAL_ORIG);
+		else
+			set_pll(MODE_NTSC_ORIG);
+	}
 #endif
 }
 
