@@ -1,11 +1,15 @@
 # atari_xl_fpga
 
 An FPGA implementation of the Atari 800XL (and, with a swapped memory map, the
-Atari 5200). The core is written mostly in VHDL, with a ZPU soft-core handling
-drive emulation, on-screen menus and housekeeping. It has been ported to a wide
-range of FPGA boards over the years, and grew a companion set of individual
-chip replacements (POKEY, GTIA, ANTIC, Sally/6502) — one of which, **PokeyMAX**,
-went on to become a product in its own right.
+Atari 5200), ported to a wide range of FPGA boards. The shared core, ZPU and
+common building blocks live in a separate repository,
+[**atari_xl_fpga_common**](https://github.com/scrameta/atari_xl_fpga_common),
+included here as a git submodule at `common/`. This repository provides the
+per-board top levels, the standalone Atari chip replacements, and the firmware.
+
+The project also grew a companion set of individual chip replacements (POKEY,
+GTIA, ANTIC, Sally/6502) — one of which, **PokeyMAX**, went on to become a
+product in its own right.
 
 > This repository was migrated from a long-lived SVN history, so some of the
 > commit history and layout reflects that heritage.
@@ -13,10 +17,13 @@ went on to become a product in its own right.
 ## Contents
 
 - [What this is](#what-this-is)
+- [Getting the code](#getting-the-code)
 - [Repository layout](#repository-layout)
 - [The core](#the-core)
 - [Supported boards](#supported-boards)
 - [Individual chip replacements](#individual-chip-replacements)
+- [Downstream forks](#downstream-forks)
+- [Related work](#related-work)
 - [Firmware](#firmware)
 - [Toolchain](#toolchain)
 - [Building](#building)
@@ -30,13 +37,31 @@ Because the Atari 5200 shares most of the 800XL hardware and differs mainly in
 its memory map and I/O, a 5200 variant fell out fairly naturally and is
 maintained alongside the 800XL builds.
 
-Beyond raw machine emulation, a **ZPU** soft-core was added to provide the
-"glue" a real setup needs: SIO disk-drive emulation, menu/UI, timers and
-similar. That firmware lives in the `firmware_*` folders.
+Beyond raw machine emulation, a **ZPU** soft-core provides the "glue" a real
+setup needs: SIO disk-drive emulation, menu/UI, timers and similar. The ZPU and
+core themselves live in the shared
+[atari_xl_fpga_common](https://github.com/scrameta/atari_xl_fpga_common) repo;
+the board-specific firmware builds live here in the `firmware_*` folders.
 
 Over time the core was ported to many different FPGA boards, and separately the
 individual custom Atari ICs were reimplemented as standalone RTL so they could
 be dropped into real machines.
+
+## Getting the code
+
+The shared core is a submodule, so clone recursively:
+
+```sh
+git clone --recursive https://github.com/scrameta/atari_xl_fpga
+
+# …or, if you already cloned without --recursive:
+git submodule update --init --recursive
+```
+
+The core then appears under `common/`. To move onto a newer core revision, bump
+the submodule pointer (see the
+[common repo](https://github.com/scrameta/atari_xl_fpga_common#using-this-repository)
+for the exact commands).
 
 ## Repository layout
 
@@ -44,25 +69,21 @@ Everything lives under `atari_800xl/`.
 
 | Path | Description |
 | --- | --- |
-| `common/a8core` | The main Atari 800XL/5200 core RTL. |
-| `common/components` | Shared, largely Atari-agnostic building blocks used by the core. |
-| `common/zpu` | ZPU soft-core plus the extra functionality (drive emulator, timers, menus, etc.). |
-| `common/tb`, `common/tb_*` | Testbenches and simulation scripts for the core. |
+| `common/` | **Submodule:** shared core, ZPU and components — see [atari_xl_fpga_common](https://github.com/scrameta/atari_xl_fpga_common). |
 | `atari_chips/` | Standalone RTL for individual Atari ICs — see [below](#individual-chip-replacements). |
 | `atari_chips/hardware/` | Board designs and Gerbers for the chip-replacement hardware. |
 | *(one folder per board)* | Per-board top level, pin constraints, PLLs and build scripts — see [below](#supported-boards). |
-| `firmware_*` | ZPU firmware (see [Firmware](#firmware)). |
-| `COPYRIGHT_NOTICE` | Aggregated copyright notices for the various RTL/firmware pieces. |
+| `firmware_*` | ZPU firmware builds (see [Firmware](#firmware)). |
 | `VERSION` | Core version string. |
 | `buildall.sh`, `package.pl`, `makemifall` | Top-level build / packaging helpers. |
 
 ## The core
 
-The main core is in `common/a8core`, with reusable pieces factored out into
-`common/components`. The design targets cycle-accurate 800XL behaviour and
-reuses the same core across every board port — each board folder is essentially
-a thin top level (clocking, pin mapping, memory controller, board-specific I/O)
-wrapped around the common core.
+The main core lives in the `common/` submodule
+([atari_xl_fpga_common](https://github.com/scrameta/atari_xl_fpga_common)) and is
+shared unchanged across every board port. Each board folder in this repository
+is essentially a thin top level — clocking, pin mapping, memory controller,
+board-specific I/O — wrapped around that common core.
 
 The 5200 variants (`*_5200`) reuse the same core with the 5200 memory map and
 I/O differences.
@@ -134,14 +155,16 @@ has taken on a life of its own — see [64kib.com](https://www.64kib.com/) and t
 - **[tonnere](https://github.com/scrameta/tonnere)** — Project Thunder
   (*tonnere* is French for thunder), the successor board to the EclaireXL
   (itself named for lightning), now being renamed **MegaXE**. An Atari XL/XE
-  FPGA board carrying this lineage forward.
+  FPGA board carrying this lineage forward. It shares the same
+  [common core](https://github.com/scrameta/atari_xl_fpga_common).
 - **`ultimate_cart`** — Veronica, a separate 65816 upgrade project for the
   800XL (not a board port of this core).
 
 ## Firmware
 
 The ZPU firmware provides the drive emulator, menu system and supporting
-services:
+services. The ZPU core and services themselves live in the `common/` submodule;
+these folders hold the board-specific firmware builds:
 
 | Folder | Description |
 | --- | --- |
@@ -166,15 +189,18 @@ Which tool you need depends on the target FPGA:
   recorded; a late ISE 14.x release is the usual choice for these Spartan-6-era
   parts.
 
-Simulation uses the testbenches under `common/tb*` and `atari_chips/tb_*`, with
+Simulation of the core and sub-blocks lives in the `common/` submodule; the
+chip replacements have their own testbenches under `atari_chips/tb_*` driven by
 the `simulate_*.sh` scripts. A ZPU toolchain is required to (re)build the
 firmware.
 
 ## Building
 
-Each board folder contains a `build.sh` (and often a `build.pl`) that drives the
-flow for that target. `buildall.sh` at the top level builds across boards, and
-`makemifall` / `package.pl` handle ROM/MIF generation and packaging.
+Make sure the `common/` submodule is populated first (see
+[Getting the code](#getting-the-code)). Each board folder then contains a
+`build.sh` (and often a `build.pl`) that drives the flow for that target.
+`buildall.sh` at the top level builds across boards, and `makemifall` /
+`package.pl` handle ROM/MIF generation and packaging.
 
 > This is a large, long-lived hobby codebase migrated from SVN. Build scripts
 > assume the author's environment in places; expect to adjust paths and tool
@@ -185,11 +211,13 @@ flow for that target. `buildall.sh` at the top level builds across boards, and
 **Please read this carefully — the licensing here is genuinely mixed and, in
 places, unsettled.**
 
-This repository combines RTL and firmware from many sources. The author does
-**not** own copyright in all of it, so a single blanket open-source licence
-(GPL or otherwise) **cannot** be applied to the whole tree. See the
-`COPYRIGHT_NOTICE` file, which aggregates the copyright notices for the various
-components — note that it is acknowledged to be **incomplete**.
+This project combines RTL and firmware from many sources, and the shared
+`common/` submodule adds more of the same. The author does **not** own copyright
+in all of it, so a single blanket open-source licence (GPL or otherwise)
+**cannot** be applied to the whole tree. See the `COPYRIGHT_NOTICE` file here and
+the one in [atari_xl_fpga_common](https://github.com/scrameta/atari_xl_fpga_common),
+which aggregate the copyright notices for the various components — note they are
+acknowledged to be **incomplete**.
 
 For the parts authored by the project author, the intent is:
 
