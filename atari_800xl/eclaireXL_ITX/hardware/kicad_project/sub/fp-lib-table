@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "eclaire sub board")(type "KiCad")(uri "$(KIPRJMOD)/eclaireXLv1sub.pretty")(options "")(descr ""))
+)

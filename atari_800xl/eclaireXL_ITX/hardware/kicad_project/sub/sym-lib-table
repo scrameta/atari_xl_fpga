@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "eclaire sub board-eagle-import")(type "KiCad")(uri "${KIPRJMOD}/eclaire sub board-eagle-import.kicad_sym")(options "")(descr ""))
+)
