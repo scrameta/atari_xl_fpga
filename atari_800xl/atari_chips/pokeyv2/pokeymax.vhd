@@ -59,6 +59,8 @@ ENTITY pokeymax IS
 		paddle_lvds: integer := 0;
 		paddle_comp: integer := 1;
 		enable_iox: integer := 1;
+
+		enable_cs_latch_mode: integer := 0;
 	
 		sid_wave_base : integer := 42496; --to_integer(unsigned(x"a600"));
 
@@ -348,6 +350,10 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal CS1MOD : std_logic;
 	signal CS_COMB : std_logic;
 
+	signal CLK_PAL : std_logic;
+	signal CLK_NTSC : std_logic;
+	signal PHI2_INT : std_logic;
+
 	signal AIN : std_logic_vector(7 downto 0);
 
 	signal POTRESET : std_logic;
@@ -513,6 +519,16 @@ ARCHITECTURE vhdl OF pokeymax IS
 
 	-- paddles
 	signal PADDLE_ADJ : std_logic_vector(7 downto 0);
+
+	-- special mode clocked by cs1->0 with fake internal PHI2
+	signal CS0N_REG : std_logic;
+	signal CS0N_NEXT : std_logic;
+
+		-- actually these are for normal mode, but are in support of the special mode
+	signal ADDR_IN_SLAVE : std_logic_vector(7 downto 0);
+	signal WRITE_DATA_SLAVE : std_logic_vector(7 downto 0);
+	signal REQUEST_SLAVE : std_logic;
+	signal WRITE_N_SLAVE : std_logic;
 
 	function getByte(a : string; x : integer) return std_logic_vector is
    		 variable ret : std_logic_vector(7 downto 0);
@@ -708,6 +724,10 @@ pll_v3_inst : if pll_v2=0 generate
 			 c1 => CLK116,  --56ish
 			 c2 => CLK106,  --106ish
 			 c3 => CLK6144,  --6.44MHz
+			 c4 => CLK_PAL,  
+			 c5 => CLK_NTSC, 
+--PAL: 1.773381818 − 1.7734475 = −65.682 Hz (≈ −37.0 ppm)
+--NTSC: 1.789651376 − 1.789772725 = −121.349 Hz (≈ −67.8 ppm)
 			 locked => PLL_LOCKED);
 	CLK49152 <= CLK0;
 end generate;
@@ -725,6 +745,35 @@ pll_sync : entity work.pll_reset_sync
 	CS1MOD <= EXT_INT(cs1_bit);
 	CS0NMOD <= EXT_INT(cs0_bit);
 
+cs_latch_mode_on : if enable_cs_latch_mode =1 generate
+	-- Drive these on CS high->low
+        synchronizer_cs0 : entity work.synchronizer
+		port map (clk=>clk, raw=>CS0NMOD, sync=>CS0N_NEXT);
+	REQUEST <= not(CS0NMOD) and CS0N_REG;
+	ADDR_IN <= AIN;
+	WRITE_DATA <= D;
+	WRITE_N <= W_N;
+
+	-- Make this depending on PHI2 (low->NTSC, high->PAL)
+	-- PLL...
+	process (PHI2,CLK_PAL,CLK_NTSC)
+	begin
+		if PHI2='1' then			
+			PHI2_INT <= CLK_PAL;
+		else
+			PHI2_INT <= CLK_NTSC;
+		end if;
+	end process;
+end generate;
+
+cs_latch_mode_off : if enable_cs_latch_mode =0 generate
+	PHI2_INT <= PHI2;
+	REQUEST <= REQUEST_SLAVE;
+	ADDR_IN <= ADDR_IN_SLAVE;
+	WRITE_DATA <= WRITE_DATA_SLAVE;
+	WRITE_N <= WRITE_N_SLAVE;
+end generate;
+
 bus_adapt : entity work.slave_timing_6502
 	GENERIC MAP
 	(
@@ -736,7 +785,7 @@ bus_adapt : entity work.slave_timing_6502
 		RESET_N => RESET_N,
 		
 		-- input from the cart port
-		PHI2 => PHI2,
+		PHI2 => PHI2_INT,
 		bus_addr => AIN, 
 		bus_data => D,
 	
@@ -747,10 +796,10 @@ bus_adapt : entity work.slave_timing_6502
 		bus_rw_n => W_N,
 
 		-- request for a memory bus cycle (read or write)
-		BUS_REQUEST => REQUEST,
-		ADDR_IN => ADDR_IN,
-		DATA_IN => WRITE_DATA,
-		RW_N => WRITE_N,
+		BUS_REQUEST => REQUEST_SLAVE,
+		ADDR_IN => ADDR_IN_SLAVE,
+		DATA_IN => WRITE_DATA_SLAVE,
+		RW_N => WRITE_N_SLAVE,
 
 		-- end of cycle
 		ENABLE_CYCLE => ENABLE_CYCLE,
@@ -1555,6 +1604,7 @@ begin
 			MIX_SEL1_REG <= (others=>'0');
 			MIX_SEL2_REG <= (others=>'0');
 		end if;
+		CS0N_REG <= '1';
 	elsif (clk'event and clk='1') then
 		DETECT_RIGHT_REG <= DETECT_RIGHT_NEXT;
 		IRQ_EN_REG <= IRQ_EN_NEXT;
@@ -1584,6 +1634,7 @@ begin
 			MIX_SEL1_REG <= MIX_SEL1_NEXT;
 			MIX_SEL2_REG <= MIX_SEL2_NEXT;
 		end if;
+		CS0N_REG <= CS0N_NEXT;
 	end if;
 end process;
 
