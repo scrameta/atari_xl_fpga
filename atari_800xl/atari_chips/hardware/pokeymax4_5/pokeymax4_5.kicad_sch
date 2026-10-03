@@ -1,7 +1,7 @@
 (kicad_sch
-	(version 20250114)
+	(version 20260306)
 	(generator "eeschema")
-	(generator_version "9.0")
+	(generator_version "10.0")
 	(uuid "f8f92944-710a-49a0-a698-f840e5f20e15")
 	(paper "A4")
 	(lib_symbols)
@@ -628,11 +628,13 @@
 			(type solid)
 		)
 		(fill
-			(color 0 0 0 0.0000)
+			(color 0 0 0 0)
 		)
 		(uuid "1dc50d40-2acd-4c26-808b-1819716fc764")
 		(property "Sheetname" "ADC"
 			(at 194.31 74.2184 0)
+			(show_name no)
+			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -642,6 +644,8 @@
 		)
 		(property "Sheetfile" "adc.kicad_sch"
 			(at 194.31 111.0746 0)
+			(show_name no)
+			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -720,11 +724,13 @@
 			(type solid)
 		)
 		(fill
-			(color 0 0 0 0.0000)
+			(color 0 0 0 0)
 		)
 		(uuid "473fb442-f6a6-4f3e-b077-9a313beb11d5")
 		(property "Sheetname" "pokey_pins"
 			(at 115.57 135.1784 0)
+			(show_name no)
+			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -734,6 +740,8 @@
 		)
 		(property "Sheetfile" "pokey_pins.kicad_sch"
 			(at 115.57 170.7646 0)
+			(show_name no)
+			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -822,11 +830,13 @@
 			(type solid)
 		)
 		(fill
-			(color 0 0 0 0.0000)
+			(color 0 0 0 0)
 		)
 		(uuid "82ba8f9b-a44c-4965-afdf-636054a8ceef")
 		(property "Sheetname" "Audio output"
 			(at 41.91 74.2184 0)
+			(show_name no)
+			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -836,6 +846,8 @@
 		)
 		(property "Sheetfile" "audio_output.kicad_sch"
 			(at 41.91 111.0746 0)
+			(show_name no)
+			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -944,11 +956,13 @@
 			(type solid)
 		)
 		(fill
-			(color 0 0 0 0.0000)
+			(color 0 0 0 0)
 		)
 		(uuid "9960f3de-f40f-4029-80a8-5406de02e1f2")
 		(property "Sheetname" "Level shifter"
 			(at 43.18 133.9084 0)
+			(show_name no)
+			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -958,6 +972,8 @@
 		)
 		(property "Sheetfile" "level_shifters.kicad_sch"
 			(at 43.18 170.7646 0)
+			(show_name no)
+			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1036,11 +1052,13 @@
 			(type solid)
 		)
 		(fill
-			(color 0 0 0 0.0000)
+			(color 0 0 0 0)
 		)
 		(uuid "b3c63cf3-5aec-4ac7-b511-941f39b58d95")
 		(property "Sheetname" "Power"
 			(at 41.91 17.0684 0)
+			(show_name no)
+			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1050,6 +1068,8 @@
 		)
 		(property "Sheetfile" "power.kicad_sch"
 			(at 41.91 53.9246 0)
+			(show_name no)
+			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1078,11 +1098,13 @@
 			(type solid)
 		)
 		(fill
-			(color 0 0 0 0.0000)
+			(color 0 0 0 0)
 		)
 		(uuid "ca19021e-142b-41f4-aacf-17c21d0aabf5")
 		(property "Sheetname" "FPGA"
 			(at 115.57 74.2184 0)
+			(show_name no)
+			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1092,6 +1114,8 @@
 		)
 		(property "Sheetfile" "fpga.kicad_sch"
 			(at 115.57 111.0746 0)
+			(show_name no)
+			(do_not_autoplace no)
 			(effects
 				(font
 					(size 1.27 1.27)
