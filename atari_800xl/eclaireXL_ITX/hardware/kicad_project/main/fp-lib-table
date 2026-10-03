@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "eclaire XL new")(type "KiCad")(uri "$(KIPRJMOD)/eclaireXLv1.pretty")(options "")(descr ""))
+)
