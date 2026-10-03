@@ -60,12 +60,12 @@
           "hatch_smoothing_level": 0,
           "hatch_smoothing_value": 0.1,
           "hatch_thickness": 1.0,
-          "min_clearance": 0.2,
+          "min_clearance": 0.18,
           "min_island_area": 10.0,
-          "min_thickness": 0.25,
+          "min_thickness": 0.1524,
           "pad_connection": 1,
           "remove_islands": 0,
-          "thermal_relief_gap": 0.5,
+          "thermal_relief_gap": 0.35,
           "thermal_relief_spoke_width": 0.5
         }
       },
@@ -149,7 +149,7 @@
         "max_error": 0.005,
         "min_clearance": 0.0,
         "min_connection": 0.0,
-        "min_copper_edge_clearance": 0.0,
+        "min_copper_edge_clearance": 0.2,
         "min_groove_width": 0.0,
         "min_hole_clearance": 0.127,
         "min_hole_to_hole": 0.254,
@@ -767,7 +767,7 @@
         "uuid": "f8f92944-710a-49a0-a698-f840e5f20e15"
       }
     ],
-    "used_designators": "",
+    "used_designators": "J3-4,C30",
     "variants": []
   },
   "sheets": [

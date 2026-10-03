@@ -7308,6 +7308,16 @@
 		)
 		(uuid "ff48531e-2341-4ae0-9528-169fafabcd10")
 	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_22"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "0173f764-e58e-4623-aa86-c0e484f4cd99")
+	)
 	(label "AUDL"
 		(at 154.94 36.83 90)
 		(effects
@@ -7328,6 +7338,16 @@
 		)
 		(uuid "02cd52d3-fe71-4b5b-9e9e-39cd320f6333")
 	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_23"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "0300c48e-4380-4dd4-b948-8595329e2bc9")
+	)
 	(label "LIN2.A20"
 		(at 81.28 152.4 90)
 		(effects
@@ -7338,6 +7358,16 @@
 		)
 		(uuid "067f2b71-abcb-47f9-a8c0-dea41d2a3aed")
 	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_20"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "0c3f2cee-015f-4fe3-9fc0-bc626356fd4e")
+	)
 	(label "LIN1.A23"
 		(at 165.1 36.83 90)
 		(effects
@@ -7347,6 +7377,26 @@
 			(justify left bottom)
 		)
 		(uuid "0f51cf02-cc3c-42de-b935-46f29eba31a9")
+	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_8"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "121e07be-9d69-492b-ba76-57cb6b5687be")
+	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_7"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "142cf774-ac5b-4b5f-a1ae-ac2e40752390")
 	)
 	(label "LIN1.A17"
 		(at 129.54 36.83 90)
@@ -7408,6 +7458,26 @@
 		)
 		(uuid "2d0502ab-845a-4b3b-9c18-780a8f6f2226")
 	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_2"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "31598aef-827e-49c9-97b1-ce55e1380e6d")
+	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_19"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "324538a7-c972-46eb-9115-1559fa9fe6d9")
+	)
 	(label "LIN2.A9"
 		(at 170.18 152.4 90)
 		(effects
@@ -7437,6 +7507,26 @@
 			(justify left bottom)
 		)
 		(uuid "3fe2c2ec-6f14-4296-a689-4d53f86247d2")
+	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_15"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "41577ba9-29bb-4ddc-922a-c104358cb9ab")
+	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_24"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "41df6e62-672c-4451-9903-aa7837c39ca5")
 	)
 	(label "LIN1.A1"
 		(at 88.9 36.83 90)
@@ -7478,6 +7568,26 @@
 		)
 		(uuid "4564ed37-c217-4553-aec4-5a42b5a8883e")
 	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_1_3"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "4a6eb8bc-2ad0-4055-8eec-38133e1a07a8")
+	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_16"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "4dfbe9eb-3b87-4b1d-8bd2-25b80714dbb6")
+	)
 	(label "LIN1.A2"
 		(at 91.44 36.83 90)
 		(effects
@@ -7507,6 +7617,26 @@
 			(justify left bottom)
 		)
 		(uuid "59cdabfb-e646-4530-a27a-09b3a4e8574c")
+	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_12"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "5d3cea57-24e2-4f64-95df-3876079c4edc")
+	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_6"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "60c66e97-d489-4687-ac6f-e5b2a93af493")
 	)
 	(label "PTHRES"
 		(at 207.01 139.7 0)
@@ -7578,6 +7708,16 @@
 		)
 		(uuid "6e15f503-1e1b-4933-8505-38901e4e1a45")
 	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_14"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "708af2d6-ec51-4bea-96a1-dadb579034d0")
+	)
 	(label "LIN1.A13"
 		(at 119.38 36.83 90)
 		(effects
@@ -7618,6 +7758,16 @@
 		)
 		(uuid "819de79d-dce9-4612-90e0-3028eb254c7a")
 	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_10"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "81ee4a55-71d1-42af-b5c2-9c443cd1ed00")
+	)
 	(label "LIN1.A18"
 		(at 132.08 36.83 90)
 		(effects
@@ -7627,6 +7777,16 @@
 			(justify left bottom)
 		)
 		(uuid "8217d5ce-cda4-4bc4-8e76-4b35423a8700")
+	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_26"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "829e4b52-acaa-4d64-8d49-659c83a2739f")
 	)
 	(label "TDI"
 		(at 58.42 36.83 0)
@@ -7647,6 +7807,16 @@
 			(justify right bottom)
 		)
 		(uuid "84800920-c4b9-4138-8da8-ca2b1470f9d8")
+	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_4"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "859df641-1266-45a1-99bd-717d8b72709e")
 	)
 	(label "LIN1.A16"
 		(at 127 36.83 90)
@@ -7768,6 +7938,16 @@
 		)
 		(uuid "99bfdc41-985a-4c28-8df4-c4db89dacd71")
 	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_9"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "a1469b8b-2b01-4134-b97d-2dee1285bd6f")
+	)
 	(label "OSC_CLOCK"
 		(at 43.18 127 0)
 		(effects
@@ -7777,6 +7957,16 @@
 			(justify left bottom)
 		)
 		(uuid "a3b171b6-1d08-4a1e-a9f4-dc00fc72df39")
+	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_11"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "a4ddf060-1193-477b-a40a-def7594be583")
 	)
 	(label "LIN2.A21"
 		(at 76.2 152.4 90)
@@ -7797,6 +7987,16 @@
 			(justify left bottom)
 		)
 		(uuid "ac424575-685b-4fa2-9178-4f8954e3a786")
+	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_1"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "af276cbb-ed65-40f4-9865-a69ad476613f")
 	)
 	(label "LIN2.A17"
 		(at 91.44 152.4 90)
@@ -7857,6 +8057,16 @@
 			(justify left bottom)
 		)
 		(uuid "b9e96aab-ce69-49f9-a8d8-dbcce52a1330")
+	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_17"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "c5b4a24f-d053-437b-9dbb-7341a0d43d47")
 	)
 	(label "LIN1.A6"
 		(at 101.6 33.02 90)
@@ -7958,6 +8168,26 @@
 		)
 		(uuid "ed123290-8b4e-4f8c-8785-9c32c12aa4b5")
 	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_13"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "ed454488-86a2-4d21-a2f2-221714388f3b")
+	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_3"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "ee0a11f1-5828-4338-b17f-d9f3816ea1cc")
+	)
 	(label "LIN1.A14"
 		(at 121.92 36.83 90)
 		(effects
@@ -7968,6 +8198,26 @@
 		)
 		(uuid "ef023fbf-c5e6-4895-b675-ba26767ed0a4")
 	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_25"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "ef0f87f2-5814-44b1-ba2c-c766b6a8363b")
+	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_5"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "f738e111-da0f-49a1-8d50-42cd173460b4")
+	)
 	(label "LIN1.A8"
 		(at 106.68 36.83 90)
 		(effects
@@ -7977,6 +8227,16 @@
 			(justify left bottom)
 		)
 		(uuid "f7ae8c75-c3f8-46bf-b67e-e77d6e97ee07")
+	)
+	(label "unconnected-(U4-IO_UNUSED-PadE1)_21"
+		(at 187.96 48.26 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "fcf07ac4-8903-4382-b33c-08649adf4fab")
 	)
 	(hierarchical_label "ADC_RX"
 		(shape input)
@@ -8123,6 +8383,17 @@
 			)
 		)
 		(property "Description" ""
+			(at 139.7 81.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C1551099"
 			(at 139.7 81.28 0)
 			(hide yes)
 			(show_name no)
@@ -8716,6 +8987,17 @@
 				)
 			)
 		)
+		(property "LCSC" "C705736"
+			(at 218.44 134.62 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "e5b6e53e-4b97-440e-beee-6ea2b82c61c1")
 		)
@@ -8866,6 +9148,17 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 49.53 29.21 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C25804"
 			(at 49.53 29.21 0)
 			(hide yes)
 			(show_name no)
@@ -9036,6 +9329,17 @@
 				)
 			)
 		)
+		(property "LCSC" "C25804"
+			(at 58.42 29.21 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "26d1ce2f-4fab-456e-a454-ec0d9ec674b8")
 		)
@@ -9108,6 +9412,17 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 52.07 80.01 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C25804"
 			(at 52.07 80.01 0)
 			(hide yes)
 			(show_name no)
@@ -9200,6 +9515,17 @@
 				)
 			)
 		)
+		(property "LCSC" "C1525"
+			(at 82.55 173.99 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "583b6330-7229-459e-9e0d-acd13973c8ff")
 		)
@@ -9282,6 +9608,17 @@
 				)
 			)
 		)
+		(property "LCSC" "C4190"
+			(at 218.44 144.78 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "95c579bc-4268-4ba3-9b4c-4dd8cdec3dcb")
 		)
@@ -9352,6 +9689,17 @@
 			)
 		)
 		(property "Description" "3.3V CMOS SMD Crystal Clock Oscillator, Abracon"
+			(at 29.21 127 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C2901591"
 			(at 29.21 127 0)
 			(hide yes)
 			(show_name no)
@@ -9840,6 +10188,17 @@
 				)
 			)
 		)
+		(property "LCSC" "C21190"
+			(at 40.64 66.04 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "09ff7205-f74e-4e98-b419-2c7748698fcd")
 		)
@@ -10078,6 +10437,17 @@
 				)
 			)
 		)
+		(property "LCSC" "C25804"
+			(at 44.45 80.01 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "81c6c77c-51e8-43a4-8a50-ecb46177ca52")
 		)
@@ -10228,6 +10598,17 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 90.17 184.15 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C2987940"
 			(at 90.17 184.15 0)
 			(hide yes)
 			(show_name no)
@@ -10397,6 +10778,17 @@
 				)
 			)
 		)
+		(property "LCSC" "C57112"
+			(at 16.51 114.3 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "90bd1062-7f59-4e7d-a961-4114419bb5ad")
 		)
@@ -10469,6 +10861,17 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 76.2 33.02 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C25092"
 			(at 76.2 33.02 0)
 			(hide yes)
 			(show_name no)
@@ -10639,6 +11042,17 @@
 				)
 			)
 		)
+		(property "LCSC" "C137973"
+			(at 180.34 143.51 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "963d10d4-36b1-4ee9-83db-c13f973072d6")
 		)
@@ -10711,6 +11125,17 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 121.92 185.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C11702"
 			(at 121.92 185.42 0)
 			(hide yes)
 			(show_name no)
@@ -10898,10 +11323,10 @@
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(in_pos_files yes)
-		(dnp no)
+		(dnp yes)
 		(fields_autoplaced yes)
 		(uuid "ff4c44a9-0009-4e51-8418-462bf3d0b6a2")
 		(property "Reference" "J1"

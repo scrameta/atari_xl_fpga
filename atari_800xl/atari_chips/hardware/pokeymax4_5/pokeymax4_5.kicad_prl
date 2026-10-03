@@ -1,6 +1,6 @@
 {
   "board": {
-    "active_layer": 0,
+    "active_layer": 2,
     "active_layer_preset": "",
     "auto_track_width": true,
     "hidden_netclasses": [
@@ -9,17 +9,12 @@
     ],
     "hidden_nets": [
       "+5VA",
-      "unconnected-(U4-IO_UNUSED-PadE1)_25",
-      "unconnected-(U4-IO_UNUSED-PadE1)_19",
-      "unconnected-(U4-IO_UNUSED-PadE1)_6",
-      "unconnected-(U4-IO_UNUSED-PadE1)_5",
-      "unconnected-(U4-IO_UNUSED-PadE1)_4",
-      "+3.3VA",
-      "+2V5",
-      "+5V",
-      "+3.3V",
       "GND",
-      "Net-(U2-OUT2)"
+      "+3.3V",
+      "+5V",
+      "Net-(U2-OUT2)",
+      "+2V5",
+      "+3.3VA"
     ],
     "high_contrast_mode": 0,
     "net_color_mode": 1,
@@ -66,7 +61,7 @@
       "conflict_shadows",
       "shapes"
     ],
-    "visible_layers": "00000000_00000000_000030f4_80000033",
+    "visible_layers": "00000000_00000000_000030f4_00000080",
     "zone_display_mode": 0
   },
   "git": {

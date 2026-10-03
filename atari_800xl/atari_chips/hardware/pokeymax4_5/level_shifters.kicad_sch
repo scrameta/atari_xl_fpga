@@ -5931,6 +5931,17 @@
 				)
 			)
 		)
+		(property "LCSC" "C2674751"
+			(at 184.15 57.15 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "11"
 			(uuid "68d8510c-08e7-4548-8832-a1580b8565ac")
 		)
@@ -6321,6 +6332,17 @@
 			)
 		)
 		(property "Description" ""
+			(at 58.42 57.15 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C2674751"
 			(at 58.42 57.15 0)
 			(hide yes)
 			(show_name no)

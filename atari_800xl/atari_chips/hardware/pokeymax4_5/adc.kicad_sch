@@ -1019,6 +1019,17 @@
 				)
 			)
 		)
+		(property "LCSC" "C22961"
+			(at 33.02 116.84 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "8966611b-4ba7-41af-9d12-87eb05aad483")
 		)
@@ -1179,6 +1190,17 @@
 				)
 			)
 		)
+		(property "LCSC" "C137807"
+			(at 67.31 123.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "43b73002-03c3-4fdf-801f-40ece299f585")
 		)
@@ -1261,6 +1283,17 @@
 				)
 			)
 		)
+		(property "LCSC" "C25819"
+			(at 68.58 96.52 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "22496743-8826-4602-b5d2-2bc2af10ea9e")
 		)
@@ -1298,7 +1331,7 @@
 				)
 			)
 		)
-		(property "Value" "2.2uF C0G"
+		(property "Value" "2.2uF C0G (4.7uF X7R alternative)"
 			(at 62.23 87.63 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1331,6 +1364,17 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 62.23 92.71 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C5360844"
 			(at 62.23 92.71 0)
 			(hide yes)
 			(show_name no)
@@ -1501,6 +1545,17 @@
 				)
 			)
 		)
+		(property "LCSC" "C25860"
+			(at 64.77 44.45 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "2"
 			(uuid "dab00a8d-7729-438e-9673-63813aa46a87")
 		)
@@ -1573,6 +1628,17 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 64.77 58.42 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C126493"
 			(at 64.77 58.42 0)
 			(hide yes)
 			(show_name no)
@@ -1665,6 +1731,17 @@
 				)
 			)
 		)
+		(property "LCSC" "C19702"
+			(at 80.01 143.51 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "f6dc844a-1c25-4206-87ec-f6291b0aab96")
 		)
@@ -1737,6 +1814,17 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 67.31 143.51 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C25804"
 			(at 67.31 143.51 0)
 			(hide yes)
 			(show_name no)
