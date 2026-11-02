@@ -6,6 +6,19 @@
 -- This applies for source and binary form and derived works.
 --
 -- v2: indexed bank/group selection, avoiding large selected-OR reductions.
+-- v3: one write path shared by all RAMs. Each write stores a single RAM, so
+--     its data no longer depends on that RAM's own output:
+--       normal page: 1 write cycle, bit 8 kept via the shared read mux
+--       wide page:   8 write cycles, one RAM of the group per cycle, its
+--                    bits 7..0 kept via the shared read mux
+--     BUSY is high during the write cycles: the RAMs see the latched write
+--     address then, so a read presented in those cycles is not served
+--     (sample_top holds the DMA's data_ready and record writes off).
+--     Writes that arrive while BUSY are ignored; CPU writes are far apart.
+--     Reads: the output mux follows the address the RAMs actually read (the one
+--     given in the cycle before), as a plain synchronous RAM would. v2 used the
+--     live address, so data was wrong if the address changed after the read
+--     (e.g. a CPU access in the cycle the DMA used its data).
 ---------------------------------------------------------------------------
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
@@ -31,7 +44,8 @@ ENTITY m9k_grouped IS
 		data    : IN  std_logic_vector(7 DOWNTO 0);
 		address : IN  std_logic_vector(15 DOWNTO 0);
 		we      : IN  std_logic;
-		q       : OUT std_logic_vector(7 DOWNTO 0)
+		q       : OUT std_logic_vector(7 DOWNTO 0);
+		busy    : OUT std_logic   -- writing: reads presented now are not served
 	);
 END m9k_grouped;
 
@@ -51,18 +65,58 @@ ARCHITECTURE rtl OF m9k_grouped IS
 	TYPE ram_data_t IS ARRAY(0 TO TOTAL_RAM_BLOCKS-1) OF std_logic_vector(8 DOWNTO 0);
 
 	SIGNAL q_ram_wide          : ram_data_t;
-	SIGNAL write_data_ram_wide : ram_data_t;
-	SIGNAL sel_ram             : std_logic_vector(0 TO TOTAL_RAM_BLOCKS-1);
-	SIGNAL wide_ram            : std_logic;
-	SIGNAL we_ram              : std_logic;
+	SIGNAL write_word          : std_logic_vector(8 DOWNTO 0);  -- the same for every RAM
+	SIGNAL we_ram              : std_logic_vector(0 TO TOTAL_RAM_BLOCKS-1);
 
 	SIGNAL address_ram         : std_logic_vector(RAM_ADDR_BITS-1 DOWNTO 0);
 	SIGNAL address_used        : std_logic_vector(ADDR_BITS-1 DOWNTO 0);
 
-	SIGNAL state_next          : std_logic_vector(0 DOWNTO 0);
-	SIGNAL state_reg           : std_logic_vector(0 DOWNTO 0);
-	constant state_idle        : std_logic_vector(0 DOWNTO 0) := "0";
-	constant state_write       : std_logic_vector(0 DOWNTO 0) := "1";
+	-- page decode: PAGE_* of the address in use (for starting a write), WR_* of the
+	-- latched write address, RD_* of the address the RAM outputs belong to
+	TYPE page_t IS RECORD
+		normal : std_logic;   -- 8-bit page in a grouped RAM or an extra RAM
+		wide   : std_logic;   -- 8-bit page made of a group's bit 8
+		ram    : natural RANGE 0 TO TOTAL_RAM_BLOCKS-1;  -- its RAM (normal)
+		grp    : natural RANGE 0 TO BYTE_BITS-1;         -- its group (wide)
+	END RECORD;
+
+	FUNCTION decode(a : std_logic_vector(ADDR_BITS-1 DOWNTO RAM_ADDR_BITS)) RETURN page_t IS
+		VARIABLE page : natural RANGE 0 TO 2**PAGE_BITS-1;
+		VARIABLE r    : page_t;
+	BEGIN
+		page    := to_integer(unsigned(a));
+		r.grp := to_integer(unsigned(a(12 DOWNTO 10)));
+		r.normal := '0';
+		r.wide   := '0';
+		r.ram    := 0;
+		-- 64 KiB example:
+		--   pages 0..55  : normal 8-bit access to RAM blocks 0..55
+		--   pages 56..62 : wide access using bit 8 of RAM blocks 0..55
+		--   page  63     : normal 8-bit access to RAM block 56
+		IF page < NORMAL_RAM_BLOCKS THEN
+			r.normal := '1';
+			r.ram    := page;
+		ELSIF page < GROUP_RAM_PAGES THEN
+			r.wide   := '1';
+		ELSIF page < TOTAL_MAPPED_PAGES THEN
+			r.normal := '1';
+			r.ram    := NORMAL_RAM_BLOCKS + (page - GROUP_RAM_PAGES);
+		END IF;
+		RETURN r;
+	END FUNCTION;
+
+	SIGNAL pg, wr, rd          : page_t;
+	SIGNAL rd_page_reg         : std_logic_vector(ADDR_BITS-1 DOWNTO RAM_ADDR_BITS);
+
+	SIGNAL sel_ram             : natural RANGE 0 TO TOTAL_RAM_BLOCKS-1;  -- RAM read by sel_q
+	SIGNAL sel_q               : std_logic_vector(8 DOWNTO 0);
+
+	TYPE state_t IS (state_idle, state_write, state_write_wide);
+	SIGNAL state_next          : state_t;
+	SIGNAL state_reg           : state_t;
+
+	SIGNAL bit_next            : unsigned(2 DOWNTO 0);   -- wide write: RAM of the group
+	SIGNAL bit_reg             : unsigned(2 DOWNTO 0);
 
 	SIGNAL data_next           : std_logic_vector(7 DOWNTO 0);
 	SIGNAL data_reg            : std_logic_vector(7 DOWNTO 0);
@@ -72,46 +126,97 @@ ARCHITECTURE rtl OF m9k_grouped IS
 BEGIN
 
 	-- During idle/read, the RAMs see the live bus address.
-	-- During the write cycle, they see the latched write address.
-	address_used <= address_reg WHEN state_reg = state_write ELSE address;
+	-- During the write cycles, they see the latched write address.
+	address_used <= address WHEN state_reg = state_idle ELSE address_reg;
 	address_ram  <= address_used(RAM_ADDR_BITS-1 DOWNTO 0);
+	busy         <= '0' WHEN state_reg = state_idle ELSE '1';
 
 	PROCESS(clock, reset_n)
 	BEGIN
 		IF reset_n = '0' THEN
 			state_reg   <= state_idle;
+			bit_reg     <= (others => '0');
 			data_reg    <= (others => '0');
 			address_reg <= (others => '0');
 		ELSIF rising_edge(clock) THEN
 			state_reg   <= state_next;
+			bit_reg     <= bit_next;
 			data_reg    <= data_next;
 			address_reg <= address_next;
 		END IF;
 	END PROCESS;
 
-	-- Latch write address/data for one-cycle read-modify-write.
-	PROCESS(state_reg, we, data, address, data_reg, address_reg)
+	pg <= decode(address_used(ADDR_BITS-1 DOWNTO RAM_ADDR_BITS));
+	wr <= decode(address_reg(ADDR_BITS-1 DOWNTO RAM_ADDR_BITS));
+	rd <= decode(rd_page_reg);
+
+	-- the page the RAMs read at this edge: their outputs belong to it next cycle
+	PROCESS(clock)
+	BEGIN
+		IF rising_edge(clock) THEN
+			rd_page_reg <= address_used(ADDR_BITS-1 DOWNTO RAM_ADDR_BITS);
+		END IF;
+	END PROCESS;
+
+	-- One write per cycle: idle -> state_write (normal page, 1 cycle)
+	--                      idle -> state_write_wide (8 cycles, bit_reg = 0..7)
+	PROCESS(state_reg, bit_reg, we, data, address, data_reg, address_reg, pg)
 	BEGIN
 		state_next   <= state_reg;
+		bit_next     <= bit_reg;
 		data_next    <= data_reg;
 		address_next <= address_reg;
-		we_ram       <= '0';
 
 		CASE state_reg IS
 			WHEN state_idle =>
 				IF we = '1' THEN
 					data_next    <= data;
 					address_next <= address;
-					state_next   <= state_write;
+					bit_next     <= (others => '0');
+					IF pg.wide = '1' THEN            -- address_used = address here
+						state_next <= state_write_wide;
+					ELSIF pg.normal = '1' THEN
+						state_next <= state_write;
+					END IF;                          -- unmapped: nothing to write
 				END IF;
 
 			WHEN state_write =>
-				we_ram     <= '1';
 				state_next <= state_idle;
 
-			WHEN others =>
-				state_next <= state_idle;
+			WHEN state_write_wide =>
+				bit_next <= bit_reg + 1;
+				IF bit_reg = BYTE_BITS-1 THEN
+					state_next <= state_idle;
+				END IF;
 		END CASE;
+	END PROCESS;
+
+	-- The RAM read by the shared mux: in a wide write the group's RAM being
+	-- written, in a normal write the page's RAM, else (reads) the RAM of the
+	-- page the outputs belong to.
+	sel_ram <= wr.grp * BYTE_BITS + to_integer(bit_reg)
+	                WHEN state_reg = state_write_wide AND wr.grp < NUM_GROUPS
+	           ELSE wr.ram WHEN state_reg = state_write
+	           ELSE rd.ram;
+	sel_q <= q_ram_wide(sel_ram);
+
+	-- Write data, the same for every RAM (only one is written per cycle). The
+	-- RAMs still output the word at the write address, read in the cycle before.
+	PROCESS(state_reg, data_reg, bit_reg, sel_q)
+	BEGIN
+		IF state_reg = state_write_wide THEN
+			write_word <= data_reg(to_integer(bit_reg)) & sel_q(BYTE_BITS-1 DOWNTO 0);
+		ELSE
+			write_word <= sel_q(WIDE_BIT) & data_reg;
+		END IF;
+	END PROCESS;
+
+	PROCESS(state_reg, sel_ram)
+	BEGIN
+		we_ram <= (others => '0');
+		IF state_reg /= state_idle THEN
+			we_ram(sel_ram) <= '1';
+		END IF;
 	END PROCESS;
 
 	m9k_loop: FOR i IN 0 TO TOTAL_RAM_BLOCKS-1 GENERATE
@@ -126,99 +231,24 @@ BEGIN
 		(
 			clock   => clock,
 			reset_n => reset_n,
-			data    => write_data_ram_wide(i),
+			data    => write_word,
 			address => address_ram,
-			we      => sel_ram(i) AND we_ram,
+			we      => we_ram(i),
 			q       => q_ram_wide(i)
 		);
 	END GENERATE m9k_loop;
 
-	-- Decode only the write-enable selection and the mode.
-	-- Reads use direct indexed muxes rather than sel_ram-masked OR reductions.
-	PROCESS(address_used)
-		VARIABLE page       : natural RANGE 0 TO 2**PAGE_BITS-1;
-		VARIABLE wide_group : natural RANGE 0 TO BYTE_BITS-1;
-		VARIABLE extra      : natural RANGE 0 TO EXTRA_RAM_BLOCKS;
+	-- Read data: the page's RAM (bits 7..0), or a group's bit 8 for a wide page.
+	-- (In the write cycles the output is not used: BUSY.)
+	PROCESS(rd, sel_q, q_ram_wide)
 	BEGIN
-		page       := to_integer(unsigned(address_used(ADDR_BITS-1 DOWNTO RAM_ADDR_BITS)));
-		wide_group := to_integer(unsigned(address_used(12 DOWNTO 10)));
-
-		wide_ram <= '0';
-		sel_ram  <= (others => '0');
-
-		-- 64 KiB example:
-		--   pages 0..55  : normal 8-bit access to RAM blocks 0..55
-		--   pages 56..62 : wide access using bit 8 of RAM blocks 0..55
-		--   page  63     : normal 8-bit access to RAM block 56
-		IF page < NORMAL_RAM_BLOCKS THEN
-			sel_ram(page) <= '1';
-
-		ELSIF page < GROUP_RAM_PAGES THEN
-			wide_ram <= '1';
-			IF wide_group < NUM_GROUPS THEN
-				FOR bt IN 0 TO BYTE_BITS-1 LOOP
-					sel_ram((wide_group * BYTE_BITS) + bt) <= '1';
-				END LOOP;
-			END IF;
-
-		ELSIF page < TOTAL_MAPPED_PAGES THEN
-			extra := page - GROUP_RAM_PAGES;
-			sel_ram(NORMAL_RAM_BLOCKS + extra) <= '1';
-		END IF;
-	END PROCESS;
-
-	-- RAM write data.
-	-- Only the selected RAMs are written, so unselected RAM data inputs are don't-care.
-	-- The assignments below avoid copying every full RAM word back to its input.
-	write_data_loop: FOR i IN 0 TO TOTAL_RAM_BLOCKS-1 GENERATE
-		PROCESS(wide_ram, address_used, data_reg, q_ram_wide)
-			VARIABLE wide_group : natural RANGE 0 TO BYTE_BITS-1;
-		BEGIN
-			wide_group := to_integer(unsigned(address_used(12 DOWNTO 10)));
-
-			write_data_ram_wide(i) <= (others => '0');
-
-			IF wide_ram = '0' THEN
-				-- Normal byte write: replace bits 0..7, preserve the packed wide bit.
-				write_data_ram_wide(i)(BYTE_BITS-1 DOWNTO 0) <= data_reg;
-				write_data_ram_wide(i)(WIDE_BIT) <= q_ram_wide(i)(WIDE_BIT);
-			ELSE
-				-- Wide write: selected group of 8 RAMs stores one bit each in bit 8.
-				-- Preserve the normal byte only for RAMs in the selected group.
-				IF i < NORMAL_RAM_BLOCKS THEN
-					IF wide_group = (i / BYTE_BITS) THEN
-						write_data_ram_wide(i)(BYTE_BITS-1 DOWNTO 0) <= q_ram_wide(i)(BYTE_BITS-1 DOWNTO 0);
-						write_data_ram_wide(i)(WIDE_BIT) <= data_reg(i MOD BYTE_BITS);
-					END IF;
-				END IF;
-			END IF;
-		END PROCESS;
-	END GENERATE write_data_loop;
-
-	-- Read mux. This replaces the previous 57-way selected OR-reduction fabric.
-	PROCESS(address_used, q_ram_wide)
-		VARIABLE page       : natural RANGE 0 TO 2**PAGE_BITS-1;
-		VARIABLE wide_group : natural RANGE 0 TO BYTE_BITS-1;
-		VARIABLE extra      : natural RANGE 0 TO EXTRA_RAM_BLOCKS;
-	BEGIN
-		page       := to_integer(unsigned(address_used(ADDR_BITS-1 DOWNTO RAM_ADDR_BITS)));
-		wide_group := to_integer(unsigned(address_used(12 DOWNTO 10)));
-
 		q <= (others => '0');
-
-		IF page < NORMAL_RAM_BLOCKS THEN
-			q <= q_ram_wide(page)(BYTE_BITS-1 DOWNTO 0);
-
-		ELSIF page < GROUP_RAM_PAGES THEN
-			IF wide_group < NUM_GROUPS THEN
-				FOR bt IN 0 TO BYTE_BITS-1 LOOP
-					q(bt) <= q_ram_wide((wide_group * BYTE_BITS) + bt)(WIDE_BIT);
-				END LOOP;
-			END IF;
-
-		ELSIF page < TOTAL_MAPPED_PAGES THEN
-			extra := page - GROUP_RAM_PAGES;
-			q <= q_ram_wide(NORMAL_RAM_BLOCKS + extra)(BYTE_BITS-1 DOWNTO 0);
+		IF rd.normal = '1' THEN
+			q <= sel_q(BYTE_BITS-1 DOWNTO 0);
+		ELSIF rd.wide = '1' AND rd.grp < NUM_GROUPS THEN
+			FOR bt IN 0 TO BYTE_BITS-1 LOOP
+				q(bt) <= q_ram_wide((rd.grp * BYTE_BITS) + bt)(WIDE_BIT);
+			END LOOP;
 		END IF;
 	END PROCESS;
 

@@ -44,6 +44,7 @@ ENTITY sample_top IS
 		RAM_ADDR : out std_logic_vector(15 downto 0);
 		RAM_WRITE_ENABLE : out std_logic;
 		RAM_DATA : in std_logic_vector(7 downto 0); -- next cycle: TODO, what if we use rom?
+		RAM_BUSY : in std_logic := '0'; -- RAM finishing a write: the address given now is not read
 		RAM_WRITE_DATA : out std_logic_vector(7 downto 0);
 
 		ADPCM_STEP_ADDR : out std_logic_vector(6 downto 0);
@@ -150,6 +151,8 @@ ARCHITECTURE vhdl OF sample_top IS
 
 	signal store_data : std_logic_vector(12 downto 0);
 	signal store_source : std_logic_vector(3 downto 0);
+	signal cpu_covox_write : std_logic;
+	signal dma_data_reg : std_logic_vector(7 downto 0);  -- the DMA's byte, kept from its data_ready cycle
 	signal store_channel : std_logic_vector(1 downto 0);
 	signal store : std_logic;
 
@@ -210,27 +213,42 @@ BEGIN
  		end if;
 	end process;
 
-	process(adpcm_channel,adpcm_store,addr,bits8,dma_on,adpcm_on,write_enable)
+	cpu_covox_write <= write_enable and not(or_reduce(ADDR(4 downto 2)));
+
+	process(adpcm_channel,adpcm_store,addr,bits8,dma_on,adpcm_on,cpu_covox_write)
 	begin
 		store <= '0';
 		store_channel <= (others=>'0');
 		store_source <= (others=>'0');
 
-		if (write_enable='0' and dma_on='1') then
+		-- A CPU write to a covox register ($D280-$D283) stores; any other CPU write
+		-- must not get in the way of a DMA store in the same cycle (it used to drop it)
+		if (cpu_covox_write='0' and dma_on='1') then
 			store_channel <= adpcm_channel;
 			store <= adpcm_store;
-		elsif (write_enable='1') then
+		elsif (cpu_covox_write='1') then
 			store_channel <= ADDR(1 downto 0);
-			store <= not(or_reduce(ADDR(4 downto 2)));
+			store <= '1';
 		end if;
 		store_source(3) <= bits8;
 		store_source(2) <= dma_on;
 		store_source(1) <= adpcm_on;
-		store_source(0) <= write_enable;
+		store_source(0) <= cpu_covox_write;
+	end process;
+
+	-- The 8-bit/4-bit store comes one cycle after data_ready; the RAM output may
+	-- belong to another address by then (a CPU access), so keep the byte.
+	process(clk)
+	begin
+		if (clk'event and clk='1') then
+			if (adpcm_data_ready_reg='1') then
+				dma_data_reg <= ram_data;
+			end if;
+		end if;
 	end process;
 
 	process(store_source,data_nibble,
-		di,adpcm_decoded,ram_data)
+		di,adpcm_decoded,dma_data_reg)
 	begin
 		store_data <= (others=>'0');
 		case store_source is
@@ -240,12 +258,12 @@ BEGIN
 			when "0110"|"1110" =>
 				store_data <= adpcm_decoded(15 downto 3);
 			when "1100" =>
-				store_data(12 downto 5) <= ram_data(7 downto 0);
+				store_data(12 downto 5) <= dma_data_reg(7 downto 0);
 			when "0100" =>
 				if (data_nibble='0') then
-					store_data(12 downto 9) <= ram_data(7 downto 4);
+					store_data(12 downto 9) <= dma_data_reg(7 downto 4);
 				else
-					store_data(12 downto 9) <= ram_data(3 downto 0);
+					store_data(12 downto 9) <= dma_data_reg(3 downto 0);
 				end if;
 
 			when others=>
@@ -594,7 +612,8 @@ BEGIN
 		adpcm_reg,
 		bits8_reg,
 		adpcm_data_request,
-		ram_record_enabled_reg)
+		ram_record_enabled_reg,
+		ram_busy)
 	begin
 		ram_addr <= (others=>'0');
 		data_nibble <= '0';
@@ -662,6 +681,13 @@ BEGIN
 		if (request='1') then
 			ram_addr <= ram_cpu_addr_reg;
 			adpcm_data_ready_next <= '0';
+		end if;
+
+		-- The packed RAM is still writing (up to 9 cycles after a CPU write): it ignores
+		-- the address this cycle, so this channel's read is retried, like a CPU access.
+		if (ram_busy='1') then
+			adpcm_data_ready_next <= '0';
+			ram_record_write_enable <= '0';
 		end if;
 	end process;
 
