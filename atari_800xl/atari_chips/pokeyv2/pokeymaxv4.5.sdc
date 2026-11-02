@@ -23,6 +23,10 @@ set_clock_groups -asynchronous \
     \pll_v3_inst:pll_inst|altpll_component|auto_generated|pll1|clk[3] \
   }
 
+set amy [get_registers {*|amy1:chip|*}]
+set_multicycle_path -from $amy -to $amy -setup -end 2
+set_multicycle_path -from $amy -to $amy -hold  -end 1
+
 #		IOX_RST : OUT STD_LOGIC;
 #		IOX_INT : IN STD_LOGIC;
 #		IOX_SDA : INOUT STD_LOGIC;

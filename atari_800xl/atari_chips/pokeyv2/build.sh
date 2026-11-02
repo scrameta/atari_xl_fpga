@@ -8,7 +8,7 @@ my $name="eclaireXL";
 #Added like this to the generated qsf
 #set_parameter -name TV 1
 
-my $version = "31";
+my $version = "32";
 
 my %variants = 
 (
@@ -859,6 +859,7 @@ my %variants =
 				"audout2_on_audout3" => 1,
 				"pokeys" => 4,
 				"enable_auto_stereo" => 1,
+				"enable_amy" => 1,
 				"enable_sid" => 1,
 				"enable_psg" => 1,
 				"enable_covox" => 1,
@@ -896,6 +897,7 @@ my %variants =
 				"enable_audout2" => 0,
 				"pokeys" => 4,
 				"enable_auto_stereo" => 1,
+				"enable_amy" => 1,
 				"enable_sid" => 1,
 				"enable_psg" => 1,
 				"enable_covox" => 1,
@@ -1309,6 +1311,7 @@ foreach my $typeboard (sort keys %variants)
 			`cp -r flash_$fpgasize/flash* $dir 2> /dev/null`;
 			`cp -r PSG $dir`;
 			`cp -r SID $dir`;
+			`cp -r AMY $dir`;
 			`cp -r pokey $dir`;
 			`cp -r sample $dir`;
 			`cp -r covox $dir`;

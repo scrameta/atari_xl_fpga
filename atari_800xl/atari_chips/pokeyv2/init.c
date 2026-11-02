@@ -452,6 +452,12 @@ PSG_ENVELOPE16_NEXT <= flash_do(28);
 	FILE * fr =fopen("fir_rom.bin","rb");
 	        fread(fir,2,2032,fr);
 	fclose(fr);
+
+	int amy_base = 0x1000*4;
+	unsigned short * amy = (unsigned short *)(buffer+amy_base);
+	FILE * af =fopen("amy1_mem.bin","rb");
+	        fread(amy,4,1208,af);
+	fclose(af);
 	
 
 	FILE * x =fopen("init_0.bin","w");

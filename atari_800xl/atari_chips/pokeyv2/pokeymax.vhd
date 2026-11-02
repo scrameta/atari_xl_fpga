@@ -45,6 +45,7 @@ ENTITY pokeymax IS
 		pll_v2 : integer := 1;
 
 		enable_config : integer := 1;
+		enable_amy : integer := 0;
 		enable_sid : integer := 0;
 		enable_psg : integer := 0;
 		enable_covox : integer := 0;
@@ -195,6 +196,8 @@ ARCHITECTURE vhdl OF pokeymax IS
 
 	-- WRITE ENABLES
 	SIGNAL POKEY_WRITE_ENABLE : STD_LOGIC_VECTOR(3 downto 0);		
+
+	SIGNAL AMY_WRITE_ENABLE : STD_LOGIC_VECTOR(1 downto 0);	
 	
 	SIGNAL SID_WRITE_ENABLE : STD_LOGIC_VECTOR(1 downto 0);	
 	SIGNAL SID_READ_ENABLE : STD_LOGIC_VECTOR(1 downto 0);	
@@ -208,6 +211,8 @@ ARCHITECTURE vhdl OF pokeymax IS
 	type DO_TYPE is array (NATURAL range <>) of std_logic_vector(7 downto 0);
 	
 	SIGNAL POKEY_DO : DO_TYPE(3 downto 0);	
+
+	SIGNAL AMY_DO : DO_TYPE(1 downto 0);
 	
 	SIGNAL SID_DO : DO_TYPE(1 downto 0);
 	SIGNAL SID_DRIVE_DO : std_logic_vector(1 downto 0);
@@ -272,6 +277,12 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal POKEY_PROFILE_ADDR : std_logic_vector(5 downto 0);
 	signal POKEY_PROFILE_REQUEST : std_logic;
 	signal POKEY_PROFILE_READY : std_logic;
+
+        -- AMY
+	signal AMY_AUDIO_SIGNED : SIGNED_AUDIO_TYPE(1 downto 0);
+	signal AMY_FLASH_ADDR : std_logic_vector(10 downto 0);
+        signal AMY_FLASH_ROMREQUEST : std_logic;
+        signal AMY_FLASH_ROMREADY : std_logic;
 
 	-- SID
 	signal SID_CLK_ENABLE : std_logic;
@@ -396,6 +407,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal SAMPLE_RAM_ADDRESS : std_logic_vector(15 downto 0);
 	signal SAMPLE_RAM_WRITE_ENABLE : std_logic;
 	signal SAMPLE_RAM_READ_DATA : std_logic_vector(7 downto 0);
+	signal SAMPLE_RAM_BUSY : std_logic;
 	signal SAMPLE_RAM_WRITE_DATA : std_logic_vector(7 downto 0);
 
 	signal ADPCM_STEP_ADDR : std_logic_vector(6 downto 0);
@@ -440,8 +452,8 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal CONFIG_FLASH_ADDR : std_logic_vector(0 downto 0);
 
 	-- capability restriction
-	signal RESTRICT_CAPABILITY_REG : std_logic_vector(4 downto 0);
-	signal RESTRICT_CAPABILITY_NEXT : std_logic_vector(4 downto 0);
+	signal RESTRICT_CAPABILITY_REG : std_logic_vector(5 downto 0);
+	signal RESTRICT_CAPABILITY_NEXT : std_logic_vector(5 downto 0);
 	signal readreq_s : std_logic;
 	signal writereq_s : std_logic;
 	-- 0=stereo off
@@ -468,6 +480,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	-- clock gen
 	signal MHZ1_ENABLE : std_logic;
 	signal MHZ2_ENABLE : std_logic;
+	signal MHZ8_ENABLE : std_logic;
 
 	-- spdif
 	signal spdif_out : std_logic;
@@ -616,7 +629,10 @@ flash_on : if enable_flash=1 generate
 		flash_req7_addr(8 downto 0) => "11"&SATURATE_REG&POKEY_PROFILE_ADDR,  --TODO + init.bin
 
 		flash_req8_addr(12 downto 12) => (others=>'0'),
-		flash_req8_addr(11 downto 0) => "11"&FIR_DATA_ADDRESS,
+		flash_req8_addr(11 downto 0) => "11"&FIR_DATA_ADDRESS, -- Clash??
+
+		flash_req9_addr(12 downto 11) => "10",
+		flash_req9_addr(10 downto 0) => AMY_FLASH_ADDR,
 
 		flash_req_request(0) => CPU_FLASH_REQUEST_REG,
 		flash_req_request(1) => CONFIG_FLASH_REQUEST,
@@ -626,7 +642,8 @@ flash_on : if enable_flash=1 generate
 		flash_req_request(5) => PSG_PROFILE_REQUEST,
 		flash_req_request(6) => POKEY_PROFILE_REQUEST,
 		flash_req_request(7) => FIR_DATA_REQUEST,
-		flash_req_complete(7 downto 0) => open,
+		flash_req_request(8) => AMY_FLASH_ROMREQUEST,
+		flash_req_complete(8 downto 0) => open,
 
 		flash_req_complete_slow(0) => CPU_FLASH_COMPLETE,
 		flash_req_complete_slow(1) => CONFIG_FLASH_COMPLETE,
@@ -636,6 +653,7 @@ flash_on : if enable_flash=1 generate
 		flash_req_complete_slow(5) => PSG_PROFILE_READY,
 		flash_req_complete_slow(6) => POKEY_PROFILE_READY,
 		flash_req_complete_slow(7) => FIR_DATA_READY,
+		flash_req_complete_slow(8) => AMY_FLASH_ROMREADY,
 
 		flash_data_out_slow => flash_do_slow
 	);
@@ -983,6 +1001,45 @@ sidpsg_on : if enable_sid=1 or enable_psg=1 generate
 end generate sidpsg_on;
 
 --------------------------------------------------------
+-- AMY
+--------------------------------------------------------
+amy_off : if enable_amy=0 generate 
+	AMY_AUDIO_SIGNED(0) <= to_signed(0,16);
+	AMY_AUDIO_SIGNED(1) <= to_signed(0,16);
+	AMY_DO(0) <= (others=>'0');
+	AMY_DO(1) <= (others=>'0');
+end generate amy_off;
+
+amy_on : if enable_amy=1 generate 
+
+amy1 : entity work.amy1_top
+GENERIC MAP(
+	USE_TICK => false,
+	STEP_NUM => 3,
+	STEP_DEN => 8,
+	ENGINE_UNIT_LOG2 => 15,
+	ENGINE => true
+)
+PORT MAP(
+	CLK => CLK,
+	RESET_N => RESET_N,
+
+	WRITE_ENABLE => AMY_WRITE_ENABLE(0),
+	ADDR => ADDR_IN(3 downto 0),
+	DI => WRITE_DATA(7 downto 0),
+	DO => AMY_DO(0),
+
+	rom_addr(10 downto 0) => amy_flash_addr,
+	rom_data => flash_do_slow,
+       	rom_request => amy_flash_romrequest,
+	rom_ready => amy_flash_romready,
+
+	AUDIO_L => AMY_AUDIO_SIGNED(0),
+	AUDIO_R => AMY_AUDIO_SIGNED(1)
+);
+end generate amy_on;		
+
+--------------------------------------------------------
 -- SID
 --------------------------------------------------------
 sid_off : if enable_sid=0 generate 
@@ -1325,6 +1382,7 @@ sample_on : if enable_sample=1 generate
 		RAM_ADDR => SAMPLE_RAM_ADDRESS,
 		RAM_WRITE_ENABLE => SAMPLE_RAM_WRITE_ENABLE,
 		RAM_DATA => SAMPLE_RAM_READ_DATA,
+		RAM_BUSY => SAMPLE_RAM_BUSY,
 		RAM_WRITE_DATA => SAMPLE_RAM_WRITE_DATA,
 
 		ADPCM_STEP_ADDR => ADPCM_STEP_ADDR,
@@ -1348,7 +1406,8 @@ packed_ram45 : if sample_ram_size=46080 generate
 		data => sample_ram_write_data,
 		address => sample_ram_address,
 		we => sample_ram_write_enable,
-		q => sample_ram_read_data
+		q => sample_ram_read_data,
+		busy => sample_ram_busy
 	);
 end generate;
 
@@ -1365,7 +1424,8 @@ packed_ram64 : if sample_ram_size=65536 generate
 		data => sample_ram_write_data,
 		address => sample_ram_address,
 		we => sample_ram_write_enable,
-		q => sample_ram_read_data
+		q => sample_ram_read_data,
+		busy => sample_ram_busy
 	);
 end generate;
 
@@ -1386,6 +1446,7 @@ normal_ram : if not(sample_ram_size=65536 or sample_ram_size=46080) generate
 		we => sample_ram_write_enable,
 		q => sample_ram_read_data
 	);
+	sample_ram_busy <= '0';
 end generate;
 
 end generate sample_on;
@@ -1431,6 +1492,7 @@ end process;
 process(
 	DEVICE_ADDR,
 	POKEY_DO,
+	AMY_DO,
 	SID_DO,SID_DRIVE_DO,
 	PSG_DO,
 	SAMPLE_DO,
@@ -1447,6 +1509,7 @@ begin
 	readreq := write_n and request;
 	
 	POKEY_WRITE_ENABLE <= (others=>'0');
+	AMY_WRITE_ENABLE <= (others=>'0');
 	SID_WRITE_ENABLE <= (others=>'0');
 	SID_READ_ENABLE <= (others=>'0');
 	PSG_WRITE_ENABLE <= (others=>'0');
@@ -1494,6 +1557,10 @@ begin
 			enable_region := RESTRICT_CAPABILITY_REG(3);
 			DO_MUX <= PSG_DO(1);			
 			PSG_WRITE_ENABLE(1) <= writereq_s;
+		when "1100" =>
+			enable_region := RESTRICT_CAPABILITY_REG(5);
+			DO_MUX <= AMY_DO(0);			
+			AMY_WRITE_ENABLE(0) <= writereq_s;
 		when "1111" =>
 			enable_region := '1';
 			DO_MUX <= CONFIG_DO;
@@ -1683,8 +1750,8 @@ begin
 				-- 3 reserved
 				SID_FILTER2_NEXT <= flash_do_slow(6 downto 4);
 				-- 7 reserved
-				RESTRICT_CAPABILITY_NEXT <= flash_do_slow(12 downto 8);
-				-- 13-15 reserved
+				RESTRICT_CAPABILITY_NEXT <= flash_do_slow(13 downto 8);
+				-- 14-15 reserved
 				-- 21-23 reserved (used in sidmax)
 				MIX_SEL1_NEXT(2 downto 0) <= flash_do_slow(18 downto 16); -- (clash with sidmix)
 				MIX_SEL2_NEXT(2 downto 0) <= flash_do_slow(22 downto 20); -- (clash with sidmix)
@@ -1728,7 +1795,7 @@ begin
 		end if;
 
 		if (addr_decoded4(7)='1') then
-			RESTRICT_CAPABILITY_NEXT(4 downto 0) <= WRITE_DATA(4 downto 0);
+			RESTRICT_CAPABILITY_NEXT(5 downto 0) <= WRITE_DATA(5 downto 0);
 		end if;
 
 		if enable_routing=1 then 
@@ -1847,10 +1914,10 @@ begin
 		ACTUAL_CAPABILITY(7) := '1';
 	else
 		ACTUAL_CAPABILITY(7) := '0';
-	end if;					
+	end if;	
 	
 	if (addr_decoded4(1)='1') then
-		CONFIG_DO <= ACTUAL_CAPABILITY and "11"&RESTRICT_CAPABILITY_REG(4)&RESTRICT_CAPABILITY_REG;
+		CONFIG_DO <= ACTUAL_CAPABILITY and "11"&RESTRICT_CAPABILITY_REG(4)&RESTRICT_CAPABILITY_REG(4 downto 0); -- TODO: Amy??
 	end if;
 	
 	if (addr_decoded4(2)='1') then
@@ -1910,7 +1977,7 @@ begin
 	end if;
 
 	if (addr_decoded4(7)='1') then
-		CONFIG_DO(4 downto 0) <= RESTRICT_CAPABILITY_REG(4 downto 0);
+		CONFIG_DO(5 downto 0) <= RESTRICT_CAPABILITY_REG(5 downto 0);
 	end if;
 
 	if (enable_routing=1) then
@@ -1997,6 +2064,8 @@ PORT MAP
 	R_CH3 => SID_AUDIO_SIGNED(1),	
 	L_CH4 => PSG_AUDIO_SIGNED(0),
 	R_CH4 => PSG_AUDIO_SIGNED(1),		
+	L_CH5 => AMY_AUDIO_SIGNED(0),
+	R_CH5 => AMY_AUDIO_SIGNED(1),		
 	B_CH0 => GTIA_AUDIO_SIGNED,
 	B_CH1 => SIO_AUDIO_SIGNED,			
 
