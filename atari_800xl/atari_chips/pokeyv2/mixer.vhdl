@@ -33,11 +33,13 @@ PORT
 	L_CH2 : IN SIGNED(15 downto 0);
 	L_CH3 : IN SIGNED(15 downto 0);
 	L_CH4 : IN SIGNED(15 downto 0);
+	L_CH5 : IN SIGNED(15 downto 0);
 	R_CH0 : IN SIGNED(15 downto 0);
 	R_CH1 : IN SIGNED(15 downto 0);
 	R_CH2 : IN SIGNED(15 downto 0);
 	R_CH3 : IN SIGNED(15 downto 0);
 	R_CH4 : IN SIGNED(15 downto 0);
+	R_CH5 : IN SIGNED(15 downto 0);
 	B_CH0 : IN SIGNED(15 downto 0);
 	B_CH1 : IN SIGNED(15 downto 0);
 
@@ -94,10 +96,11 @@ ARCHITECTURE vhdl OF mixer IS
 	constant state_CH2    : unsigned(3 downto 0) := "0010";
 	constant state_CH3    : unsigned(3 downto 0) := "0011";
 	constant state_CH4    : unsigned(3 downto 0) := "0100";
-	constant state_BCH0   : unsigned(3 downto 0) := "0101";
-	constant state_BCH1   : unsigned(3 downto 0) := "0110";
-	constant state_divide : unsigned(3 downto 0) := "0111";  -- divide
-	constant state_clear  : unsigned(3 downto 0) := "1000";  -- saturate + write output
+	constant state_CH5    : unsigned(3 downto 0) := "0101";
+	constant state_BCH0   : unsigned(3 downto 0) := "0110";
+	constant state_BCH1   : unsigned(3 downto 0) := "0111";
+	constant state_divide : unsigned(3 downto 0) := "1000";  -- divide
+	constant state_clear  : unsigned(3 downto 0) := "1001";  -- saturate + write output
 
 	signal channelsel : std_logic_vector(3 downto 0);
 	signal include_in_output : std_logic_vector(3 downto 0);
@@ -209,6 +212,9 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 				state_next <= state_CH4;
 			when state_CH4 =>
 				channelsel <= x"4";
+				state_next <= state_CH5;
+			when state_CH5 =>
+				channelsel <= x"5";
 				state_next <= state_BCH0;
 			when state_BCH0 =>
 				channelsel <= x"6";
@@ -271,8 +277,8 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 	end process;		
 
 	process(state_reg,channelsel,
-		L_CH0,L_CH1,L_CH2,L_CH3,L_CH4,
-		R_CH0,R_CH1,R_CH2,R_CH3,R_CH4,
+		L_CH0,L_CH1,L_CH2,L_CH3,L_CH4,L_CH5,
+		R_CH0,R_CH1,R_CH2,R_CH3,R_CH4,R_CH5,
 		B_CH0,B_CH1,
 		B_CH0_EN,B_CH1_EN
 		)
@@ -298,6 +304,8 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 		        volume <= L_CH3;
 		when x"4" =>
 		        volume <= L_CH4;
+		when x"5" =>
+		        volume <= L_CH5;
 		when x"8" =>
 		        volume <= R_CH0;
 		when x"9" =>
@@ -308,6 +316,8 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 			volume <= R_CH3;
 		when x"c" =>
 			volume <= R_CH4;
+		when x"d" =>
+			volume <= R_CH5;
 		when x"6"|x"e" =>
 			include_in_output <= B_CH0_EN;
 		        volume <= B_CH0;
