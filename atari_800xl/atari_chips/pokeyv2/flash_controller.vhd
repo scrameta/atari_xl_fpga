@@ -32,9 +32,9 @@ ENTITY flash_controller IS
 		flash_req1_data_in : IN STD_LOGIC_VECTOR(31 downto 0);
 		flash_req1_write_n: IN STD_LOGIC;
 
-		flash_req_request : IN STD_LOGIC_VECTOR(7 downto 0);
-		flash_req_complete : OUT STD_LOGIC_VECTOR(7 downto 0);
-		flash_req_complete_slow : OUT STD_LOGIC_VECTOR(7 downto 0);
+		flash_req_request : IN STD_LOGIC_VECTOR(8 downto 0);
+		flash_req_complete : OUT STD_LOGIC_VECTOR(8 downto 0);
+		flash_req_complete_slow : OUT STD_LOGIC_VECTOR(8 downto 0);
 
 		flash_req1_addr : IN STD_LOGIC_VECTOR(addr_bits-1 downto 0) := (others=>'0');
 		flash_req2_addr : IN STD_LOGIC_VECTOR(12 downto 0) := (others=>'0');
@@ -44,6 +44,7 @@ ENTITY flash_controller IS
 		flash_req6_addr : IN STD_LOGIC_VECTOR(12 downto 0) := (others=>'0');
 		flash_req7_addr : IN STD_LOGIC_VECTOR(12 downto 0) := (others=>'0');
 		flash_req8_addr : IN STD_LOGIC_VECTOR(12 downto 0) := (others=>'0');
+		flash_req9_addr : IN STD_LOGIC_VECTOR(12 downto 0) := (others=>'0');
 
 		-- Output
 		flash_data_out : OUT STD_LOGIC_VECTOR(31 downto 0);
@@ -110,11 +111,11 @@ ARCHITECTURE vhdl OF flash_controller IS
 	signal request_di_next : std_logic_vector(31 downto 0);
 	signal device_reg : std_logic;
 	signal device_next : std_logic;
-	signal output_reg : std_logic_vector(7 downto 0);
-	signal output_next : std_logic_vector(7 downto 0);
+	signal output_reg : std_logic_vector(8 downto 0);
+	signal output_next : std_logic_vector(8 downto 0);
 
-	signal robin_reg : std_logic_vector(7 downto 0);
-	signal robin_next : std_logic_vector(7 downto 0);
+	signal robin_reg : std_logic_vector(8 downto 0);
+	signal robin_next : std_logic_vector(8 downto 0);
 
 	signal complete : std_logic;
 	signal update_robin : std_logic;
@@ -128,13 +129,13 @@ ARCHITECTURE vhdl OF flash_controller IS
 	
 	signal flash_do_next : std_logic_vector(31 downto 0);
 	signal flash_do_reg : std_logic_vector(31 downto 0);
-	signal flash_complete_next : std_logic_vector(7 downto 0);
-	signal flash_complete_reg : std_logic_vector(7 downto 0);	
+	signal flash_complete_next : std_logic_vector(8 downto 0);
+	signal flash_complete_reg : std_logic_vector(8 downto 0);	
 
 	signal flash_do_slow_next : std_logic_vector(31 downto 0);
 	signal flash_do_slow_reg : std_logic_vector(31 downto 0);
-	signal flash_complete_slow_next : std_logic_vector(7 downto 0);
-	signal flash_complete_slow_reg : std_logic_vector(7 downto 0);	
+	signal flash_complete_slow_next : std_logic_vector(8 downto 0);
+	signal flash_complete_slow_reg : std_logic_vector(8 downto 0);	
 
 BEGIN
 
@@ -174,7 +175,7 @@ BEGIN
 			request_di_reg <= (others=>'0');
 			device_reg <= '0';
 			output_reg <= (others=>'0');
-			robin_reg <= "10000000";
+			robin_reg <= "100000000";
 			flash_do_reg <= (others=>'0');
 			flash_complete_reg <= (others=>'0');
 			flash_write_reg <= '0';
@@ -213,7 +214,7 @@ BEGIN
 
 		flash_req1_addr, flash_req1_data_in, flash_req1_write_n, flash_req1_addr_config,
 		flash_req2_addr, flash_req3_addr, flash_req4_addr,
-		flash_req5_addr, flash_req6_addr, flash_req7_addr, flash_req8_addr,
+		flash_req5_addr, flash_req6_addr, flash_req7_addr, flash_req8_addr, flash_req9_addr,
 
 		flash_readvalid, flash_waitrequest,
 
@@ -240,29 +241,31 @@ BEGIN
 		device := '0';
 		addr := (others=>'0');
 		case robin_reg is
-		when x"01" =>
+		when '0'&x"01" =>
 			addr := flash_req1_addr;
 			device := flash_req1_addr_config;
-		when x"02" =>
+		when '0'&x"02" =>
 			addr(12 downto 0) := flash_req2_addr;
-		when x"04" =>
+		when '0'&x"04" =>
 			addr(12 downto 0) := flash_req3_addr;
-		when x"08" =>
+		when '0'&x"08" =>
 			addr := flash_req4_addr;
-		when x"10" =>
+		when '0'&x"10" =>
 			addr := flash_req5_addr;
-		when x"20" =>
+		when '0'&x"20" =>
 			addr(12 downto 0) := flash_req6_addr;
-		when x"40" =>
+		when '0'&x"40" =>
 			addr(12 downto 0) := flash_req7_addr;
-		when others =>
+		when '0'&x"80" =>
 			addr(12 downto 0) := flash_req8_addr;
+		when others =>
+			addr(12 downto 0) := flash_req9_addr;
 		end case;
 
 
 		update_robin <= complete;
 		if (update_robin='1') then
-			robin_next <= robin_reg(6 downto 0)&robin_reg(7);
+			robin_next <= robin_reg(7 downto 0)&robin_reg(8);
 		end if;
 
 		case state_reg is
@@ -347,7 +350,7 @@ BEGIN
 	end process;
 
 	-- register complete
-	flash_complete_next <= output_reg and (complete&complete&complete&complete&complete&complete&complete&complete);
+	flash_complete_next <= output_reg and (complete&complete&complete&complete&complete&complete&complete&complete&complete);
 	flash_complete_slow_next <= flash_complete_next or flash_complete_reg;
 	process(flash_do_reg,flash_do,complete)
 	begin
