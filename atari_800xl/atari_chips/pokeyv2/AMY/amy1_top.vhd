@@ -166,6 +166,7 @@ architecture vhdl of amy1_top is
   signal chip_addr               : std_logic_vector(1 downto 0);
   signal chip_wdata              : std_logic_vector(7 downto 0);
   signal resetn_reg, resetn_next : std_logic := '0';
+  signal up_reg, up_next         : std_logic := '0';   -- the chip's reset has ended (a ce after resetn)
   signal rstcnt_reg, rstcnt_next : unsigned(3 downto 0) := to_unsigned(3, 4);  -- reset clocks left
   signal shadow_b_reg, shadow_b_next : std_logic_vector(7 downto 0) := (others => '0');
   signal shadow_c_reg, shadow_c_next : std_logic_vector(7 downto 0) := (others => '0');
@@ -212,6 +213,7 @@ begin
       wait_reg       <= (others => '0');
       cur_reg        <= (others => '0');
       resetn_reg     <= '0';
+      up_reg         <= '0';
       rstcnt_reg     <= to_unsigned(3, 4);
       shadow_b_reg   <= (others => '0');
       shadow_c_reg   <= (others => '0');
@@ -244,6 +246,7 @@ begin
       wait_reg       <= wait_next;
       cur_reg        <= cur_next;
       resetn_reg     <= resetn_next;
+      up_reg         <= up_next;
       rstcnt_reg     <= rstcnt_next;
       shadow_b_reg   <= shadow_b_next;
       shadow_c_reg   <= shadow_c_next;
@@ -337,7 +340,7 @@ begin
   ---------------------------------------------------------------------------
   -- host writes go into the FIFO
   process (fifo_reg, wr_ptr_reg, rd_ptr_reg, count_reg, full, individual_reg, reset_req_reg,
-           WRITE_ENABLE, ADDR, DI, bus_reg, resetn_reg, tick, reset_taken, timeout,
+           WRITE_ENABLE, ADDR, DI, bus_reg, up_reg, tick, reset_taken, timeout,
            eng_push_req, eng_push_addr, eng_push_data)
     variable reset_cmd, push, eng, pop : std_logic;
     variable entry : std_logic_vector(9 downto 0);
@@ -371,7 +374,7 @@ begin
     end if;
     eng_push_ack <= eng;
     pop := '0';
-    if bus_reg = bus_idle and count_reg /= 0 and resetn_reg = '1' and reset_req_reg = '0' then
+    if bus_reg = bus_idle and count_reg /= 0 and up_reg = '1' and reset_req_reg = '0' then
       pop := '1';
     end if;
 
@@ -423,7 +426,7 @@ begin
   --   idle:   pop a write and give it to the chip at once (one clk). A, B, C: done.
   --           A command: wait for INT/RDY (it goes low as the command is written).
   --   wait:   INT/RDY high again: done, or after a read command read B, then C
-  process (bus_reg, wait_reg, cur_reg, resetn_reg, rstcnt_reg, shadow_b_reg, shadow_c_reg,
+  process (bus_reg, wait_reg, cur_reg, resetn_reg, up_reg, rstcnt_reg, shadow_b_reg, shadow_c_reg,
            fifo_reg, rd_ptr_reg, count_reg, reset_req_reg, tick, reset_taken, timeout, intrdy,
            rdata)
     variable rd_cmd : boolean;
@@ -432,6 +435,7 @@ begin
     wait_next     <= wait_reg;
     cur_next      <= cur_reg;
     resetn_next   <= resetn_reg;
+    up_next       <= up_reg;
     rstcnt_next   <= rstcnt_reg;
     shadow_b_next <= shadow_b_reg;
     shadow_c_next <= shadow_c_reg;
@@ -446,11 +450,14 @@ begin
     if reset_taken = '1' or timeout = '1' then
       -- chip reset: 8 internal clocks (the spec asks for at least 10 CLOCK periods = 5)
       resetn_next <= '0';
+      up_next     <= '0';
       rstcnt_next <= to_unsigned(8, 4);
       bus_next    <= bus_idle;
     else
       if tick = '1' then
-        -- chip in reset until the count runs out (4 internal clocks after power up)
+        -- chip in reset until the count runs out (4 internal clocks after power up). The
+        -- core registers its reset, so it takes writes from the chip clock after that.
+        up_next <= resetn_reg;
         if rstcnt_reg = 0 then
           resetn_next <= '1';
         else
@@ -461,7 +468,7 @@ begin
 
       case bus_reg is
         when bus_idle =>
-          if count_reg /= 0 and resetn_reg = '1' and reset_req_reg = '0' then
+          if count_reg /= 0 and up_reg = '1' and reset_req_reg = '0' then
             cur_next  <= fifo_reg(to_integer(rd_ptr_reg));
             chip_addr <= fifo_reg(to_integer(rd_ptr_reg))(9 downto 8);
             chip_we   <= '1';
@@ -497,7 +504,7 @@ begin
 
   -- status / read-back
   busy <= '0' when count_reg = 0 and bus_reg = bus_idle and loaded_reg = '1'
-                   and resetn_reg = '1' and reset_req_reg = '0' else '1';
+                   and up_reg = '1' and reset_req_reg = '0' else '1';
   with ADDR select DO <=
     shadow_b_reg           when "0010",
     shadow_c_reg           when "0011",

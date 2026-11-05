@@ -18,7 +18,12 @@
 --   row  15    : (shift overflow, unused)
 --   row  16    : the random bits of the last pass
 --   rows 20-31 : UD (column A), VAL (column B), SHIFT (column C), LSB at row 20
--- Each sample period one generator is processed (odd picks it), one row per slot.
+-- One row is processed per slot, a pass of 32 rows per generator, the two generators
+-- alternately. With 64 harmonics a pass is a sample period (the row is the slot, odd
+-- picks the generator). With 40 harmonics (sel40) a period has only 20 slots, so the
+-- block counts its own rows and passes across the period boundaries: a pass is still
+-- 32 slots (128 chip clocks), so the noise is the same as with 64 harmonics, and each
+-- new word is held until the next period starts (AMY1_SPEC.md Q6).
 -- The arithmetic is bit-serial, LSB first, one bit per row:
 --   P0  load the row address; while it still points at the previous row, the random
 --       bits take that row's data if it is a tap row (0, 3, 8, 14)
@@ -44,6 +49,7 @@ entity amy1_noise_generator is
     p         : in  std_logic_vector(0 to 3);      -- slot phase P0..P3
     sync      : in  std_logic;                     -- last slot of the sample period
     odd       : in  std_logic;                     -- generator of this sample period
+    sel40     : in  std_logic;                     -- 40 harmonics: the passes run on their own
     hadr      : in  std_logic_vector(5 downto 0);  -- harmonic address (row & gen in host mode)
     host_mode : in  std_logic;                     -- NZINIT: the host owns the Noise RAM
     cmd       : in  host_cmd_t;                    -- the host command
@@ -91,6 +97,14 @@ architecture rtl of amy1_noise_generator is
   signal sync1_reg,   sync1_next   : std_logic := '0';
   signal sync2_reg,   sync2_next   : std_logic := '0';
   signal host_reg,    host_next    : std_logic := '0';   -- host mode, one clock late
+  -- 40 harmonics: the block's own row counter and generator, and the held word
+  signal nrow_reg,    nrow_next    : unsigned(4 downto 0) := (others => '0');  -- next row
+  signal ngen_reg,    ngen_next    : std_logic := '0';   -- generator of this pass
+  signal tsync1_reg,  tsync1_next  : std_logic := '0';   -- sync, one and two clocks late
+  signal tsync2_reg,  tsync2_next  : std_logic := '0';
+  signal held_reg,    held_next    : std_logic_vector(11 downto 0) := (others => '0');
+  signal heldg_reg,   heldg_next   : std_logic := '0';   -- the held word's generator
+  signal heldv_reg,   heldv_next   : std_logic := '0';   -- a word is held
   signal hwr_reg,     hwr_next     : std_logic := '1';   -- host write (P2 of a Noise RAM write)
 
   signal rnd     : word3;                 -- random bits (cleared one clock after SYNC)
@@ -101,12 +115,20 @@ architecture rtl of amy1_noise_generator is
   signal we      : std_logic;
   signal gen     : std_logic;             -- generator accessed (RAM address bit 0 = not gen)
   signal word    : std_logic_vector(11 downto 0);
+  signal psync   : std_logic;             -- the pass ends (P3 of row 31): sync with 64 harmonics
+  signal gsel    : std_logic;             -- the generator of the next pass
 
 begin
 
   -----------------------------------------------------------------------------
   -- Bit-serial arithmetic for the current row
   -----------------------------------------------------------------------------
+  -- pass end and generator: the timebase's with 64 harmonics, the block's own with 40
+  psync <= sync when sel40 = '0' else
+           '1'  when p(3) = '1' and row_reg = 31 and host_mode = '0' else
+           '0';
+  gsel  <= odd when sel40 = '0' else ngen_reg;
+
   rnd   <= rnd_reg when sync2_reg = '0' else "000";
   still <= '1' when rnd = "000" or rnd = "111" else '0';
 
@@ -150,7 +172,8 @@ begin
   -----------------------------------------------------------------------------
   process (row_reg, hgen_reg, data_reg, prev_reg, rnd, upper_reg, ud_c_reg, val_c_reg,
            out_sr_reg, word0_reg, word1_reg, odd_reg, sync1_reg, host_reg,
-           p, sync, odd, hadr, host_mode, ram_q, ud_co, val_co, val_sum)
+           nrow_reg, ngen_reg, tsync1_reg, tsync2_reg, held_reg, heldg_reg, heldv_reg,
+           p, sync, odd, psync, gsel, sel40, hadr, host_mode, ram_q, ud_co, val_co, val_sum)
   begin
     row_next    <= row_reg;
     hgen_next   <= hgen_reg;
@@ -163,10 +186,17 @@ begin
     out_sr_next <= out_sr_reg;
     word0_next  <= word0_reg;
     word1_next  <= word1_reg;
+    nrow_next   <= nrow_reg;
+    ngen_next   <= ngen_reg;
+    held_next   <= held_reg;
+    heldg_next  <= heldg_reg;
+    heldv_next  <= heldv_reg;
 
     -- every clock
-    odd_next   <= odd;
-    sync1_next <= sync;
+    odd_next   <= gsel;
+    sync1_next <= psync;
+    tsync1_next <= sync;
+    tsync2_next <= tsync1_reg;
     sync2_next <= sync1_reg;
     host_next  <= host_mode;
     first_next <= '0';
@@ -174,10 +204,27 @@ begin
       first_next <= '1';
     end if;
 
-    -- address: P0, or P2 in host mode
+    -- address: P0 (the slot's row, or with 40 harmonics the block's own), or P2 in host mode
     if (host_mode = '0' and p(0) = '1') or (host_mode = '1' and p(2) = '1') then
       row_next  <= unsigned(hadr(5 downto 1));
       hgen_next <= hadr(0);
+    end if;
+    if host_mode = '0' and p(0) = '1' then
+      if sel40 = '1' then
+        row_next  <= nrow_reg;
+        nrow_next <= nrow_reg + 1;
+      else
+        nrow_next <= unsigned(hadr(5 downto 1)) + 1;   -- track the slot (a mode change carries on)
+      end if;
+    end if;
+    if host_mode = '1' then
+      nrow_next <= (others => '0');                     -- after NZINIT a pass starts at row 0
+    end if;
+    -- the generator alternates at each pass end
+    if sel40 = '0' then
+      ngen_next <= odd;
+    elsif psync = '1' then
+      ngen_next <= not ngen_reg;
     end if;
 
     if p(0) = '1' then
@@ -203,13 +250,22 @@ begin
       out_sr_next <= val_sum & out_sr_reg(10 downto 1);
     end if;
 
-    -- output word at SYNC (not in host mode): VAL bit 11 and the last 11 bits shifted in
+    -- output word: taken at the pass end (not in host mode): VAL bit 11 and the last
+    -- 11 bits shifted in; it becomes the generator's word as the next period starts (at
+    -- once with 64 harmonics, where a pass is a period), so a voice sees one word for all
+    -- its harmonics
     if sync1_reg = '1' and host_reg = '0' then
-      if odd_reg = '0' then
-        word0_next <= val_sum & out_sr_reg;
+      held_next  <= val_sum & out_sr_reg;
+      heldg_next <= odd_reg;
+      heldv_next <= '1';
+    end if;
+    if tsync2_reg = '1' and heldv_reg = '1' then
+      if heldg_reg = '0' then
+        word0_next <= held_reg;
       else
-        word1_next <= val_sum & out_sr_reg;
+        word1_next <= held_reg;
       end if;
+      heldv_next <= '0';
     end if;
   end process;
 
@@ -234,6 +290,13 @@ begin
         sync1_reg  <= sync1_next;
         sync2_reg  <= sync2_next;
         host_reg   <= host_next;
+        nrow_reg   <= nrow_next;
+        ngen_reg   <= ngen_next;
+        tsync1_reg <= tsync1_next;
+        tsync2_reg <= tsync2_next;
+        held_reg   <= held_next;
+        heldg_reg  <= heldg_next;
+        heldv_reg  <= heldv_next;
       end if;
     end if;
   end process;

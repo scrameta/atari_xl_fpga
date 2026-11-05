@@ -5,61 +5,48 @@ voices, each harmonic with its own amplitude envelope, each voice with a frequen
 noise generators. It never shipped. This package rebuilds it in VHDL from the chip's own SILOS netlist
 (Dec 1985, "AMY1 version 3 including host sync modifications"), for the PokeyMAX (MAX 10 10M16).
 
-The core started as a netlist-exact translation, one statement per node. It has since been split into
-the netlist's schematic blocks and every block rewritten by hand to a spec (`AMY1_SPEC.md`), checked
-step by step against the generated version. The result is less than half the size, and readable.
+It started as a netlist-exact translation, one statement per node. That was split into the netlist's
+schematic blocks, each block was rewritten by hand to a spec (`AMY1_SPEC.md`), and the result was
+regrouped into functional units with clean interfaces (phase A), still sample-identical to the
+netlist core. Phase B (this package) drops the chip's pins and its six-step clock: the core is
+plain synchronous RTL with one clock enable per chip clock (`ce`) and a register port. With the
+host accesses replayed on the same chip clocks it is still identical to phase A in every sample and
+every RAM write. The core is about a third of its original size.
 
 ## The chip at a glance
 
 ```mermaid
 flowchart TB
-    host(["host: CS RD WR A1..0 DB7..0"])
-    pins(["INT/RDY, OUTSTB, V0, BOUT"])
-    subgraph core["amy1_core"]
-        hi["<b>host_interface</b><br/>IB bus, CMND, regs A B C, SOR"]
-        seq["<b>sequencer</b> (5 pages)<br/>counters, commands, timing,<br/>RAM control, pads"]
-        nz["<b>noise_generator</b><br/>2 generators"]
-        eg["<b>envelope_generator</b><br/>72 envelopes, noise add, LOG"]
-        xr["<b>exp_rom</b><br/>log → linear"]
-        pg["<b>phase_generator</b><br/>voice phases, sine arguments"]
-        sr["<b>sine_rom</b><br/>quarter-wave sine"]
-        acc["<b>output_accumulator</b><br/>sum, sample latch"]
+    host(["register port<br/>addr, we, wdata, rdata"]) <--> hi
+    subgraph ctl["control"]
+        direction LR
+        hi["<b>host_interface</b><br/>CMND, A, B, C"] --> cu["<b>command_unit</b><br/>busy, decode, config"]
+        tb["<b>timebase</b><br/>counters, slot phases"]
+        ra["<b>ram_addressing</b>"]
     end
-    subgraph mem["amy1_mem"]
-        eram[("envelope RAMs<br/>harmonic: breakpoint,<br/>current value, LHP flag<br/>voice: VOICE18, VOICE3")]
-        nram[("Noise RAM")]
-        xrom[("XROM tables")]
-        pram[("PHASERAM")]
-        srom[("SROM tables")]
+    cu --> rdy(["INT/RDY"])
+    ctl == "slot timing, cmd, config, addresses, A B C" ==> dp
+    subgraph dp["data path"]
+        direction LR
+        nz["<b>noise_generator</b><br/>+ Noise RAM"] -- "noise" --> eg["<b>envelope_generator</b><br/>+ envelope RAMs"]
+        eg -- "LOG" --> xr["<b>exp_rom</b>"]
+        xr -- "linear" --> pg["<b>phase_generator</b><br/>+ PHASERAM"]
+        pg -- "argument" --> sr["<b>sine_rom</b>"]
+        sr -- "HS" --> acc["<b>output_accumulator</b>"]
     end
-    samp(["SAMP15..0"])
-
-    host <--> hi
-    hi -- "CMND" --> seq
-    seq --> pins
-    hi -- "IB, AUX" --> eg
-    seq -- "slot timing" --> eg
-    seq -- "row" --> nz
-    seq -- "addresses,<br/>write enables" --> eram
-    eram <-->|"H and F buses"| eg
-    nram <--> nz
-    nz -- "noise word" --> eg
-    eg -- "LOG" --> xr
-    xrom --> xr
-    xr -- "linear value" --> pg
-    pram <--> pg
-    pg -- "sine argument" --> sr
-    srom --> sr
-    sr -- "HS" --> acc
-    seq -- "LDSAMP" --> acc
-    acc --> samp
+    acc --> samp(["samples"])
 ```
 
-In every slot of four internal clocks (32 slots, 128 clocks per sample period with 64 harmonics) the
-sequencer visits two harmonics. For each, the envelope generator steps its amplitude (or a voice's
-frequency) and turns it into a log value, exp_rom makes it linear, the phase generator turns frequency into phase and builds the sine
-argument, and sine_rom's value is added into the output accumulator. At the spec's 8 MHz a sample period
-is 32 µs (31.25 kHz).
+In every slot of four internal clocks (32 slots, 128 clocks per sample period with 64 harmonics), the
+timebase visits two harmonics. For each:
+
+1. The envelope generator reads the harmonic's state from its RAMs, steps the amplitude (or a voice's
+   frequency) and writes it back. It turns the amplitude into a log value.
+2. exp_rom makes the log value linear.
+3. The phase generator turns frequency into phase and builds the sine argument.
+4. sine_rom's value is added into the output accumulator.
+
+At the spec's 8 MHz a sample period is 32 µs (31.25 kHz).
 
 Around the chip, `amy1_top` is the PokeyMAX wrapper:
 
@@ -68,154 +55,174 @@ flowchart LR
     cpu(["6502 bus<br/>(PokeyMAX)"]) --> regs["amy1_top<br/>registers, write FIFO"]
     regs --> eng["amy1_engine<br/>note events → breakpoints"]
     eng --> regs
-    regs -- "replayed pin cycles" --> amy["amy1<br/>= amy1_core + amy1_mem"]
+    regs -- "register port, rdy" --> amy["amy1<br/>= amy1_core + amy1_mem"]
     flash(["flash: amy1_mem.bin"]) -- "loader" --> amy
     amy -- "samples" --> mix["stereo mix,<br/>volume"] --> dac(["audio out"])
-    step["step enable<br/>375/896 of 57.344 MHz<br/>or PHI2 ticks"] --> amy
+    step["ce, every 6 steps<br/>375/896 of 57.344 MHz<br/>or PHI2 ticks"] --> amy
 ```
 
 ## Files
 
 | file | what it is |
 |---|---|
-| `vhdl/amy1_top.vhd` | PokeyMAX wrapper: memory loader, step enable, host write FIFO, stereo output, the note engine (`ENGINE`) |
+| `vhdl/amy1_top.vhd` | PokeyMAX wrapper: memory loader, `ce`, host write FIFO, stereo output, the note engine (`ENGINE`) |
 | `vhdl/amy1_engine.vhd` | note engine: note events in, every harmonic breakpoint out (see below) |
-| `vhdl/amy1.vhd` | the chip: `amy1_core` + `amy1_mem` |
-| `vhdl/amy1_core.vhd` | the core: the twelve blocks wired together, with small adapters (generated) |
-| `vhdl/amy1_<unit>.vhd` (12 files) | the hand-written blocks, see "The core in blocks" |
-| `vhdl/amy1_mem.bin` / `.hex` | the memory image to put in flash (1208 32-bit words, little endian in the .bin) |
-| `vhdl/amy1_mem_packed.vhd` | memory layout for the FPGA: 4 M9Ks + 160 bits of logic + a 32x4 table in LUTs (used by `amy1.vhd`) |
+| `vhdl/amy1.vhd` | the chip: `amy1_core` + the memories (`MEM_PACKED`), and `NOISE_FIX` |
+| `vhdl/amy1_core.vhd` | the core: the ten units wired together |
+| `vhdl/amy1_pkg.vhd` | types shared by the units: the decoded host command, the configuration |
+| `vhdl/amy1_<unit>.vhd` (10 files) | the units, see "The core in units" |
+| `vhdl/amy1_mem.bin` / `.hex` | the memory image to put in flash (1208 32-bit words, little endian in the .bin), logical addresses |
+| `vhdl/amy1_mem_packed.vhd` | memory layout for the FPGA: 4 M9Ks + PHASERAM in logic (architecture `packed`, the default) |
 | `vhdl/amy1_mem.vhd` | the 12 RAMs/ROMs, one block each: the reference layout (architecture `rtl`) |
 | `vhdl/amy1_mem_pkg.vhd` | memory types and the image layout (generated) |
 | `vhdl/amy1_dpram_altera.vhd` / `amy1_dpram_sim.vhd` | true dual-port RAM for the ROM pairs: altsyncram for Quartus / behavioural for GHDL |
-| `vhdl/ref/amy1_<unit>_ref.vhd` | the stage-1 (generated, netlist-exact) version of every block, for co-simulation |
-| `vhdl/amy1_core_flat.vhd` | the flat generated core, before the split, for reference |
-| `vhdl/tb_amy1.vhd`, `tb_top.vhd`, `tb_engine.vhd` | testbenches: the chip with a command file, `amy1_top` at 57.344 MHz, the engine alone |
-| `AMY1_SPEC.md` | the behavioural spec: timing, formats, every block, quirks and decisions |
-| `gen/` | the generators (`silos2v.py`, `vhdlgen.py`, `stepcut.py`, `splitgen.py`), the adapters (`stage2_wiring.py`) and their inputs |
-| `test/` | command files, reference results, the co-simulation, noise and engine tests |
+| `vhdl/tb_top.vhd`, `tb_amy1b.vhd`, `tb_engine.vhd` | testbenches: `amy1_top` at 57.344 MHz, the chip driven by a replay schedule, the engine alone |
+| `AMY1_SPEC.md` | the behavioural spec: timing, formats, every unit, quirks and decisions |
+| `INTERFACE_REVIEW.md` | the review behind the unit structure and interface, the decisions, phase B as built |
+| `gen/` | the generators (`silos2v.py`, `vhdlgen.py`, `stepcut.py`) and their inputs |
+| `tools/` | `mkreplay.py` (replay schedule), `timedev.py` and `pcmdev.py` (timing and audio deviation), `noisecheck.py` (noise against the bit-exact model), `logimage.py` (the image in logical order), `mkcmd.py` (command-file builder, the GENERATOR.PAS API) |
+| `docs/amy_docs_ocr.txt` | OCR text of the original AMY documents (1983 spec binder, notes), for reference |
+| `HANDOVER.md` | state of the work, decisions, contracts, how to test, open items |
+| `test/` | command files, `run_phaseB.sh`, the phase-A reference (`phaseA_ref/`), noise and engine tests |
 | `vbi/` | a VBI music player for the Atari that drives the engine |
 
-Add to a Quartus project: `amy1_mem_pkg`, `amy1_dpram_altera`, `amy1_mem_packed` (and `amy1_mem`),
-the twelve block files, `amy1_core`, `amy1`, `amy1_engine`, `amy1_top`. The twelve blocks and
-`amy1_core` are strict VHDL-93; the testbenches need VHDL-2008.
+To add it to a Quartus project, include `amy1_mem_pkg`, `amy1_dpram_altera`, `amy1_mem_packed` and
+`amy1_mem`, then `amy1_pkg`, the ten unit files, `amy1_core`, `amy1`, `amy1_engine` and `amy1_top`.
+The design files are strict VHDL-93; the testbenches need VHDL-2008. **The flash image changed:**
+the envelope RAM sections are now in logical order, so program the new `amy1_mem.bin` with the new
+bitstream (an old image still plays, but its few non-zero power-up voice values land on other
+voices).
 
-## The core in blocks
+## The core in units
 
-The netlist is drawn as eight schematic blocks; the sequencer's five pages are kept as five files. Each
-entity is `amy1_<name>`, so it doesn't clash with PokeyMAX's own units (the SID has an envelope generator
-too).
+| file | what it does | LUTs / FFs |
+|---|---|---|
+| `amy1_host_interface.vhd` | the command register and registers A, B, C: a synchronous register port | 32 / 29 |
+| `amy1_command_unit.vhd` | reset, command handshake and busy, decode into `cmd`, SCR and SOR (`config`), INT/RDY, read-back loads | 40 / 17 |
+| `amy1_timebase.vhd` | clock, sample and voice counters, P0–P3, period end, voice and sample strobes | 51 / 38 |
+| `amy1_ram_addressing.vhd` | harmonic and voice RAM addresses: the slot's, or the command's | 14 / 2 |
+| `amy1_envelope_generator.vhd` | the 72 envelopes and their RAMs: step, write back, host writes, noise offset, LOG, read-back value | 261 / 100 |
+| `amy1_noise_generator.vhd` | the two noise generators and the Noise RAM (all 32 rows with 40 harmonics too) | 72 / 81 |
+| `amy1_exp_rom.vhd` | log-to-linear lookup | 76 / 93 |
+| `amy1_phase_generator.vhd` | voice phase accumulators, harmonic sine arguments | 188 / 52 |
+| `amy1_sine_rom.vhd` | quarter-wave sine lookup with interpolation | 38 / 67 |
+| `amy1_output_accumulator.vhd` | sample accumulator and sample latch | 81 / 34 |
+| **whole core** | | **815 / 514** |
 
-| file | schematic | what it does | LUTs / FFs | stage 1 |
-|---|---|---|---|---|
-| `amy1_host_interface.vhd` | BUS | pins, the IB bus, command register, registers A/B/C, SOR | 105 / 44 | 148 / 73 |
-| `amy1_seq_counters.vhd` | SEQCONT p. 15 | clock, sample and voice counters, period end, RAM addresses | 62 / 25 | 126 / 66 |
-| `amy1_seq_commands.vhd` | SEQCONT p. 16 | reset synchroniser, SCR, command decode, Noise RAM host write | 24 / 10 | 43 / 20 |
-| `amy1_seq_timing.vhd` | SEQCONT p. 17 | P0–P3, command handshake and busy, INT/RDY, voice and sample strobes | 29 / 28 | 68 / 46 |
-| `amy1_seq_ram_control.vhd` | SEQCONT p. 18 | RAM write/read enables, read-back loads, end of command | 31 / 15 | 49 / 26 |
-| `amy1_seq_pads.vhd` | SEQCONT p. 19 | test mode, the OUTSTB/T1, V0/T0, BOUT/CSYNC pads | 10 / 4 | 13 / 3 |
-| `amy1_envelope_generator.vhd` | ENVGEN | breakpoints, slopes, levels, the noise offset, LOG | 306 / 93 | 709 / 311 |
-| `amy1_noise_generator.vhd` | NOISE | the two noise generators | 46 / 58 | 188 / 117 |
-| `amy1_exp_rom.vhd` | XROM | log-to-linear lookup | 78 / 93 | 419 / 214 |
-| `amy1_phase_generator.vhd` | PHASE | voice phase accumulators, harmonic sine arguments | 189 / 53 | 386 / 162 |
-| `amy1_sine_rom.vhd` | SINROM | quarter-wave sine lookup with interpolation | 38 / 81 | 221 / 169 |
-| `amy1_output_accumulator.vhd` | ACC | sample accumulator, sample latch, SAMP pins | 102 / 51 | 181 / 102 |
-| **whole core** | | | **970 / 558** | **2,202 / 1,437** |
+Sizes are from Yosys (generic 4-LUT, flattened, memories outside), each unit synthesised alone. The whole
+core is smaller than the sum because Yosys optimises across units. For comparison: stage 1 was 2,202 /
+1,437, stage 2 970 / 558 and phase A 899 / 534. Each entity is `amy1_<name>`, so it doesn't clash with PokeyMAX's own
+units (the SID has an envelope generator too).
 
-(Yosys, generic 4-LUT, flattened, memories outside. Per block, each synthesised alone; the whole core is
-smaller than the sum because Yosys optimises across the blocks.)
-
-The sequencer in more detail:
+How the control units connect:
 
 ```mermaid
 flowchart TB
     hi(["host_interface"])
-    subgraph seq["sequencer"]
-        cmd["<b>seq_commands</b><br/>RST, SCR, command decode"]
-        tim["<b>seq_timing</b><br/>P0–P3 (to every page), busy, INT/RDY<br/>ZEROB, NV, LDSAMP, OUTSTB, V0"]
-        ram["<b>seq_ram_control</b><br/>write enables, read-back<br/>LDRB / LDRC, end of command"]
-        cnt["<b>seq_counters</b><br/>cnt, sam, cntv, period end, SYNC<br/>HADR / VADR, RAM ports"]
-        pad["<b>seq_pads</b><br/>TEST, TST0..2, pads"]
-    end
-    mem[("RAMs")]
-    hi -- "CMND" --> cmd
-    hi -- "LDCMND" --> tim
-    tim -- "busy, SEQB2" --> cmd
-    cmd -- "decodes" --> ram
-    ram -- "end of command" --> tim
-    cnt -- "cnt1..0, cnt15, NEWV" --> tim
-    ram -- "HALSB, VFRECYC" --> cnt
-    tim -- "OUTSTB, V0" --> pad
-    cnt -- "end40" --> pad
-    pad -- "TST0" --> cnt
-    cnt -- "addresses" --> mem
-    ram -- "write strobes" --> mem
+    cu["<b>command_unit</b><br/>RST, busy, cmd, config,<br/>ld_rb / ld_rc, INT/RDY"]
+    tb["<b>timebase</b><br/>p, cnt, voice, sync, odd, ssen,<br/>upd_freq, strobes"]
+    ra["<b>ram_addressing</b><br/>harm_addr, voice_addr"]
+    eg(["envelope_generator"])
+    nz(["noise_generator"])
+    hi -- "cmnd, cmd_wr" --> cu
+    cu -- "ld_rb, ld_rc" --> hi
+    cu -- "rst, config" --> tb
+    tb -- "p, sync, upd_freq" --> cu
+    cu -- "cmd" --> ra
+    tb -- "slot" --> ra
+    cu -- "cmd, config" --> eg
+    cu -- "cmd, config" --> nz
+    eg -- "host_wr" --> cu
+    nz -- "host_wr" --> cu
+    eg -- "last_pair, slope_rate" --> tb
 ```
 
-## Stage 2: the hand-written blocks
+The interfaces follow five rules, set out in `INTERFACE_REVIEW.md`:
 
-`AMY1_SPEC.md` is the spec the blocks are written to. It is **exact by default**: a block must reproduce
-the netlist, and every deliberate deviation is listed (D1 `NOISE_FIX`, D2 the SAMP pins holding when OE
-is off). The chip's quirks are documented and kept unless a fix can't change any sensible program.
+1. Signals between units are valid for a whole chip clock.
+2. They are active high.
+3. Each memory has one owner. The envelope generator owns the envelope RAMs, because they hold the 72
+   envelopes' state, and the noise generator owns the Noise RAM.
+4. A command is decoded once, into `cmd`.
+5. Groups of signals travel as records (`amy1_pkg`).
 
-How the blocks are written:
+**The chip's interface** (`amy1.vhd`):
 
-* **Clean ports**: vectors, one polarity, names that say what the signal is. The core still uses the
-  netlist's names between blocks, so `stage2_wiring.py` gives each block a small adapter in
-  `amy1_core.vhd` (for example `hadr <= not HADR5N..HADR0N`).
-* **next/reg style**, register then logic, in the chip's order. Initial values follow the netlist's
-  power-up state.
-* **`step_en` stays outside.** The chip's registers are two-phase (sample at the end of CLKN, show from
-  CLK); each becomes one register updated on `tick` (`step_en` in step 0, the first after the first
-  CLKN). Inputs made by precharged logic are latched on `sample` (step 5, the end of CLKN) first, as the
-  chip's master latch does.
-* **Step-level state where the chip has it**: CLKN or CLK pass latches, cross-coupled gate latches, the
-  T10MHZ master-slave flip-flops of the command and reset synchronisers, pads that keep their charge.
-  These update on `step_en` and are named and commented as such.
+| port | |
+|---|---|
+| `clk`, `ce`, `reset` | `ce` = one AMY internal clock (4 MHz at the spec's 8 MHz CLOCK); every register updates on `clk` when `ce` is high. `ce` must be low on the clk before each `ce` (two clks with the packed memories). `reset` is synchronous, active high |
+| `addr`, `we`, `wdata`, `rdata` | registers 0 command, 1 A, 2 B, 3 C. `we` writes at the `clk` edge; `rdata` is the addressed register (the command register reads FF) |
+| `rdy` | INT/RDY. READY mode: high when no command is pending or running (it falls in the chip clock after a command write; the command is busy from the clock after that). INT mode: a pulse at the end of each command |
+| `sample`, `sample_stb`, `sample_v0` | the 17-bit sum, two's complement; `sample_stb` is high for the one chip clock in which a new sample appears (count it at `ce`); `sample_v0` marks voice 0 in INDIVIDUAL mode |
+| `load_*` | the memory image, while in reset |
+| `aux_*` | the note engine's port on the VOICE M9K (packed layout only) |
 
-Each block's chapter in the spec says what it does, its ports and memories, its comparison window and
-its size.
+The memory contract inside: the address presented in chip clock n has its data before the `ce` that
+ends clock n, and a write enabled in clock n happens at that `ce`.
 
-### How they were checked
+## How it was checked
 
 ```mermaid
 flowchart LR
-    stim(["command file"]) --> tb["tb_amy1"]
-    tb --> core
-    subgraph core["amy1_core_cosim"]
-        ref["stage-1 block<br/>(ref/, generated)"] -- "drives the core" --> rest["the other blocks"]
-        rest --> ref
-        rest -- "same inputs" --> new["hand-written block<br/>+ adapter"]
-        ref --> cmpx{"compare every<br/>output, every step"}
-        new --> cmpx
-    end
-    cmpx -- "MISMATCH net step phase" --> log(["cosim.log"])
+    cmds(["command files"]) --> pa["phase-A core<br/>(sample-identical<br/>to the netlist core)"]
+    pa --> logs1(["per chip clock: busy starts,<br/>samples, host reads,<br/>every RAM write"])
+    logs1 -- "mkreplay.py" --> sched(["replay schedule"])
+    sched --> pb["phase-B core<br/>(both memory layouts)"]
+    pb --> logs2(["samples, host reads,<br/>every RAM write"])
+    logs1 --> cmp{"identical?"}
+    logs2 --> cmp
 ```
 
-1. **Co-simulation** (`test/cosim/run_cosim.sh [cmds] [stop]`). The stage-1 version of every block
-   (`vhdl/ref/`) runs the core; the hand-written blocks run alongside on the same inputs, and every
-   output is compared at every step after power-up (the first 12 steps; 18 for seq_timing, 30 for
-   exp_rom). A few outputs are compared only where they are used: RAM write data while written, and
-   outputs that the stage-1 model computes with precharged logic, one-step transients or loop cuts
-   (`cmp_when` in `stage2_wiring.py`; each is explained in the block's chapter).
-2. **Full-core regressions**, with all twelve hand-written blocks: sample-identical to the netlist core
-   in quickclr_spec and rich_spec, and in the drum test with `NOISE_FIX` on and off.
-3. The read-back test (`test/cmds/cmds_readback.txt`: harmonic amplitude and voice frequency read
-   commands) in co-simulation.
+**Stage 2.** Each hand-written block ran alongside its generated, netlist-exact version inside the
+core, and every output was compared at every step. The full core was sample-identical to the netlist
+core in quickclr_spec, rich_spec and the drum test, with `NOISE_FIX` on and off.
 
-To regenerate the core and the co-simulation:
+**Phase A.** The interfaces changed, so the check moved to what the core does rather than what its
+blocks say to each other: host reads and every RAM write as well as the samples, against the stage-2
+core. Identical, apart from the power-up write before the first clock (D3 in the spec).
+`test/phaseA_ref/run_phaseA.sh` repeats it against the stored logs in `test/results/phaseA/`.
+
+**Phase B: aligned replay.** Without the pins, the core cannot see the same bus cycles, and without
+the synchroniser a command starts on a different clock. So the phase-A core logs, per chip clock, when
+each command's busy starts and when its reset ends, and `tools/mkreplay.py` makes a schedule that
+writes each command to the phase-B core two clocks before that (and A, B, C and the host reads on
+their own clocks). `tb_amy1b` replays it. In quickclr_spec, rich_spec, the read-back test with host
+reads, and the drum test with `NOISE_FIX` on and off, the samples, host reads and every RAM write
+(clock, RAM, address, data) are identical, for the packed memories with `ce` every 3 and 4 clks and the
+`rtl` memories every 2 and 4.
+
+**Phase B: unaligned.** Through `amy1_top` (FIFO and RDY handshake), with phase A and with phase B
+inside, `tools/timedev.py` reports how far each command's busy start moved, and compares the audio by
+short-time spectrum (64-sample frames, magnitude only, so a phase shift doesn't count) and level:
+
+| test | busy start, B − A | spectrum error, median / max | level, max \|ΔdB\| |
+|---|---|---|---|
+| quickclr_spec | −4 clocks (−75 .. −3) | 0.000 / 0.061 | 0.36 |
+| quickclr_spec, 40 harmonics | −4 (−75 .. −3) | 0.029 / 0.039 | 0.20 |
+| rich_spec, SUM and INDIVIDUAL | −4 (−75 .. −3) | 0.002 / 0.079 | 0.59 |
+| rich_spec, INDIVIDUAL, voice 0 left, voice 1 right | −4 (−75 .. −3) | 0.001 / 0.091 | 0.34 |
+| drums | −33 (−108 .. −3) | 4.0 / 30 | 29 |
+| drums, SCR (end of NZINIT) written 100 clocks later, a diagnostic run (see below) | −8 | 0.24 / 0.52 | 1.4 |
+
+Each command now runs 3–4 chip clocks earlier, and up to 140 inside a burst: the old wrapper needed at
+least 12 chip clocks per command (a 4-clock pin write cycle and a fixed 6-clock wait before polling
+RDY), and the tests write some bursts every 9.8 clocks, so its FIFO fell behind. The tonal tests agree closely. The drum test's noise is a different
+realisation: NZINIT now ends one SYNC earlier, so the other generator runs first. The diagnostic
+run writes that one SCR command 100 chip clocks later in the test's command file (nothing changes in
+the design), so it lands on phase A's SYNC, and the noise comes back into line. Read-back through `amy1_top`: 45 of 48 values identical,
+the other 3 amplitude reads of rising envelopes, taken at a different time. The note engine's system
+test is identical to its model. `test/run_phaseB.sh` runs all of it.
+
+To regenerate the flat generated core:
 
 ```
 cd gen
-python3 silos2v.py adjusted.mac synchro.net quickclr.pat amy1.v fixnoise fixnzinit   # amy1.v.json, .mem.json, .blk.json
-python3 blk2.py amy1.v.json amy1.v.blk.json amy1.v.blk2.json   # the untagged v3 gates to their pages
-python3 splitgen.py amy1.v.json amy1.v.mem.json amy1.v.blk2.json synchro.net out/
+python3 silos2v.py adjusted.mac synchro.net quickclr.pat amy1.v fixnoise fixnzinit   # amy1.v.json, .mem.json
+python3 vhdlgen.py amy1.v.json amy1.v.mem.json synchro.net out/
 ```
 
-`splitgen.py` writes `amy1_core.vhd`, `ref/` and `cosim/amy1_core_cosim.vhd`; the hand-written block
-files are not generated, copy them in. `amy1.v.blk.json` gives each device its schematic block (from
-the deck's block and page tags); `blk2.py` gives the seven untagged v3
-host-synchronisation gates to sequencer pages 15 and 18, where the hand-written blocks have them.
+The stage-2 split and co-simulation (`splitgen.py`, `stage2_wiring.py`, the per-block `ref/` files) are
+in the previous package, `amy1_vhdl_stage2_complete.zip`.
 
 ## How the generated core was built (stage 1)
 
@@ -229,8 +236,7 @@ Two netlist transcription errors are corrected in generation by `silos2v.py` swi
   switch drops the copy, so NZINIT comes from the DREG only. Nothing else uses the duplicate;
   with NZINIT off (every program that never sets SC1) the core output is unchanged.
 
-The hand-written blocks were checked against this generated core; `vhdl/ref/` and
-`amy1_core_flat.vhd` are its output. `vhdlgen.py` writes the flat core
+The hand-written blocks were checked against this generated core; `test/phaseA_ref/amy1_core_flat.vhd` is its output. `vhdlgen.py` writes the flat core
 (`python3 vhdlgen.py amy1.v.json amy1.v.mem.json synchro.net out/`). Its step model is the one the
 Verilog RTL uses, and that RTL was checked sample for sample against the switch-level simulation:
 
@@ -287,6 +293,14 @@ samples:
   by the noise and spreads into a band roughly 100-400 Hz wide. Space a noise voice's harmonics
   150-300 Hz apart for a continuous noise band.
 
+**40 harmonics.** The netlist processes one noise row per slot, and a 40-harmonic period has only 20
+slots, so the UD, B and S rows were never processed and the noise voices didn't work there (Q6). With
+40 harmonics the generator now counts its own rows across the period boundaries: a pass is still 32
+slots (128 chip clocks), so each generator updates every 256 clocks in both modes and the noise is the
+same process; each new word is held until the next sample period starts. Note that in 40-harmonic
+mode the sample rate is 1.6 x higher, so every frequency word, and the noise band's place relative
+to the harmonics, scales with it.
+
 **The netlist as drawn never feeds the shift registers.** The selector between the shift path
 (rows 0-15) and the arithmetic path (rows 16-31) is registered on NADR5 one row late, so the
 feedback is written to row 16 and row 0 is rewritten by the arithmetic path with its own value.
@@ -311,6 +325,9 @@ repair); `modstat.py` and `modspec.py` compare S settings.
 
 ## Verification (GHDL 4.1)
 
+The rows before phase B are from earlier builds (pin-level, six steps per chip clock; `tb_amy1` and
+the phase-A sources are in `test/phaseA_ref/`).
+
 | run | reference | result |
 |---|---|---|
 | `tb_amy1`, quickclr_spec and rich_spec, bus timing as in GENERATOR.PAS | Verilator RTL (`vlat/`) | identical, every sample |
@@ -328,38 +345,47 @@ repair); `modstat.py` and `modspec.py` compare S settings.
 | same, `tb_amy1` with 6 of the 8 voices set to the noise types, and `tb_top` rich_spec and noise at 375/896 steps and with 2xPHI2 ticks | the reference memory layout `amy1_mem(rtl)` in the same testbenches | identical, every sample and PCM value |
 | co-simulation, all twelve hand-written blocks against their stage-1 versions: quickclr_spec, rich_spec, the drum test, the read-back test | stage-1 blocks in the same core | every output identical at every compared step |
 | `tb_amy1`, all twelve hand-written blocks: quickclr_spec, rich_spec, the drum test with `NOISE_FIX` on and off | the stage-1 core | identical, every sample |
+| `tb_amy1`, phase-A core: quickclr_spec, rich_spec, the drum test with `NOISE_FIX` on and off, the read-back test with host reads | the stage-2 core | identical samples, host reads and RAM writes |
+| `tb_amy1b`, phase-B core, aligned replay of the same five runs; packed memories at 3 and 4 clks per `ce`, `rtl` at 2 and 4; logical-address image | the phase-A core | identical samples, host reads and RAM writes |
+| `tb_top`, phase B: quickclr_spec, rich_spec (SUM, INDIVIDUAL), read-back, drums | `amy1_top` with the phase-A chip | see "Phase B: unaligned" above |
+| `tb_top`, phase B, `ENGINE` = true: 16 x 4, 8 x 8, 4 x PHI2, CLK / 8 | `engmodel.py` | every chip write identical; no jump followed by a write within a sample |
+| `tb_top`, the drum test with 64 and with 40 harmonics, every Noise RAM write and noise word (`tools/noisecheck.py`) | `test/noise/amynoise.py`, the bit-exact model | 399 passes (all 32 rows each) and 386 words identical, both modes |
+| `tb_top`, every command executes in phase B and phase A (after the 4 Nov reset fix), same order | the phase-A wrapper and chip | identical command sequences in all tests |
 
 ## Size and timing (Yosys, generic 4-LUT, memories outside)
 
-* 970 LUT4 and 558 FFs for the core (stage 1: 2,202 and 1,437).
+* 815 LUT4 and 514 FFs for the core (793 / 492 before the 40-harmonic noise fix; phase A: 899 and
+  534; stage 2: 970 and 558; stage 1: 2,202 and 1,437). In Quartus the phase-B build before that fix
+  used 88% of the 10M16.
 * The longest path is 16 LUT levels (stage 1: 18).
-* At 375/896 of 57.344 MHz the steps are 2 or 3 clocks apart, so the core needs a
-  multicycle-2 constraint (34.9 ns). If Quartus does not meet that, use STEP_NUM/STEP_DEN = 1/3
-  (19.1 MHz of steps, equivalent to a 6.37 MHz AMY). Because the pitch word is logarithmic, you
-  can then correct the pitch by adding a constant to every frequency.
+* Every register is a `ce` register and `ce` is at least six clks apart, so every path has six clks.
+  **No multicycle constraint is needed:** on the PokeyMAX (10M16) phase B closes timing at
+  57.344 MHz without one, and runs on the hardware at 88% utilisation. (A multicycle of 6 setup /
+  5 hold on paths between `ce` registers would be valid, if a slower part ever needs it.) The memory
+  paths are the tightest: the packed M9Ks take the address on the clk after `ce`, and NOISE's data
+  comes on the second, so with the default step rate there are 11 or more clks left.
 
 ## Clocking from PHI2
 
 `USE_TICK = true`: pulse `CHIP_CLK_TICK` for one CLK on every PHI2 edge. Each pulse is one edge
 of the AMY's CLOCK input, so the AMY runs at 2 x PHI2 (3.547 MHz PAL, 3.580 MHz NTSC), locked to
 the Atari like POKEY. The wrapper makes 3 steps per pulse, `STEP_SPACING` (default 4) CLKs apart,
-so the core only needs a multicycle-4 constraint (70 ns at 57.344 MHz).
+so `ce` is 24 CLKs apart.
 
 **4 x PHI2** (the AMY at 7.09 MHz PAL): four `CHIP_CLK_TICK` pulses per PHI2 cycle,
-`STEP_SPACING = 2`, a multicycle-2 setup / 1 hold constraint, and with the engine
+`STEP_SPACING = 2` (`ce` every 16 CLKs), and with the engine
 `ENGINE_UNIT_LOG2 = 15` (keeps its time unit at 9.2 ms). The tables change too: frequency
 correction +133 (PAL) / +123 (NTSC), and slopes for the faster clock (`vbiplay_4xphi2.xex`,
-`mkvbi.py ... clk4`). Checked: the noise test with a tick every 8 clocks and steps 2 apart is
+`mkvbi.py ... clk4`). Checked (phase A): the noise test with a tick every 8 clocks and steps 2 apart is
 identical, step for step, to a tick every 16 and steps 4 apart; the engine's full-system test
-at that timing with the 4 x PHI2 tables is identical to its model.
+at that timing with the 4 x PHI2 tables is identical to its model (phase B too).
 
 **CLK / 8, free running** (the AMY at 57.344 / 8 = 7.168 MHz, not locked to PHI2):
-`USE_TICK = false`, `STEP_NUM = 3`, `STEP_DEN = 8` (steps 3, 3, 2 clocks apart, so still
-multicycle 2/1), `ENGINE_UNIT_LOG2 = 15`. No PHI2 jitter on the steps, and the pitch
+`USE_TICK = false`, `STEP_NUM = 3`, `STEP_DEN = 8` (`ce` every 16 CLKs), `ENGINE_UNIT_LOG2 = 15`. No PHI2 jitter on the steps, and the pitch
 correction is the same for PAL and NTSC: +122 (768 x log2(8 / 7.168) = 121.7). The tables are
 `mkinst.py` clock `clk8` (`amybox` with `-DAMY_CLK8`, `vbiplay_clk8.xex`, `mkvbi.py ... clk8`).
-Checked: the noise test at 3/8 is identical, step for step, to the other step modes, and the
-engine's full-system test at 3/8 with the clk8 tables is identical to its model. If CLK is not
+Checked (phase A): the noise test at 3/8 is identical, step for step, to the other step modes, and
+the engine's full-system test at 3/8 with the clk8 tables is identical to its model (phase B too). If CLK is not
 57.344 MHz, the correction is 768 x log2(8 MHz / (CLK / 8)).
 
 | | 8 MHz (spec) | 2 x PHI2 PAL | 2 x PHI2 NTSC |
@@ -383,6 +409,10 @@ through the same request/ready interface as the SID (`ROM_BASE` = word address o
 and holds the chip until it is done (1208 requests). The RAM part of the image is the deck's
 power-up state (zeros, noise LFSR seed, a few voice values), so a run is reproducible.
 
+All addresses are logical: word h of the harmonic section is harmonic h, word v of the voice section
+voice v. (The netlist drove the envelope RAMs' address lines inverted, so the generated image,
+`vhdlgen.py`'s output, has those two sections reversed; `tools/logimage.py` converts it.)
+
 ## Packed memories (`amy1_mem(packed)`)
 
 | block | contents |
@@ -390,24 +420,24 @@ power-up state (zeros, noise LFSR seed, a few voice values), so a run is reprodu
 | M9K 1, true dual port | SROMBS (256x17) on port A, XROMBS (128x15) on port B |
 | M9K 2, true dual port | SROMINT (512x5) on port A, XROMINT (128x5) on port B, NOISE (64x3) at word 640 |
 | M9K 3, simple dual port | HARMBRKPOINT, HARMCURNTVAL and LHPRAM as one 30-bit word (one shared address) |
-| M9K 4, simple dual port, 256x36 | VOICE18 and VOICE3 as one 21-bit word in words 0..15; words 16..255 belong to the note engine, through an aux port (it reads and writes on the clocks the chip doesn't use) |
-| logic | PHASERAM (8x20); OCTSPL (32x4) is a ROM, so a constant table in LUTs |
+| M9K 4, simple dual port, 256x36 | VOICE18 and VOICE3 as one 21-bit word in words 0..15; words 16..255 belong to the note engine, through an aux port |
+| logic | PHASERAM (8x20). OCTSPL is no longer read |
 
-Every chip address changes in step 1, so all M9K ports read at the step. NOISE uses M9K 2 in
-the clock *after* each step instead: port B reads it (address latched at the step) while port A
-does that step's write, at the same edge, with old-data mixed-port read-during-write (supported
-by M9K on one clock), which matches the reference read-before-write. The ROM outputs of M9K 2,
-and the HARM/VOICE outputs, are held in registers while the ports do something else. So the
-NOISE data reaches the core one clock after the step rather than at it: with steps two clocks
-apart the core has one clock to use it, the same as any single-cycle path, which the design
-already meets at 57.344 MHz. `NOISE_IN_M9K` and `OCTSPL_IN_LUTS` (constants in the file) switch
-back to the logic versions.
+With e1 and e2 the first and second clk edges after a `ce`:
 
-The grouped RAMs write one clock after the step, merging the new field into the word read
-in that step, so **step_en must never be high on two consecutive clocks** (true for both
-step modes of `amy1_top`). The ROM pairs are `amy1_dpram`, a true dual-port block:
-`amy1_dpram_altera.vhd` instantiates altsyncram for Quartus (inference split the two ports
-into two copies), `amy1_dpram_sim.vhd` is the same entity for simulation. Use one or the other.
+* **e1:** every M9K port takes the core's read address for this chip clock (registered address,
+  unregistered output), so the data is there for the rest of the clock.
+* **e2:** M9K 2 port B moves on to the NOISE row (XROMINT's data is held in a register from e2);
+  M9K 4's read port is free for the aux port (the voice data is held).
+* **`ce`:** the writes. NOISE on M9K 2 port A; the harmonic and voice words on the write ports of
+  M9K 3 and 4, merged with this clock's read of the same word (the RAMs that share an address are one
+  word).
+
+So `ce` must be low on the two clks before each `ce`; the aux port reads on any clk but e1 and
+writes on any clk without a voice write. The ROM pairs are `amy1_dpram`, a true dual-port block:
+`amy1_dpram_altera.vhd` instantiates altsyncram for Quartus (inference split the two ports into two
+copies), `amy1_dpram_sim.vhd` is the same entity for simulation. Use one or the other.
+`MEM_PACKED => false` selects `amy1_mem(rtl)`, one block per memory.
 
 ## Stereo
 
@@ -432,13 +462,14 @@ period, saturated to 16 bits.
 | 8..15 | the note engine (`ENGINE` = true), see below | engine status; 15 reads back CONFIG |
 
 * Registers 4-6 are set straight away and are `$FF` after RESET_N; a chip reset leaves them.
-* Writes to 0-3 go through a FIFO of 2**FIFO_LOG2 entries (default 4) and are replayed to the
-  chip's pins: CS low, WR low for two internal clocks, release. After a command (register 0) the
-  next write waits 6 internal clocks and then for INT/RDY; A, B and C are plain latches, so their
-  writes go straight through. After a read command (`$18+v` frequency, `$C0+h` amplitude) the wrapper reads B and
-  C (RD low for two internal clocks each) into the read-back registers, so 6502 reads never wait.
+* Writes to 0-3 go through a FIFO of 2**FIFO_LOG2 entries (default 4) to the chip's register port,
+  one per CLK. After a command (register 0) the next write waits for INT/RDY, which falls in the
+  chip clock after the write; A, B and C are plain registers, so their writes go straight through.
+  After a read command (`$18+v` frequency, `$C0+h` amplitude) the wrapper copies B and C into the
+  read-back registers (one CLK each), so 6502 reads never wait.
+* After a chip reset, writes wait one more internal clock: the core registers its reset, so it takes
+  commands from the clock after the one in which reset is released (RDY is low until then).
 * If INT/RDY stays low for 255 internal clocks the chip is reset (safety net).
-* The pins change only at the start of step 0; the loop analysis assumes this.
 * Output is silent while the chip is in reset.
 
 ## The note engine (`ENGINE` = true, `amy1_engine.vhd`)

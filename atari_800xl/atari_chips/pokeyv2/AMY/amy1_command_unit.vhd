@@ -191,7 +191,7 @@ begin
 
   ld_rb   <= (p(1) or p(2)) and rdfa2_reg;
   ld_rc   <= (p(3) or p(0)) and rdfa1_reg;
-  -- READY: no command pending or running; INT: the end-of-command pulse
-  rdy     <= (not (req_reg or seq1d_reg or bsy) and not sor(1)) or (endd2_reg and sor(1));
+  -- READY: no command pending or running, and not in reset; INT: the end-of-command pulse
+  rdy     <= (not (req_reg or seq1d_reg or bsy or rst_reg) and not sor(1)) or (endd2_reg and sor(1));
 
 end architecture;

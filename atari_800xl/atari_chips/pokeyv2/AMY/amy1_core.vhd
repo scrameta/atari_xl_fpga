@@ -168,7 +168,7 @@ begin
 
   u_noise_generator: entity work.amy1_noise_generator port map (
     clk => clk, ce => ce,
-    p => p, sync => sync, odd => odd, hadr => harm_a,
+    p => p, sync => sync, odd => odd, sel40 => config.sel40, hadr => harm_a,
     host_mode => config.nzinit, cmd => cmd, host_data => reg_a(2 downto 0),
     host_wr => noise_wr, noise_gen => noise_gen, mute => zerob,
     noise => noise, serial => bout,
