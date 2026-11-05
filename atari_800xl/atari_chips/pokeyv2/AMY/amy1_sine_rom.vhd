@@ -13,13 +13,12 @@
 -- The base ROM (256 x 17) holds the 12-bit magnitude and a 5-bit slope for each 1/1024
 -- cycle; the interpolation ROM (512 x 5) holds slope x fraction.
 --
--- Pipeline (one register stage per chip clock, on tick):
+-- Pipeline (one register stage per chip clock, on ce):
 --   1  latch arg; fold it: base ROM address
 --   2  base ROM data; interpolation ROM address
 --   3  interpolation ROM data
 --   4  add, sign: hs
--- arg comes from precharged adders in the phase generator, valid only at the end of
--- CLKN, so it is captured on sample (end of step 5) as the chip's input latch does.
+-- arg is the phase generator's, valid for the whole clock.
 -------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
@@ -28,8 +27,7 @@ use ieee.numeric_std.all;
 entity amy1_sine_rom is
   port (
     clk       : in  std_logic;
-    tick      : in  std_logic;                      -- chip clock: registers update
-    sample    : in  std_logic;                      -- end of CLKN: inputs are valid
+    ce      : in  std_logic;                      -- chip clock: registers update
     arg       : in  std_logic_vector(13 downto 0);  -- phase (SARG13..8, ARG7..0)
     hs        : out std_logic_vector(12 downto 0);  -- sine, two's complement (ones' complement negation)
     -- ROMs (synchronous read)
@@ -42,7 +40,6 @@ end entity;
 
 architecture rtl of amy1_sine_rom is
 
-  signal arg_in_reg : std_logic_vector(13 downto 0) := (others => '0');   -- input latch
   -- stage 1
   signal arg1_reg,  arg1_next  : std_logic_vector(13 downto 0) := (others => '0');
   signal a1   : std_logic_vector(11 downto 0);   -- folded into the first quarter
@@ -68,12 +65,12 @@ begin
   base_addr <= a1(11 downto 4);
   int_addr  <= slope2_reg & frac2_reg;
 
-  process (arg_in_reg, a1, neg1, mag2_reg, neg2_reg,
+  process (arg, a1, neg1, mag2_reg, neg2_reg,
            mag3_reg, int3_reg, neg3_reg, base_q, int_q)
     variable mag : unsigned(11 downto 0);
   begin
     -- 1: latch the argument
-    arg1_next <= arg_in_reg;
+    arg1_next <= arg;
 
     -- 2: base ROM data
     frac2_next  <= a1(3 downto 0);
@@ -98,10 +95,7 @@ begin
   process (clk)
   begin
     if rising_edge(clk) then
-      if sample = '1' then
-        arg_in_reg <= arg;
-      end if;
-      if tick = '1' then
+      if ce = '1' then
         arg1_reg   <= arg1_next;
         frac2_reg  <= frac2_next;
         mag2_reg   <= mag2_next;

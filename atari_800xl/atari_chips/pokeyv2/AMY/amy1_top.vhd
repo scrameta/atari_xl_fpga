@@ -1,20 +1,24 @@
 ---------------------------------------------------------------------------
 -- AMY1 for PokeyMAX
 --
--- Wraps the generated chip model (amy1 = amy1_core + amy1_mem) with:
+-- Wraps the chip (amy1 = amy1_core + amy1_mem) with:
 --   * a memory loader: after reset all AMY memories (ROM tables included) are
 --     filled from flash through the ROM_ADDR/ROM_REQUEST/ROM_READY/ROM_DATA
 --     interface, from the image amy1_mem.bin placed at word address ROM_BASE.
 --     The chip is held in reset until that is done.
---   * a step enable, either
+--   * the chip clock enable ce (one per AMY internal clock, CLOCK / 2). Its rate is
+--     given in steps of a sixth of a chip clock (three per CLOCK edge), as before:
 --       USE_TICK = false: STEP_NUM/STEP_DEN of CLK, e.g. 375/896 of 57.344 MHz
 --         = 24 MHz of steps, which is an 8 MHz AMY (31.25 kHz output, A = 440 Hz)
 --       USE_TICK = true:  CHIP_CLK_TICK pulses are the AMY's CLOCK input edges;
 --         each gives 3 steps, STEP_SPACING clocks apart. A pulse on every PHI2
 --         edge makes a 2 x PHI2 = 3.55 MHz AMY (13.9 kHz output with 64
 --         harmonics, 22.2 kHz with 40), locked to the Atari's clock.
+--     ce is the sixth step, so ce is at least six clks apart (the packed memories
+--     need three). Only ce clocks the chip: nothing in it needs a multicycle path
+--     constraint, though one of 6 clks would be valid.
 --   * the host interface. The 6502 writes at full speed into a FIFO; each write
---     is replayed to the chip's bus pins. A, B and C are plain latches, so their
+--     goes to the chip's register port. A, B and C are plain registers, so their
 --     writes go straight through; after a command write the next one waits
 --     until INT/RDY is high again. After a read command (read frequency $18+v, read amplitude
 --     $C0+h) the wrapper reads the chip's B and C registers into shadows, so
@@ -43,9 +47,6 @@
 --   * stereo output: in SUM mode both channels carry the chip's sample; in
 --     INDIVIDUAL mode (system options bit 2) every voice is a separate sample
 --     and VOICE_LEFT/VOICE_RIGHT (registers 4, 5) choose the channels
---
--- Chip pins only ever change at the start of sequencer step 0. The loop
--- analysis in vhdlgen.py assumes this (see stepcut.py).
 ---------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
@@ -89,9 +90,9 @@ entity amy1_top is
     READY        : out std_logic;                      -- memories loaded, chip running
 
     -- for testbenches (leave open)
-    DBG_STEP_EN  : out std_logic;
-    DBG_SAMP     : out std_logic_vector(15 downto 0);  -- SAMP pins
-    DBG_OUTSTBN  : out std_logic;
+    DBG_STEP_EN  : out std_logic;                      -- the step enable (six per ce)
+    DBG_SAMP     : out std_logic_vector(15 downto 0);  -- the chip's sample, bits 15..0
+    DBG_OUTSTBN  : out std_logic;                      -- low with a new sample
     DBG_V0       : out std_logic
   );
 end entity;
@@ -126,7 +127,7 @@ architecture vhdl of amy1_top is
   signal phase_reg, phase_next     : unsigned(2 downto 0) := (others => '0');   -- = core step
   signal pending_reg, pending_next : unsigned(3 downto 0) := (others => '0');   -- steps owed (USE_TICK)
   signal space_reg, space_next     : unsigned(3 downto 0) := (others => '0');
-  signal tick                      : std_logic;    -- bus tick: end of step 5, pins change after it
+  signal tick                      : std_logic;    -- the chip clock enable (ce): the sixth step
 
   -- note engine
   signal eng_cpu_we, eng_push_req, eng_push_ack : std_logic;
@@ -155,34 +156,29 @@ architecture vhdl of amy1_top is
   signal volume_reg, volume_next   : std_logic_vector(7 downto 0) := (others => '1');
 
   ---------------------------------------------------------------------------
-  -- chip bus cycles, one state per internal chip clock
-  type bus_t is (bus_idle,
-                 bus_setup, bus_strobe1, bus_strobe2, bus_release, bus_wait,       -- write
-                 bus_rd_setup, bus_rd_strobe1, bus_rd_strobe2, bus_rd_release);    -- read B, C
+  -- chip register port
+  type bus_t is (bus_idle, bus_wait, bus_rd_b, bus_rd_c);
   signal bus_reg, bus_next       : bus_t := bus_idle;
-  signal gap_reg, gap_next       : unsigned(3 downto 0) := (others => '0');
-  signal wait_reg, wait_next     : unsigned(7 downto 0) := (others => '0');  -- clocks waiting for RDY
+  signal wait_reg, wait_next     : unsigned(7 downto 0) := (others => '0');  -- chip clocks waiting for RDY
   signal timeout                 : std_logic;
   signal cur_reg, cur_next       : std_logic_vector(9 downto 0) := (others => '0');
-  signal csn_reg, csn_next       : std_logic := '1';
-  signal wrn_reg, wrn_next       : std_logic := '1';
-  signal rdn_reg, rdn_next       : std_logic := '1';
-  signal drive_reg, drive_next   : std_logic := '0';
+  signal chip_we                 : std_logic;
+  signal chip_addr               : std_logic_vector(1 downto 0);
+  signal chip_wdata              : std_logic_vector(7 downto 0);
   signal resetn_reg, resetn_next : std_logic := '0';
   signal rstcnt_reg, rstcnt_next : unsigned(3 downto 0) := to_unsigned(3, 4);  -- reset clocks left
   signal shadow_b_reg, shadow_b_next : std_logic_vector(7 downto 0) := (others => '0');
   signal shadow_c_reg, shadow_c_next : std_logic_vector(7 downto 0) := (others => '0');
-  signal db_out                  : std_logic_vector(7 downto 0);
+  signal rdata                   : std_logic_vector(7 downto 0);
   signal intrdy                  : std_logic;
   signal busy                    : std_logic;
-  constant GAP : natural := 6;   -- internal clocks after a write before RDY is valid
+  signal chip_reset              : std_logic;
 
   ---------------------------------------------------------------------------
   -- output
-  signal samp_latch  : std_logic_vector(16 downto 0);
-  signal outstbn     : std_logic;
+  signal sample      : signed(16 downto 0);
+  signal sample_stb  : std_logic;
   signal v0          : std_logic;
-  signal outstbn_reg : std_logic := '1';
   signal voice_reg, voice_next   : unsigned(2 downto 0) := (others => '0');
   signal acc_l_reg, acc_l_next   : signed(19 downto 0) := (others => '0');
   signal acc_r_reg, acc_r_next   : signed(19 downto 0) := (others => '0');
@@ -213,18 +209,12 @@ begin
       voice_r_reg    <= (others => '1');
       volume_reg     <= (others => '1');
       bus_reg        <= bus_idle;
-      gap_reg        <= (others => '0');
       wait_reg       <= (others => '0');
       cur_reg        <= (others => '0');
-      csn_reg        <= '1';
-      wrn_reg        <= '1';
-      rdn_reg        <= '1';
-      drive_reg      <= '0';
       resetn_reg     <= '0';
       rstcnt_reg     <= to_unsigned(3, 4);
       shadow_b_reg   <= (others => '0');
       shadow_c_reg   <= (others => '0');
-      outstbn_reg    <= '1';
       voice_reg      <= (others => '0');
       acc_l_reg      <= (others => '0');
       acc_r_reg      <= (others => '0');
@@ -251,13 +241,8 @@ begin
       voice_r_reg    <= voice_r_next;
       volume_reg     <= volume_next;
       bus_reg        <= bus_next;
-      gap_reg        <= gap_next;
       wait_reg       <= wait_next;
       cur_reg        <= cur_next;
-      csn_reg        <= csn_next;
-      wrn_reg        <= wrn_next;
-      rdn_reg        <= rdn_next;
-      drive_reg      <= drive_next;
       resetn_reg     <= resetn_next;
       rstcnt_reg     <= rstcnt_next;
       shadow_b_reg   <= shadow_b_next;
@@ -271,9 +256,6 @@ begin
       aud_l_reg      <= aud_l_next;
       aud_r_reg      <= aud_r_next;
       aud_strobe_reg <= strobe_reg;
-      if step_en = '1' then
-        outstbn_reg <= outstbn;
-      end if;
     end if;
   end process;
 
@@ -347,7 +329,7 @@ begin
 
   tick <= step_en and to_sl(phase_reg = 5);
 
-  -- a chip reset starts at the next bus tick after it is asked for, or when
+  -- a chip reset starts at the next chip clock after it is asked for, or when
   -- INT/RDY has been low for 255 internal clocks (commands take about 10)
   reset_taken <= reset_req_reg and tick;
   timeout     <= tick and to_sl(bus_reg = bus_wait and wait_reg = 255) and not intrdy;
@@ -389,8 +371,7 @@ begin
     end if;
     eng_push_ack <= eng;
     pop := '0';
-    if tick = '1' and bus_reg = bus_idle and count_reg /= 0 and resetn_reg = '1'
-       and reset_req_reg = '0' then
+    if bus_reg = bus_idle and count_reg /= 0 and resetn_reg = '1' and reset_req_reg = '0' then
       pop := '1';
     end if;
 
@@ -438,28 +419,25 @@ begin
   end process;
 
   ---------------------------------------------------------------------------
-  -- chip bus: one state per internal chip clock, changing as step 0 starts
-  --   write:  setup (CS low, address and data) - WR low for two internal clocks -
-  --           release (WR, then CS high) - wait GAP clocks, then for INT/RDY
-  --   read:   after a read command, the same with RD low for B, then for C;
-  --           the data bus is taken as RD goes high
-  process (bus_reg, gap_reg, wait_reg, cur_reg, csn_reg, wrn_reg, rdn_reg, drive_reg,
-           resetn_reg, rstcnt_reg, shadow_b_reg, shadow_c_reg, fifo_reg, rd_ptr_reg,
-           count_reg, reset_req_reg, tick, reset_taken, timeout, intrdy, db_out)
+  -- chip register port
+  --   idle:   pop a write and give it to the chip at once (one clk). A, B, C: done.
+  --           A command: wait for INT/RDY (it goes low as the command is written).
+  --   wait:   INT/RDY high again: done, or after a read command read B, then C
+  process (bus_reg, wait_reg, cur_reg, resetn_reg, rstcnt_reg, shadow_b_reg, shadow_c_reg,
+           fifo_reg, rd_ptr_reg, count_reg, reset_req_reg, tick, reset_taken, timeout, intrdy,
+           rdata)
     variable rd_cmd : boolean;
   begin
     bus_next      <= bus_reg;
-    gap_next      <= gap_reg;
     wait_next     <= wait_reg;
     cur_next      <= cur_reg;
-    csn_next      <= csn_reg;
-    wrn_next      <= wrn_reg;
-    rdn_next      <= rdn_reg;
-    drive_next    <= drive_reg;
     resetn_next   <= resetn_reg;
     rstcnt_next   <= rstcnt_reg;
     shadow_b_next <= shadow_b_reg;
     shadow_c_next <= shadow_c_reg;
+    chip_we       <= '0';
+    chip_addr     <= cur_reg(9 downto 8);
+    chip_wdata    <= fifo_reg(to_integer(rd_ptr_reg))(7 downto 0);
 
     -- the command just written reads something back: $18-$1F frequency, $C0-$FF amplitude
     rd_cmd := cur_reg(9 downto 8) = "00" and
@@ -470,90 +448,52 @@ begin
       resetn_next <= '0';
       rstcnt_next <= to_unsigned(8, 4);
       bus_next    <= bus_idle;
-      csn_next    <= '1';
-      wrn_next    <= '1';
-      rdn_next    <= '1';
-      drive_next  <= '0';
-    elsif tick = '1' then
-      -- chip in reset until the count runs out (4 internal clocks after power up)
-      if rstcnt_reg = 0 then
-        resetn_next <= '1';
-      else
-        resetn_next <= '0';
-        rstcnt_next <= rstcnt_reg - 1;
+    else
+      if tick = '1' then
+        -- chip in reset until the count runs out (4 internal clocks after power up)
+        if rstcnt_reg = 0 then
+          resetn_next <= '1';
+        else
+          resetn_next <= '0';
+          rstcnt_next <= rstcnt_reg - 1;
+        end if;
       end if;
 
       case bus_reg is
         when bus_idle =>
           if count_reg /= 0 and resetn_reg = '1' and reset_req_reg = '0' then
-            cur_next   <= fifo_reg(to_integer(rd_ptr_reg));
-            csn_next   <= '0';
-            drive_next <= '1';
-            bus_next   <= bus_setup;
-          end if;
-
-        -- write cycle
-        when bus_setup =>
-          wrn_next <= '0';
-          bus_next <= bus_strobe1;
-        when bus_strobe1 =>
-          bus_next <= bus_strobe2;
-        when bus_strobe2 =>
-          wrn_next <= '1';
-          bus_next <= bus_release;
-        when bus_release =>
-          csn_next   <= '1';
-          drive_next <= '0';
-          if cur_reg(9 downto 8) = "00" then
-            -- a command: INT/RDY drops until the chip has executed it
-            gap_next  <= to_unsigned(GAP, 4);
-            wait_next <= (others => '0');
-            bus_next  <= bus_wait;
-          else
-            -- A, B, C are plain latches: the next write can follow at once
-            bus_next  <= bus_idle;
+            cur_next  <= fifo_reg(to_integer(rd_ptr_reg));
+            chip_addr <= fifo_reg(to_integer(rd_ptr_reg))(9 downto 8);
+            chip_we   <= '1';
+            if fifo_reg(to_integer(rd_ptr_reg))(9 downto 8) = "00" then
+              wait_next <= (others => '0');
+              bus_next  <= bus_wait;
+            end if;
           end if;
         when bus_wait =>
-          if wait_reg /= 255 then
+          if tick = '1' and wait_reg /= 255 then
             wait_next <= wait_reg + 1;
           end if;
-          if gap_reg /= 0 then
-            gap_next <= gap_reg - 1;
-          elsif intrdy = '1' then
+          if intrdy = '1' then
             if rd_cmd then
-              cur_next <= "10" & cur_reg(7 downto 0);    -- read B first
-              csn_next <= '0';
-              bus_next <= bus_rd_setup;
+              bus_next <= bus_rd_b;
             else
               bus_next <= bus_idle;
             end if;
           end if;
-
-        -- read cycle (register in cur_reg(9 downto 8))
-        when bus_rd_setup =>
-          rdn_next <= '0';
-          bus_next <= bus_rd_strobe1;
-        when bus_rd_strobe1 =>
-          bus_next <= bus_rd_strobe2;
-        when bus_rd_strobe2 =>
-          if cur_reg(8) = '0' then
-            shadow_b_next <= db_out;
-          else
-            shadow_c_next <= db_out;
-          end if;
-          rdn_next <= '1';
-          bus_next <= bus_rd_release;
-        when bus_rd_release =>
-          if cur_reg(8) = '0' then
-            cur_next <= "11" & cur_reg(7 downto 0);    -- then C
-            bus_next <= bus_rd_setup;
-          else
-            csn_next <= '1';
-            bus_next <= bus_idle;
-          end if;
+        when bus_rd_b =>
+          chip_addr     <= "10";
+          shadow_b_next <= rdata;
+          bus_next      <= bus_rd_c;
+        when bus_rd_c =>
+          chip_addr     <= "11";
+          shadow_c_next <= rdata;
+          bus_next      <= bus_idle;
       end case;
     end if;
   end process;
+
+  chip_reset <= not resetn_reg;
 
   -- status / read-back
   busy <= '0' when count_reg = 0 and bus_reg = bus_idle and loaded_reg = '1'
@@ -609,24 +549,16 @@ begin
   -- the chip
   chip: entity work.amy1 port map (
     clk          => CLK,
-    step_en      => step_en,
-    pin_resetn   => resetn_reg,
-    pin_test     => '0',
-    pin_oen      => '0',
-    pin_csn      => csn_reg,
-    pin_wrn      => wrn_reg,
-    pin_rdn      => rdn_reg,
-    pin_a        => cur_reg(9 downto 8),
-    pin_db_in    => cur_reg(7 downto 0),
-    pin_db_drive => drive_reg,
-    pin_db_out   => db_out,
-    pin_db_oe    => open,
-    pin_intrdy   => intrdy,
-    pin_samp     => DBG_SAMP,
-    pin_outstbn  => outstbn,
-    pin_v0       => v0,
-    samp_latch   => samp_latch,
-    samp_load    => open,
+    ce           => tick,
+    reset        => chip_reset,
+    addr         => chip_addr,
+    we           => chip_we,
+    wdata        => chip_wdata,
+    rdata        => rdata,
+    rdy          => intrdy,
+    sample       => sample,
+    sample_stb   => sample_stb,
+    sample_v0    => v0,
     load_we      => load_we,
     load_addr    => std_logic_vector(load_idx_reg),
     load_data    => ROM_DATA,
@@ -641,12 +573,12 @@ begin
   );
 
   ---------------------------------------------------------------------------
-  -- output: take the sample latch as OUTSTB starts (offset binary -> signed).
+  -- output: take each new sample (sample_stb, at the end of its chip clock).
   --   SUM mode:        one sample per period, on both channels
   --   INDIVIDUAL mode: one sample per voice; V0 marks voice 0. The previous
   --                    period's left/right sums are output when voice 0 arrives.
   process (voice_reg, acc_l_reg, acc_r_reg, out_l_reg, out_r_reg, individual_reg, resetn_reg,
-           step_en, outstbn, outstbn_reg, v0, samp_latch, voice_l_reg, voice_r_reg)
+           tick, sample_stb, v0, sample, voice_l_reg, voice_r_reg)
     variable s     : signed(19 downto 0);
     variable voice : unsigned(2 downto 0);
     variable l, r  : signed(19 downto 0);
@@ -664,8 +596,8 @@ begin
       out_r_next <= (others => '0');
       acc_l_next <= (others => '0');
       acc_r_next <= (others => '0');
-    elsif step_en = '1' and outstbn_reg = '1' and outstbn = '0' then
-      s := resize(signed(not samp_latch(15) & samp_latch(14 downto 0)), 20);
+    elsif tick = '1' and sample_stb = '1' then
+      s := resize(sample(15 downto 0), 20);
       if individual_reg = '0' or not STEREO then
         out_l_next  <= s;
         out_r_next  <= s;
@@ -715,6 +647,7 @@ begin
   AUDIO_R       <= aud_r_reg;
   SAMPLE_STROBE <= aud_strobe_reg;
   DBG_STEP_EN   <= step_en;
-  DBG_OUTSTBN   <= outstbn;
+  DBG_SAMP      <= std_logic_vector(sample(15 downto 0));
+  DBG_OUTSTBN   <= not sample_stb;
   DBG_V0        <= v0;
 end architecture;

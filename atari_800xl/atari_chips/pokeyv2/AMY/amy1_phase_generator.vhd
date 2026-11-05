@@ -8,7 +8,7 @@
 --   +1  read the voice's phase phi from the RAM
 --   +2  phi' = phi + xo (xo is the voice's frequency increment at this clock);
 --       the harmonic phase register h takes phi'
---   +3  write phi' back (the write strobe is a CLKN latch: steps 4, 5 .. 3)
+--   +3  write phi' back
 -- After that the RAM is read again, so every second clock h += phi': h = k phi' for
 -- harmonic k.
 --
@@ -30,9 +30,7 @@ use ieee.numeric_std.all;
 entity amy1_phase_generator is
   port (
     clk       : in  std_logic;
-    tick      : in  std_logic;                      -- chip clock: registers update
-    sample    : in  std_logic;                      -- end of CLKN
-    clkn_ph   : in  std_logic;                      -- chip CLKN phase (write strobe latch)
+    ce        : in  std_logic;                      -- chip clock enable: registers update
     -- sequencer
     ld_voice  : in  std_logic;                      -- first clock of a voice (LDVOICE)
     voice     : in  std_logic_vector(2 downto 0);   -- the voice
@@ -62,7 +60,6 @@ architecture rtl of amy1_phase_generator is
   signal h_reg,     h_next     : unsigned(19 downto 0) := (others => '0');  -- harmonic phase
   signal disp_reg,  disp_next  : unsigned(9 downto 0) := (others => '0');
   signal dsum_reg,  dsum_next  : unsigned(13 downto 0) := (others => '0');  -- displaced phase
-  signal wr_hold_reg           : std_logic := '1';   -- write strobe latch (CLKN; netlist power-up: on)
 
   signal sel_h  : std_logic;              -- clock a: the argument is h
   signal h      : unsigned(19 downto 0);  -- h as seen (clrph)
@@ -102,7 +99,7 @@ begin
   -- phase RAM
   wr_d      <= drive_reg and ldv3_reg;
   ram_addr  <= addr_reg;
-  ram_we    <= wr_d when clkn_ph = '1' else wr_hold_reg;
+  ram_we    <= wr_d;
   ram_wdata <= std_logic_vector(bus_v);
 
   process (ld_voice, voice, addr_reg, ldv1_reg, ldv2_reg, ldv3_reg, sel_h, h, sum,
@@ -128,10 +125,7 @@ begin
   process (clk)
   begin
     if rising_edge(clk) then
-      if sample = '1' then
-        wr_hold_reg <= wr_d;
-      end if;
-      if tick = '1' then
+      if ce = '1' then
         addr_reg  <= addr_next;
         ldv1_reg  <= ldv1_next;
         ldv2_reg  <= ldv2_next;

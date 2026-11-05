@@ -16,7 +16,7 @@
 -- The base ROM (128 x 15, 96 words used) holds the 11-bit mantissa and a 4-bit
 -- slope for each 1/96 octave; the interpolation ROM (128 x 5) holds slope x fraction.
 --
--- Pipeline (one register stage per chip clock, all on tick):
+-- Pipeline (one register stage per chip clock, all on ce):
 --   1  latch log
 --   2  octave / third; base ROM address
 --   3  base ROM data; interpolation ROM address
@@ -31,7 +31,7 @@ use ieee.numeric_std.all;
 entity amy1_exp_rom is
   port (
     clk       : in  std_logic;
-    tick      : in  std_logic;                      -- chip clock: registers update
+    ce      : in  std_logic;                      -- chip clock: registers update
     log       : in  std_logic_vector(12 downto 0);  -- log value (LOG12..0)
     fan       : in  std_logic;                      -- FAN, delayed to clrdisp
     xo        : out std_logic_vector(17 downto 0);  -- linear value, 5 clocks after log
@@ -85,7 +85,7 @@ begin
   base_addr <= std_logic_vector(third_reg) & pos2_reg(7 downto 3);
   int_addr  <= slope3_reg & frac3_reg;
 
-  process (log, fan, log1_reg, code2_reg, pos2_reg, code3_reg, man4_reg, int4_reg,
+  process (log, fan, log1_reg, code2_reg, pos2_reg, code3_reg, man3_reg, man4_reg, int4_reg,
            code4_reg, xo_reg, fan_reg, base_q, int_q)
     variable man : unsigned(10 downto 0);
   begin
@@ -122,7 +122,7 @@ begin
   process (clk)
   begin
     if rising_edge(clk) then
-      if tick = '1' then
+      if ce = '1' then
         log1_reg   <= log1_next;
         code2_reg <= code2_next;
         third_reg  <= third_next;

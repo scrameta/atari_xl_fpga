@@ -29,32 +29,31 @@
 -- In host mode (NZINIT) the host owns the RAM: the address comes from hadr (loaded at
 -- P2), the write strobe from host_we and the data from host_data.
 --
--- Registers: each is one of the chip's two-phase registers (sampled at the end of
--- CLKN, shown from CLK). They all update on tick, the end of the step before CLK.
+-- Registers: each is one of the chip's two-phase registers; they all update on ce.
 -------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.amy1_pkg.all;
 
 entity amy1_noise_generator is
   port (
     clk       : in  std_logic;
-    tick      : in  std_logic;                     -- chip clock: registers update
-    clk_ph    : in  std_logic;                     -- chip CLK phase (gates the RAM write)
+    ce        : in  std_logic;                     -- chip clock enable: registers update
     -- sequencer
     p         : in  std_logic_vector(0 to 3);      -- slot phase P0..P3
     sync      : in  std_logic;                     -- last slot of the sample period
     odd       : in  std_logic;                     -- generator of this sample period
     hadr      : in  std_logic_vector(5 downto 0);  -- harmonic address (row & gen in host mode)
     host_mode : in  std_logic;                     -- NZINIT: the host owns the Noise RAM
-    host_we   : in  std_logic;                     -- host write strobe
-    host_data : in  std_logic_vector(2 downto 0);  -- host write data (IB2..0)
-    sync_d    : out std_logic;                     -- SYNC one clock later
+    cmd       : in  host_cmd_t;                    -- the host command
+    host_data : in  std_logic_vector(2 downto 0);  -- host write data (A2..0)
+    host_wr   : out std_logic;                     -- the host write is happening
     -- envelope generator
-    gen_sel   : in  std_logic;                     -- the voice's generator (voice type 2)
+    noise_gen : in  std_logic;                     -- the voice's generator (voice type 2)
     mute      : in  std_logic;                     -- force the noise word to zero
     noise     : out std_logic_vector(11 downto 0); -- noise word, two's complement
-    serial    : out std_logic;                     -- VAL adder sum (BOUT, test pin)
+    serial    : out std_logic;                     -- VAL adder sum (the BOUT pin)
     -- Noise RAM
     ram_addr  : out std_logic_vector(5 downto 0);
     ram_we    : out std_logic;
@@ -92,6 +91,7 @@ architecture rtl of amy1_noise_generator is
   signal sync1_reg,   sync1_next   : std_logic := '0';
   signal sync2_reg,   sync2_next   : std_logic := '0';
   signal host_reg,    host_next    : std_logic := '0';   -- host mode, one clock late
+  signal hwr_reg,     hwr_next     : std_logic := '1';   -- host write (P2 of a Noise RAM write)
 
   signal rnd     : word3;                 -- random bits (cleared one clock after SYNC)
   signal still   : std_logic;             -- ra = rb = rc: step 0
@@ -136,10 +136,9 @@ begin
              prev_reg;
 
   -----------------------------------------------------------------------------
-  -- Noise RAM: write at P3 (or the host strobe), steps 3, 4, 5 and the next 0
+  -- Noise RAM: write at P3 (or the host strobe), at the ce that ends the clock
   -----------------------------------------------------------------------------
-  we  <= host_we and not clk_ph when host_mode = '1' else
-         p(3)    and not clk_ph;
+  we  <= hwr_reg when host_mode = '1' else p(3);
   gen <= hgen_reg when host_mode = '1' else odd_reg;
 
   ram_addr  <= std_logic_vector(row_reg) & not gen;
@@ -217,7 +216,8 @@ begin
   process (clk)
   begin
     if rising_edge(clk) then
-      if tick = '1' then
+      if ce = '1' then
+        hwr_reg <= hwr_next;
         row_reg    <= row_next;
         hgen_reg   <= hgen_next;
         odd_reg    <= odd_next;
@@ -241,9 +241,10 @@ begin
   -----------------------------------------------------------------------------
   -- Outputs
   -----------------------------------------------------------------------------
-  word   <= word1_reg when gen_sel = '1' else word0_reg;
+  word   <= word1_reg when noise_gen = '1' else word0_reg;
   noise  <= word when mute = '0' else (others => '0');
   serial <= val_sum;
-  sync_d <= sync1_reg;
+  hwr_next <= '1' when p(2) = '1' and cmd.op = OP_WR_NOISE and host_mode = '1' else '0';
+  host_wr  <= hwr_reg;
 
 end architecture;

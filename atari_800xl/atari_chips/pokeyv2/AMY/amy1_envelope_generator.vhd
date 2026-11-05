@@ -21,67 +21,61 @@
 -- It also adds the noise word to amplitudes (log domain), and makes LOG for exp_rom
 -- and FAN (silence the harmonic) for the phase generator via exp_rom's clrdisp.
 --
--- The H and F buses are precharged in steps 0 and 1 and then driven by the RAMs or
--- the write drivers. The registers here sample them as the chip does at the end of
--- CLKN; that equals the bus as evaluated without the precharge, which is what they
--- use (h_val, f_val), so the registers can update on tick.
+-- The envelope RAMs are the envelopes' state: this block owns their writes (the new
+-- value, and the host's breakpoints, LHP flags and voice types); the addresses come
+-- from amy1_ram_addressing. Inside, the RAM data and the write data meet on the H bus
+-- (harmonics) and the F bus (voices), as in the chip: a 0 from any driver wins.
 -------------------------------------------------------------------------------
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.amy1_pkg.all;
 
 entity amy1_envelope_generator is
   port (
     clk        : in  std_logic;
-    tick       : in  std_logic;                      -- chip clock: registers update
-    prech      : in  std_logic;                      -- bus precharge (steps 0, 1)
-    -- sequencer
+    ce         : in  std_logic;                      -- chip clock enable: registers update
+    -- timebase
     p          : in  std_logic_vector(0 to 3);       -- slot phase P0..P3
-    p2x        : in  std_logic;                      -- P2X: slope from the F bus
-    odd        : in  std_logic;                      -- ODDEV
-    nv         : in  std_logic;                      -- NV: ZEROB (noise muted) one clock later
-    rst        : in  std_logic;                      -- RST
-    clrph      : in  std_logic;                      -- CLRPH
-    ssen       : in  std_logic;                      -- rate counter: step this envelope
-    sel_ff     : in  std_logic;                      -- read-back of a frequency (SELFF)
+    p2x        : in  std_logic;                      -- P1 one clock late: slope from the F bus
+    odd        : in  std_logic;                      -- odd sample period
+    nv         : in  std_logic;                      -- noise muted one clock ago (new voice)
+    ssen       : in  std_logic;                      -- step this envelope (slope rate)
     ld_flo     : in  std_logic;                      -- load frequency low bits / voice type
-    h_wr       : in  std_logic;                      -- write drivers on the H bus (not ENHWRN)
-    aux_wr     : in  std_logic;                      -- host drivers on the F bus (not ENAUXWRN)
-    vnv_wr     : in  std_logic;                      -- new value on the F bus (ENVNVWR)
-    rdbk       : in  std_logic;                      -- read-back enable (not ENRDBKN)
-    -- host data
-    cmnd0      : in  std_logic;                      -- command bit 0 (LHP flag)
-    ib         : in  std_logic_vector(7 downto 0);   -- IB bus
-    aux        : in  std_logic_vector(12 downto 0);  -- Reg B:C
+    upd_freq   : in  std_logic;                      -- the voice's frequency is stepped
+    -- command unit
+    rst        : in  std_logic;
+    clrph      : in  std_logic;
+    cmd        : in  host_cmd_t;
+    -- host registers
+    reg_a      : in  std_logic_vector(7 downto 0);   -- slope
+    reg_bc     : in  std_logic_vector(12 downto 0);  -- B:C: destination, voice type
     -- noise generator
     noise      : in  std_logic_vector(11 downto 0);  -- noise word, two's complement
-    -- RAM read data and enables
-    hbp_q      : in  std_logic_vector(15 downto 0);  -- harmonic breakpoint -> H16..1
-    hbp_rd     : in  std_logic;
-    hcv_q      : in  std_logic_vector(12 downto 0);  -- harmonic current value -> H29..17
-    hcv_rd     : in  std_logic;
-    lhp_q      : in  std_logic_vector(0 downto 0);   -- last harmonic pair flag -> H0
-    lhp_rd     : in  std_logic;
-    v18_q      : in  std_logic_vector(17 downto 0);  -- voice word -> F20..3
-    v18_rd     : in  std_logic;
-    v3_q       : in  std_logic_vector(2 downto 0);   -- voice word -> F2..0
-    v3_rd      : in  std_logic;
-    -- buses (RAM write data)
-    h_bus      : out std_logic_vector(29 downto 0);
-    f_bus      : out std_logic_vector(20 downto 0);
+    -- envelope RAMs (addresses from amy1_ram_addressing)
+    hbp_q      : in  std_logic_vector(15 downto 0);  -- harmonic breakpoint: destination 8, slope 8
+    hbp_we     : out std_logic;
+    hbp_wdata  : out std_logic_vector(15 downto 0);
+    hcv_q      : in  std_logic_vector(12 downto 0);  -- harmonic current value
+    hcv_we     : out std_logic;
+    hcv_wdata  : out std_logic_vector(12 downto 0);
+    lhp_q      : in  std_logic_vector(0 downto 0);   -- last harmonic pair flag
+    lhp_we     : out std_logic;
+    lhp_wdata  : out std_logic_vector(0 downto 0);
+    v18_q      : in  std_logic_vector(17 downto 0);  -- voice word, bits 20..3
+    v18_we     : out std_logic;
+    v18_wdata  : out std_logic_vector(17 downto 0);
+    v3_q       : in  std_logic_vector(2 downto 0);   -- voice word, bits 2..0
+    v3_we      : out std_logic;
+    v3_wdata   : out std_logic_vector(2 downto 0);
     -- outputs
     log        : out std_logic_vector(12 downto 0);  -- to exp_rom
     fan        : out std_logic;                      -- silence (to exp_rom, clrdisp)
-    gen_sel    : out std_logic;                      -- CVNL1: the voice's noise generator
-    ss         : out std_logic_vector(1 downto 0);   -- slope rate (to the sequencer)
-    upenff     : out std_logic;                      -- write the new value
-    upenha     : out std_logic;
-    lhpulse_n  : out std_logic;                      -- LHPULSEN
-    en7rdbkh   : out std_logic;                      -- read-back drivers on IB
-    en7rdbkl   : out std_logic;
-    rb_slope   : out std_logic_vector(7 downto 0);   -- test read-back: sign, ss1, ss0, slope
-    rb_hi      : out std_logic_vector(4 downto 0);   -- read-back: F15..11
-    rb_lo      : out std_logic_vector(7 downto 0)    -- read-back: F10..3 or H29..22
+    noise_gen  : out std_logic;                      -- the voice's noise generator
+    slope_rate : out std_logic_vector(1 downto 0);   -- to the timebase (ssen)
+    last_pair  : out std_logic;                      -- LHP flag seen: next voice
+    host_wr    : out std_logic;                      -- the command's RAM write is happening
+    readback   : out std_logic_vector(12 downto 0)   -- for B (12..8) and C (7..0)
   );
 end entity;
 
@@ -110,7 +104,19 @@ architecture rtl of amy1_envelope_generator is
   signal lhp_reg,    lhp_next    : std_logic := '1';                                 -- LHPND
   signal rbh_reg,    rbh_next    : std_logic_vector(4 downto 0) := (others => '0');
   signal rbl_reg,    rbl_next    : std_logic_vector(7 downto 0) := (others => '1');
-  signal p23_reg,    p23_next    : std_logic := '0';                                 -- not (P2 or P3), late
+
+  -- RAM write control (each a register; the write happens at the ce ending its clock)
+  signal enwrh_reg,  enwrh_next  : std_logic := '0';   -- harmonic current value (envelope)
+  signal enwrbp_reg, enwrbp_next : std_logic := '0';   -- harmonic breakpoint (host)
+  signal enwrlh_reg, enwrlh_next : std_logic := '0';   -- LHP flag (host)
+  signal upffw_reg,  upffw_next  : std_logic := '0';   -- frequency update window, from P1
+  signal enwrv_reg,  enwrv_next  : std_logic := '1';   -- voice current value (envelope); power-up: on
+  signal enwrvi_reg, enwrvi_next : std_logic := '1';   -- voice breakpoint (host); power-up: on
+  signal ennzwr_reg, ennzwr_next : std_logic := '1';   -- voice type (host); power-up: on
+  signal h_wr, v_wr, aux_wr, vnv_wr, sel_ff, upenha, upenff : std_logic;
+  signal hbp_rd, hcv_rd, lhp_rd, v18_rd, v3_rd : std_logic;
+  signal we_hbp, we_hcv, we_lhp, we_v18, we_v3 : std_logic;
+  signal wr_harm, wr_lhp, wr_freq, wr_type : std_logic;
 
   -- buses
   signal h_val : std_logic_vector(29 downto 0);   -- H bus as driven (no precharge)
@@ -134,7 +140,7 @@ begin
   -----------------------------------------------------------------------------
   -- The buses: 0 from any driver wins, otherwise 1 (precharge or a driver)
   -----------------------------------------------------------------------------
-  process (hbp_q, hbp_rd, hcv_q, hcv_rd, lhp_q, lhp_rd, h_wr, cmnd0, ib, aux, nvhi_reg)
+  process (hbp_q, hbp_rd, hcv_q, hcv_rd, lhp_q, lhp_rd, h_wr, cmd, reg_a, reg_bc, nvhi_reg)
     variable h : std_logic_vector(29 downto 0);
   begin
     h := (others => '1');
@@ -142,24 +148,24 @@ begin
     if hbp_rd = '1' then h(16 downto 1) := hbp_q; end if;
     if hcv_rd = '1' then h(29 downto 17) := hcv_q; end if;
     if h_wr = '1' then
-      h(0)            := h(0) and cmnd0;
-      h(8 downto 1)   := h(8 downto 1) and ib;
-      h(16 downto 9)  := h(16 downto 9) and aux(7 downto 0);
+      h(0)            := h(0) and cmd.lhp;
+      h(8 downto 1)   := h(8 downto 1) and reg_a;
+      h(16 downto 9)  := h(16 downto 9) and reg_bc(7 downto 0);
       h(29 downto 17) := h(29 downto 17) and nvhi_reg;
     end if;
     h_val <= h;
   end process;
 
-  process (v18_q, v18_rd, v3_q, v3_rd, aux_wr, vnv_wr, ib, aux, nvhi_reg, nvlo_reg)
+  process (v18_q, v18_rd, v3_q, v3_rd, aux_wr, vnv_wr, reg_a, reg_bc, nvhi_reg, nvlo_reg)
     variable f : std_logic_vector(20 downto 0);
   begin
     f := (others => '1');
     if v3_rd = '1' then f(2 downto 0) := v3_q; end if;
     if v18_rd = '1' then f(20 downto 3) := v18_q; end if;
     if aux_wr = '1' then
-      f(7 downto 0)   := f(7 downto 0) and ib;
-      f(15 downto 8)  := f(15 downto 8) and aux(12 downto 5);
-      f(20 downto 16) := f(20 downto 16) and aux(4 downto 0);
+      f(7 downto 0)   := f(7 downto 0) and reg_a;
+      f(15 downto 8)  := f(15 downto 8) and reg_bc(12 downto 5);
+      f(20 downto 16) := f(20 downto 16) and reg_bc(4 downto 0);
     end if;
     if vnv_wr = '1' then
       f(20 downto 16) := f(20 downto 16) and nvlo_reg;
@@ -168,8 +174,47 @@ begin
     f_val <= f;
   end process;
 
-  h_bus <= (others => '1') when prech = '1' else h_val;
-  f_bus <= (others => '1') when prech = '1' else f_val;
+  -----------------------------------------------------------------------------
+  -- RAM writes: the envelope's new value (harmonic in P3, voice in P1 of an update
+  -- period), the host's breakpoint, LHP flag and voice type. A RAM is read when its
+  -- group is not written.
+  -----------------------------------------------------------------------------
+  wr_harm <= '1' when cmd.op = OP_WR_HARM else '0';
+  wr_lhp  <= '1' when cmd.op = OP_WR_LHP  else '0';
+  wr_freq <= '1' when cmd.op = OP_WR_FREQ else '0';
+  wr_type <= '1' when cmd.op = OP_WR_TYPE else '0';
+  sel_ff  <= '1' when p(2) = '1' and cmd.op = OP_RD_FREQ else '0';
+
+  enwrh_next  <= upenha and p(2);
+  enwrbp_next <= wr_harm and p(1);
+  enwrlh_next <= wr_lhp and p(1);
+  upffw_next  <= upd_freq when p(1) = '1' else upffw_reg;
+  enwrv_next  <= upffw_reg and p(0) and upenff;
+  enwrvi_next <= p(3) and wr_freq;
+  ennzwr_next <= p(3) and wr_type;
+
+  h_wr   <= enwrbp_reg or enwrh_reg or enwrlh_reg;
+  v_wr   <= enwrv_reg or enwrvi_reg;
+  aux_wr <= enwrvi_reg or ennzwr_reg;
+  vnv_wr <= enwrv_reg;
+
+  we_hcv <= enwrh_reg;
+  we_hbp <= enwrbp_reg;
+  we_lhp <= enwrlh_reg;
+  we_v18 <= v_wr;
+  we_v3  <= aux_wr;
+  hbp_rd <= not h_wr and not we_hbp;
+  hcv_rd <= not h_wr and not we_hcv;
+  lhp_rd <= not h_wr and not we_lhp;
+  v18_rd <= not v_wr and not we_v18;
+  v3_rd  <= not aux_wr and not we_v3;
+
+  hcv_we <= we_hcv;  hcv_wdata <= h_val(29 downto 17);
+  hbp_we <= we_hbp;  hbp_wdata <= h_val(16 downto 1);
+  lhp_we <= we_lhp;  lhp_wdata <= h_val(0 downto 0);
+  v18_we <= we_v18;  v18_wdata <= f_val(20 downto 3);
+  v3_we  <= we_v3;   v3_wdata  <= f_val(2 downto 0);
+  host_wr <= enwrbp_reg or enwrlh_reg or aux_wr;
 
   -----------------------------------------------------------------------------
   -- Step the envelope
@@ -320,13 +365,12 @@ begin
         rbl_next <= h_val(29 downto 22);
       end if;
     end if;
-    p23_next <= not (p(2) or p(3));
   end process;
 
   process (clk)
   begin
     if rising_edge(clk) then
-      if tick = '1' then
+      if ce = '1' then
         slp_reg  <= slp_next;
         sign_reg <= sign_next;
         ss_reg   <= ss_next;
@@ -348,7 +392,13 @@ begin
         lhp_reg  <= lhp_next;
         rbh_reg  <= rbh_next;
         rbl_reg  <= rbl_next;
-        p23_reg  <= p23_next;
+        enwrh_reg  <= enwrh_next;
+        enwrbp_reg <= enwrbp_next;
+        enwrlh_reg <= enwrlh_next;
+        upffw_reg  <= upffw_next;
+        enwrv_reg  <= enwrv_next;
+        enwrvi_reg <= enwrvi_next;
+        ennzwr_reg <= ennzwr_next;
       end if;
     end if;
   end process;
@@ -367,15 +417,11 @@ begin
            (not enaorf and (nzv_reg or neg_reg or lz_reg));
   end process;
 
-  gen_sel   <= vt_reg(1);
-  ss        <= ss_reg;
-  upenff    <= not upenffn;
-  upenha    <= not upenffn when odd = '1' else not upd_reg;
-  lhpulse_n <= not (lhp_reg or (p(1) and clrph));
-  en7rdbkh  <= rdbk and p23_reg;
-  en7rdbkl  <= rdbk and not p23_reg;
-  rb_slope  <= sign_reg & ss_reg(1) & ss_reg(0) & slp_reg;
-  rb_hi     <= rbh_reg;
-  rb_lo     <= rbl_reg;
+  noise_gen  <= vt_reg(1);
+  slope_rate <= ss_reg;
+  upenff     <= not upenffn;
+  upenha     <= not upenffn when odd = '1' else not upd_reg;
+  last_pair  <= lhp_reg or (p(1) and clrph);
+  readback   <= rbh_reg & rbl_reg;
 
 end architecture;
