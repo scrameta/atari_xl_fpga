@@ -116,6 +116,7 @@ architecture rtl of amy1_core is
   signal clrdisp : std_logic;
   signal arg : std_logic_vector(13 downto 0);
   signal hs : std_logic_vector(12 downto 0);
+  signal fjump : std_logic;
 
 begin
 
@@ -146,7 +147,7 @@ begin
   u_ram_addressing: entity work.amy1_ram_addressing port map (
     clk => clk, ce => ce,
     p => p, cnt => cnt(6 downto 2), p2x => p2x, odd => odd, cntv => cntv,
-    upd_freq => upd_freq, cmd => cmd,
+    upd_freq => upd_freq, cmd => cmd, fjump => fjump,
     harm_addr => harm_a, voice_addr => voice_addr);
   harm_addr <= harm_a;
 
@@ -164,7 +165,7 @@ begin
     v18_q => voice18_q, v18_we => voice18_we, v18_wdata => voice18_wdata,
     v3_q => voice3_q, v3_we => voice3_we, v3_wdata => voice3_wdata,
     log => log, fan => fan, noise_gen => noise_gen, slope_rate => slope_rate,
-    last_pair => last_pair, host_wr => env_wr, readback => readback);
+    last_pair => last_pair, host_wr => env_wr, readback => readback, fjump => fjump);
 
   u_noise_generator: entity work.amy1_noise_generator port map (
     clk => clk, ce => ce,

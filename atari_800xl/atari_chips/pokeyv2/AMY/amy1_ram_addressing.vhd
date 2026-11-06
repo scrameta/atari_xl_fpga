@@ -5,7 +5,8 @@
 -- the LSB halsb (odd harmonic: P0, and P2 of odd periods), or, in P2 of a host harmonic
 -- command, the command's harmonic.
 -- Voice RAMs: the voice counter and the word (not P2X), or the command's voice and word
--- (P1 of a frequency read outside the voice's update, P3 of a voice write).
+-- (P1 of a frequency read outside the voice's update, P3 of a voice write), or the command's
+-- voice and word 0 for a frequency jump's current value (the P1 after its breakpoint write).
 -- The addresses are logical (the netlist drives the RAMs' address lines inverted).
 -------------------------------------------------------------------------------
 library ieee;
@@ -25,6 +26,7 @@ entity amy1_ram_addressing is
     upd_freq   : in  std_logic;
     -- command
     cmd        : in  host_cmd_t;
+    fjump      : in  std_logic;                     -- a frequency jump's current-value write
     -- addresses
     harm_addr  : out std_logic_vector(5 downto 0);
     voice_addr : out std_logic_vector(3 downto 0)
@@ -60,6 +62,7 @@ begin
   end process;
 
   harm_addr  <= cmd.harm when p2y = '1' else cnt & halsb_reg;
-  voice_addr <= (cmd.voice & not cmd.word) when vcmd_reg = '1' else cntv & p2x;
+  voice_addr <= (cmd.voice & not cmd.word) when vcmd_reg = '1' else
+                (cmd.voice & '0')          when fjump = '1'    else cntv & p2x;
 
 end architecture;

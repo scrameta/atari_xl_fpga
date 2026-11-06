@@ -73,6 +73,7 @@ entity amy1_envelope_generator is
     fan        : out std_logic;                      -- silence (to exp_rom, clrdisp)
     noise_gen  : out std_logic;                      -- the voice's noise generator
     slope_rate : out std_logic_vector(1 downto 0);   -- to the timebase (ssen)
+    fjump      : out std_logic;                      -- P1 after a frequency jump: its current value
     last_pair  : out std_logic;                      -- LHP flag seen: next voice
     host_wr    : out std_logic;                      -- the command's RAM write is happening
     readback   : out std_logic_vector(12 downto 0)   -- for B (12..8) and C (7..0)
@@ -112,10 +113,12 @@ architecture rtl of amy1_envelope_generator is
   signal upffw_reg,  upffw_next  : std_logic := '0';   -- frequency update window, from P1
   signal enwrv_reg,  enwrv_next  : std_logic := '1';   -- voice current value (envelope); power-up: on
   signal enwrvi_reg, enwrvi_next : std_logic := '1';   -- voice breakpoint (host); power-up: on
+  signal fjump_reg,  fjump_next  : std_logic := '0';   -- the clock after a frequency jump's write
   signal ennzwr_reg, ennzwr_next : std_logic := '1';   -- voice type (host); power-up: on
   signal h_wr, v_wr, aux_wr, vnv_wr, sel_ff, upenha, upenff : std_logic;
   signal hbp_rd, hcv_rd, lhp_rd, v18_rd, v3_rd : std_logic;
   signal we_hbp, we_hcv, we_lhp, we_v18, we_v3 : std_logic;
+  signal jump_now : std_logic;
   signal wr_harm, wr_lhp, wr_freq, wr_type : std_logic;
 
   -- buses
@@ -156,7 +159,7 @@ begin
     h_val <= h;
   end process;
 
-  process (v18_q, v18_rd, v3_q, v3_rd, aux_wr, vnv_wr, reg_a, reg_bc, nvhi_reg, nvlo_reg)
+  process (v18_q, v18_rd, v3_q, v3_rd, aux_wr, vnv_wr, fjump_reg, reg_a, reg_bc, nvhi_reg, nvlo_reg)
     variable f : std_logic_vector(20 downto 0);
   begin
     f := (others => '1');
@@ -170,6 +173,10 @@ begin
     if vnv_wr = '1' then
       f(20 downto 16) := f(20 downto 16) and nvlo_reg;
       f(15 downto 3)  := f(15 downto 3) and nvhi_reg;
+    end if;
+    if fjump_reg = '1' then                    -- the jump's current value: destination, fraction 0
+      f(20 downto 16) := (others => '0');
+      f(15 downto 3)  := f(15 downto 3) and reg_bc;
     end if;
     f_val <= f;
   end process;
@@ -191,14 +198,28 @@ begin
   upffw_next  <= upd_freq when p(1) = '1' else upffw_reg;
   enwrv_next  <= upffw_reg and p(0) and upenff;
   enwrvi_next <= p(3) and wr_freq;
+  -- A frequency jump (WR_FREQ with a zero mantissa) also loads the voice's current value, in
+  -- P1 straight after the breakpoint write (P0), as the 1983 spec says ("loaded immediate into
+  -- the FF current value field"): the netlist applied it at the voice's next update, every
+  -- other sample period, and a second write before then lost it. The breakpoint and current
+  -- value are separate voice words, so this is a second write; ram_addressing gives it the
+  -- command's voice and word 0. If the envelope updates a voice in that P1, the jump's write
+  -- takes the clock and that voice's step waits for its next update.
+  fjump_next  <= enwrvi_reg and wr_freq when reg_a(4 downto 0) = "00000" else '0';
   ennzwr_next <= p(3) and wr_type;
 
   h_wr   <= enwrbp_reg or enwrh_reg or enwrlh_reg;
-  v_wr   <= enwrv_reg or enwrvi_reg;
+  v_wr   <= enwrv_reg or enwrvi_reg or fjump_reg;
   aux_wr <= enwrvi_reg or ennzwr_reg;
-  vnv_wr <= enwrv_reg;
+  vnv_wr <= enwrv_reg and not fjump_reg;
 
-  we_hcv <= enwrh_reg;
+  -- A breakpoint write with a zero slope mantissa (a jump) also loads the current value
+  -- at once, as the 1983 spec says ("loaded immediate into the HA current value field"):
+  -- the netlist applied it at the harmonic's next update, up to two sample periods
+  -- later, and a second write before then lost it (Q1). Same clock and address as the
+  -- breakpoint write; the next update still applies the jump as before.
+  jump_now <= enwrbp_reg when reg_a(4 downto 0) = "00000" else '0';
+  we_hcv <= enwrh_reg or jump_now;
   we_hbp <= enwrbp_reg;
   we_lhp <= enwrlh_reg;
   we_v18 <= v_wr;
@@ -209,9 +230,10 @@ begin
   v18_rd <= not v_wr and not we_v18;
   v3_rd  <= not aux_wr and not we_v3;
 
-  hcv_we <= we_hcv;  hcv_wdata <= h_val(29 downto 17);
+  hcv_we <= we_hcv;  hcv_wdata <= reg_bc(7 downto 0) & "00000" when jump_now = '1' else h_val(29 downto 17);
   hbp_we <= we_hbp;  hbp_wdata <= h_val(16 downto 1);
   lhp_we <= we_lhp;  lhp_wdata <= h_val(0 downto 0);
+  fjump <= fjump_reg;
   v18_we <= we_v18;  v18_wdata <= f_val(20 downto 3);
   v3_we  <= we_v3;   v3_wdata  <= f_val(2 downto 0);
   host_wr <= enwrbp_reg or enwrlh_reg or aux_wr;
@@ -398,6 +420,7 @@ begin
         upffw_reg  <= upffw_next;
         enwrv_reg  <= enwrv_next;
         enwrvi_reg <= enwrvi_next;
+        fjump_reg  <= fjump_next;
         ennzwr_reg <= ennzwr_next;
       end if;
     end if;

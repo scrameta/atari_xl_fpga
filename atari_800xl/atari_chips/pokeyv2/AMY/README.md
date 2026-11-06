@@ -72,7 +72,7 @@ flowchart LR
 | `vhdl/amy1_pkg.vhd` | types shared by the units: the decoded host command, the configuration |
 | `vhdl/amy1_<unit>.vhd` (10 files) | the units, see "The core in units" |
 | `vhdl/amy1_mem.bin` / `.hex` | the memory image to put in flash (1208 32-bit words, little endian in the .bin), logical addresses |
-| `vhdl/amy1_mem_packed.vhd` | memory layout for the FPGA: 4 M9Ks + PHASERAM in logic (architecture `packed`, the default) |
+| `vhdl/amy1_mem_packed.vhd` | memory layout for the FPGA: 4 M9Ks, nothing in logic (architecture `packed`, the default) |
 | `vhdl/amy1_mem.vhd` | the 12 RAMs/ROMs, one block each: the reference layout (architecture `rtl`) |
 | `vhdl/amy1_mem_pkg.vhd` | memory types and the image layout (generated) |
 | `vhdl/amy1_dpram_altera.vhd` / `amy1_dpram_sim.vhd` | true dual-port RAM for the ROM pairs: altsyncram for Quartus / behavioural for GHDL |
@@ -351,6 +351,9 @@ the phase-A sources are in `test/phaseA_ref/`).
 | `tb_top`, phase B, `ENGINE` = true: 16 x 4, 8 x 8, 4 x PHI2, CLK / 8 | `engmodel.py` | every chip write identical; no jump followed by a write within a sample |
 | `tb_top`, the drum test with 64 and with 40 harmonics, every Noise RAM write and noise word (`tools/noisecheck.py`) | `test/noise/amynoise.py`, the bit-exact model | 399 passes (all 32 rows each) and 386 words identical, both modes |
 | `tb_top`, every command executes in phase B and phase A (after the 4 Nov reset fix), same order | the phase-A wrapper and chip | identical command sequences in all tests |
+| 6 Nov: immediate frequency jumps: `run_phaseB.sh` with `test/q1check.py`; Warhawk frames 1-50 with the monitor; `dircheck.py` over the three tunes | phase A, and the design before | RAM writes equal phase A's apart from the added jump writes, one displaced envelope write and PHASERAM (phase offset); lost frequency jumps 2 before, 0 after; no wrong-way slopes in 528 s of music |
+| 5 Nov: Q1 fix (immediate harmonic jumps): `run_phaseB.sh` with `test/q1check.py` on the aligned replays; Warhawk frames 1-50 and 790-845 through `amy1_top` + engine with a lost-jump / wrap monitor | phase A, and the design before the fix | RAM writes equal phase A's apart from the added jump writes; samples differ only in a 2-3 sample burst per test; wraps 5 and 7 before, 0 after |
+| 5 Nov: packed memories with registered reads and PHASERAM in M9K 3: `run_phaseB.sh` in full, plus the aligned replay with `ce` every 4 clks | the 4 Nov package | every result identical; `amy1_top`'s PCM bit-identical in all ten `tb_top` runs |
 
 ## Size and timing (Yosys, generic 4-LUT, memories outside)
 
@@ -419,19 +422,24 @@ voice v. (The netlist drove the envelope RAMs' address lines inverted, so the ge
 |---|---|
 | M9K 1, true dual port | SROMBS (256x17) on port A, XROMBS (128x15) on port B |
 | M9K 2, true dual port | SROMINT (512x5) on port A, XROMINT (128x5) on port B, NOISE (64x3) at word 640 |
-| M9K 3, simple dual port | HARMBRKPOINT, HARMCURNTVAL and LHPRAM as one 30-bit word (one shared address) |
+| M9K 3, simple dual port, 128x30 | HARMBRKPOINT, HARMCURNTVAL and LHPRAM as one 30-bit word in words 0..63 (one shared address); PHASERAM (8x20) in words 64..71 |
 | M9K 4, simple dual port, 256x36 | VOICE18 and VOICE3 as one 21-bit word in words 0..15; words 16..255 belong to the note engine, through an aux port |
-| logic | PHASERAM (8x20). OCTSPL is no longer read |
 
 With e1 and e2 the first and second clk edges after a `ce`:
 
 * **e1:** every M9K port takes the core's read address for this chip clock (registered address,
-  unregistered output), so the data is there for the rest of the clock.
+  unregistered output), so the data is there for the rest of the clock. M9K 3 writes the PHASERAM
+  word of the chip clock before (registered at its `ce`).
 * **e2:** M9K 2 port B moves on to the NOISE row (XROMINT's data is held in a register from e2);
-  M9K 4's read port is free for the aux port (the voice data is held).
+  M9K 3 reads the PHASERAM word (the harmonic word is held); M9K 4's read port is free for the aux
+  port (the voice data is held).
 * **`ce`:** the writes. NOISE on M9K 2 port A; the harmonic and voice words on the write ports of
   M9K 3 and 4, merged with this clock's read of the same word (the RAMs that share an address are one
   word).
+
+Every read is registered in the RTL (a read on the edge of a write to the same word gets the old
+data), which the M9K does natively, so Quartus adds no read-during-write (pass-through) logic. The
+4 Nov build had 92 such registers on M9K 3 and 4; OCTSPL is no longer read.
 
 So `ce` must be low on the two clks before each `ce`; the aux port reads on any clk but e1 and
 writes on any clk without a voice write. The ROM pairs are `amy1_dpram`, a true dual-port block:
