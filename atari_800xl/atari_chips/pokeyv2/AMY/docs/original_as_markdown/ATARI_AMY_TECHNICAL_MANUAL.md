@@ -1,20 +1,30 @@
+> **Diagram edition (v6):** Flowcharts and functional block diagrams use Mermaid. Numerical plots, word-layout figures and analogue/reset circuits use native SVG; digital bus/output and command-completion timing uses editable WaveJSON with generated SVG previews. Timing diagrams are schematic; the original scans and electrical tables remain authoritative.
+
 # ATARI AMY — Technical Manual (earlier edition)
 
 > **Working Markdown transcription of Atari’s 55-page Technical Manual**, based on the supplied scanned PDF. This is an **earlier document than the AMY 1 Rev. B specification**, not a corrected or merged copy. It retains its different pin assignments, clock and reset limits, and noise descriptions. The text has been editorially reconstructed against matched sections of the later document and the original scans, so it is not yet a page-perfect critical transcription.
 >
-> Source: [`AMY_tech_manual.pdf`](AMY_tech_manual.pdf). All page headings below refer to **physical PDF pages** (the source does not use the same later Rev. B binder pagination). Original figure crops are supplied alongside Mermaid redrawings. Appendix I Tables A/B/C now include complete numerical transcriptions using the Technical Manual’s original decimal encoding; source scans remain alongside for comparison.
+> Source: [`AMY_tech_manual.pdf`](AMY_tech_manual.pdf). All page headings below refer to **physical PDF pages** (the source does not use the same later Rev. B binder pagination). Original figure crops accompany the vector, WaveDrom, and Mermaid redrawings. Appendix I Tables A/B/C now include complete numerical transcriptions using the Technical Manual’s original decimal encoding; source scans remain alongside for comparison.
 
 ## Contents
 
+[1. General description](#general-description) · [2. Features](#features) · [3. Block diagram](#block-diagram) · [4. Pin assignment](#pin-assignment) · [5. Pin description](#pin-description)
+
+[6. Functional description](#functional-description) · [7. Register organization](#register-organization) · [8. Operating procedure](#operating-procedure)
+
+[9. Maximum ratings](#maximum-ratings) · [10. Capacitances](#capacitances) · [11. D.C. characteristics](#dc-characteristics) · [12. A.C. characteristics](#ac-characteristics)
+
+[Appendix I — Slope and pitch tables](#appendix-i)
+
 | Section | Subject |
 |---|---|
-| 1–5 | General description, features, block diagram, pins |
-| 6.1 | Musical specifications |
-| 6.2–6.4.2 | Internal architecture, system and envelopes |
-| 7.1–7.5.9 | Registers and command set |
-| 8.1–8.3 | Operating procedure, initialization, timing |
-| 9–12 | Maximum ratings and electrical/timing specifications |
-| Appendix I | Tables A (semitones), B (tone increments) and C (slopes) |
+| [1–5](#general-description) | General description, features, block diagram, pins |
+| [6.1](#functional-description) | Musical specifications |
+| [6.2–6.4.2](#functional-description) | Internal architecture, system and envelopes |
+| [7.1–7.5.9](#register-organization) | Registers and command set |
+| [8.1–8.3](#operating-procedure) | Operating procedure, initialization, timing |
+| [9–12](#maximum-ratings) | Maximum ratings and electrical/timing specifications |
+| [Appendix I](#appendix-i) | Tables A (semitones), B (tone increments) and C (slopes) |
 
 **Editorial note on page order:** physical PDF page 19 contains §8.1 (reset) before §7.4 resumes on PDF page 20. The following transcription preserves the original *scanned page order* and notes where the subject sequence jumps.
 
@@ -78,9 +88,13 @@ Appendix I: tables A, B and C.
 
 <sub>Original PDF page 3 · [View source](AMY_tech_manual.pdf#page=3)</sub>
 
+<a name="general-description"></a>
+
 ## 1. General description
 
 AMY 1 is a digital, pipeline-architectured additive music synthesizer chip. Eight voices may share a total of 64 harmonic oscillators, assignable in groups of two. There are 72 piecewise-linear envelope generators: eight for fundamental frequency and 64 for harmonic amplitude. A complete sound system adds a D/A converter (up to 16 bits) and generally a controlling microprocessor such as the Intel 8051.
+
+<a name="features"></a>
 
 ## 2. Features
 
@@ -94,17 +108,15 @@ AMY 1 is a digital, pipeline-architectured additive music synthesizer chip. Eigh
 | 1/128 dB amplitude and 1/64 semitone frequency resolution | Programmable noise statistics |
 | 72 on-chip envelope generators | Approximately 37,000 transistors |
 
+<a name="block-diagram"></a>
+
 ## 3. Block diagram
 
-```mermaid
-flowchart LR
-  CPU[Processor interface / interrupt logic] <--> FG[Frequency and amplitude generation]
-  NG[Noise generator] --> FG
-  FG --> PH[Phase generation]
-  PH --> SIN[Sine argument formation]
-  SIN --> ACC[Sample formation / accumulator]
-  ACC --> OUT[16-bit digital output]
-```
+![AMY-1 system-bus interface and main functional blocks, early pinout](assets/vector/overview_technical_manual.svg)
+
+*Vector functional redrawing based on the earlier Technical Manual’s block diagram and pin descriptions. Signals use its original pinout, not Rev. B.*
+
+<a name="pin-assignment"></a>
 
 ## 4. Pin assignment — **original Technical Manual pinout**
 
@@ -146,6 +158,8 @@ flowchart LR
 <!-- Technical Manual original PDF page 04/55 -->
 
 <sub>Original PDF page 4 · [View source](AMY_tech_manual.pdf#page=4)</sub>
+
+<a name="pin-description"></a>
 
 ## 5. Pin description (part 1)
 
@@ -191,6 +205,8 @@ flowchart LR
 
 <sub>Original PDF page 6 · [View source](AMY_tech_manual.pdf#page=6)</sub>
 
+<a name="functional-description"></a>
+
 ## 6. Functional description
 
 ### 6.1 Musical specifications
@@ -228,21 +244,11 @@ Atari gives these values for a **4 MHz external CLK** with **64 harmonics enable
 
 AMY 1 consists of 8 major blocks as shown in Figure 1 below.
 
-```mermaid
-flowchart LR
-    CPU[uP interface] <--> BUS[System bus interface]
-    BUS <--> ENV[Envelope generators]
-    NG[Noise generator] --> ENV
-    ENV --> EXP[Exponential ROM]
-    EXP -->|F, DISP| PH[Phase generation and argument formation]
-    PH --> SIN[SIN ROM]
-    SIN --> ACC[Output accumulator]
-    ACC --> OUT[16-bit digital output]
-    BUS --> SEQ[Sequencer]
-    SEQ --> CTRL[Control bus]
-```
+![AMY-1 simplified internal architecture, including system bus interface](assets/vector/internal_architecture.svg)
 
-**Figure 1. Simplified block diagram** — re-created from the PDF.
+*Figure 1 redrawn as SVG with the system bus interface, sequencer and control bus.*
+
+**Figure 1. Simplified block diagram** — SVG redrawing from the original scan.
 
 The System Bus Interface block provides the user with a standard microprocessor interface. The user sends all commands and passes frequency and amplitude breakpoint data and current values over the "µP Interface" lines (RESET, RD, WR, CS, DB0–DB7, ALE, INT/RDY, A1, A0).
 
@@ -268,16 +274,9 @@ The Envelope Generator block contains the Voice RAM (VRAM), Harmonic RAM (HRAM),
 **Figure 2. HRAM and VRAM data word formats**
 
 
-```mermaid
-flowchart TB
-  subgraph HRAM[HRAM word fields]
-    HC[13-bit harmonic amplitude current] --- HD[8-bit destination] --- HS[8-bit slope]
-  end
-  subgraph VRAM[VRAM word fields]
-    VF[13-bit fundamental-frequency destination] --- VS[8-bit slope]
-    VC[18-bit fundamental-frequency current] --- VT[2-bit voice type] --- SP[1-bit spare]
-  end
-```
+![Hram Vram Fields](assets/vector/hram_vram_fields.svg)
+
+*Word layout redrawn as native SVG.*
 
 *Conceptual field-level Mermaid diagram; the scanned Figure 2 preserves the original bit positions.*
 
@@ -353,25 +352,11 @@ flowchart LR
 
 Envelopes are generated by the on-chip AMY 1 envelope generator block. The user may command the generators to make a piecewise linear envelope using a slope and destination scheme. Assume that a particular envelope has previously been loaded immediate to zero. By loading two breakpoints (slope–destination pairs), we obtain the following envelope:
 
-```mermaid
----
-config:
-  themeVariables:
-    xyChart:
-      plotColorPalette: "#1658B9, #0C728A, #B34428"
-      xAxisLineColor: "#334155"
-      yAxisLineColor: "#334155"
-      xAxisLabelColor: "#1E293B"
-      yAxisLabelColor: "#1E293B"
----
-xychart-beta
-  title "Piecewise-linear envelope (schematic)"
-  x-axis "Time" [0, 1, 2, 3, 4, 5]
-  y-axis "Envelope value" 0 --> 10
-  line [0, 0, 10, 10, 10, 0]
-```
+![Envelope](assets/vector/envelope.svg)
 
-**Figure 4. Piecewise linear envelope**. Point A is the first breakpoint, B the first destination/free point, C the second breakpoint, and D the second free point. This Mermaid graph preserves the *shape*, not the source's exact annotated coordinates.
+*Envelope plot redrawn with labelled breakpoint points.*
+
+**Figure 4. Piecewise linear envelope**. Point A is the first breakpoint, B the first destination/free point, C the second breakpoint, and D the second free point. This reconstruction preserves the labelled shape, but is not a calibrated timing plot.
 
 At point A, BP1 is loaded and the envelope starts rising at the constant slope defined by BP1. At B, the destination is reached and the slope effectively becomes zero (a "free point"). At C, a negative-slope breakpoint with zero destination is loaded. At D, zero is reached, becoming another free point.
 
@@ -461,25 +446,11 @@ Since all harmonic amplitudes have a 64 dB dynamic range, a single eight-bit des
 | `0x01` | Minimum nonzero setting (0.25 dB) |
 | `0xFF` | Full scale (63.75 dB) |
 
-```mermaid
----
-config:
-  themeVariables:
-    xyChart:
-      plotColorPalette: "#1658B9, #0C728A, #B34428"
-      xAxisLineColor: "#334155"
-      yAxisLineColor: "#334155"
-      xAxisLabelColor: "#1E293B"
-      yAxisLabelColor: "#1E293B"
----
-xychart-beta
-  title "Harmonic amplitude vs destination"
-  x-axis "Destination code" [0, 1, 64, 128, 192, 255]
-  y-axis "Amplitude (dB)" 0 --> 64
-  line [0, 0.25, 16, 32, 48, 63.75]
-```
+![Amplitude Destination](assets/vector/amplitude_destination.svg)
 
-**Figure 5. Harmonic amplitude destination**. Note that Atari's text uses *dB* as a positive magnitude. Graph is representative.
+*Plot redrawn as SVG to preserve scale, axes and accessible colours.*
+
+**Figure 5. Harmonic amplitude destination**. Note that Atari's text uses *dB* as a positive magnitude. SVG plot is representative.
 
 <details><summary>Original Atari diagram / timing scan — PDF page 14</summary>
 
@@ -503,23 +474,9 @@ Each fundamental-frequency envelope has a 128-semitone range with destination re
 | Semitone field | 7 bits |
 | Atari tone field | 6 bits |
 
-```mermaid
----
-config:
-  themeVariables:
-    xyChart:
-      plotColorPalette: "#1658B9, #0C728A, #B34428"
-      xAxisLineColor: "#334155"
-      yAxisLineColor: "#334155"
-      xAxisLabelColor: "#1E293B"
-      yAxisLabelColor: "#1E293B"
----
-xychart-beta
-  title "Fundamental frequency (semitones) vs destination"
-  x-axis "13-bit destination" [0, 2048, 4096, 6144, 8191]
-  y-axis "Semitones" 0 --> 128
-  line [0, 32, 64, 96, 127.984375]
-```
+![Frequency Destination](assets/vector/frequency_destination.svg)
+
+*Plot redrawn as SVG to preserve scale, axes and accessible colours.*
 
 **Figure 6. Fundamental frequency vs destination**. A linear semitone scale; actual Hz is exponential. The original figure uses a broken horizontal axis.
 
@@ -539,6 +496,8 @@ The destination 0 yields a nonzero frequency. The effective Hz resolution is app
 <!-- Technical Manual original PDF page 16/55 -->
 
 <sub>Original PDF page 16 · [View source](AMY_tech_manual.pdf#page=16)</sub>
+
+<a name="register-organization"></a>
 
 ## 7. REGISTER ORGANIZATION
 
@@ -627,6 +586,8 @@ There are three data registers for transferring values between the processor and
 
 <sub>Original PDF page 19 · [View source](AMY_tech_manual.pdf#page=19)</sub>
 
+<a name="operating-procedure"></a>
+
 ## 8. Operating procedure (bound out of sequence)
 
 ### 8.1 Initialization
@@ -637,24 +598,15 @@ The manual instructs that the RESET pin be held low during power-up and released
 
 **Figure 8. RESET with standard microprocessor-system reset circuit**
 
-```mermaid
-flowchart LR
-  RST[Reset source] --> AMY[AMY 1: RESET, pin 1]
-  RST --> CPU[Controlling microprocessor]
-  CLK[3–5 MHz external CLK] --> AMY
-  POWER[+5 V supply] --> AMY
-```
+![Tech Reset Standard](assets/vector/tech_reset_standard.svg)
+
+*Circuit and startup timing redrawn as SVG (schematic).*
 
 **Figure 9. RESET with RC**
 
-```mermaid
-flowchart TB
-  VCC[VCC] --> R[Pull-up resistor R]
-  R --> NODE[RESET node, AMY pin 1]
-  NODE --> C[Capacitor C]
-  C --> GND[GND]
-  NODE --> AMY[AMY 1]
-```
+![Tech Reset Rc](assets/vector/tech_reset_rc.svg)
+
+*Circuit and RC startup timing redrawn as SVG (schematic).*
 
 *Mermaid captures the functional connectivity only; for component values, reset timing and waveform limits consult the source figure.*
 
@@ -1073,20 +1025,15 @@ In READY mode, INT/RDY falls on receipt of a command and rises on completion. In
 
 <sub>Original PDF page 36 · [View source](AMY_tech_manual.pdf#page=36)</sub>
 
-```mermaid
-sequenceDiagram
-  participant Host as Host CPU
-  participant AMY as AMY 1
-  Host->>AMY: Present address and command data
-  Host->>AMY: Pulse WR low (with CS active)
-  Note over AMY: Command begins at end of WR strobe
-  alt INT mode (INT=1)
-    AMY-->>Host: INT pulse when command completes
-  else RDY mode (INT=0)
-    AMY-->>Host: RDY low while processing
-    AMY-->>Host: RDY high when complete
-  end
-```
+![Rdy](assets/vector/rdy.svg)
+
+[Editable WaveJSON source](diagrams/rdy.wave.json)
+
+![Int](assets/vector/int.svg)
+
+[Editable WaveJSON source](diagrams/int.wave.json)
+
+*Command-completion waveforms. Event positions are schematic, not specified delays.*
 
 **Figure 10. INT/RDY pin timing**. Event-order representation only. Original timing waveform includes low-active CS, WR, ALE, DB timing; see [source Technical Manual scan](AMY_tech_manual.pdf#page=36).
 
@@ -1103,6 +1050,8 @@ sequenceDiagram
 
 <sub>Original PDF page 37 · [View source](AMY_tech_manual.pdf#page=37)</sub>
 
+<a name="maximum-ratings"></a>
+
 ## 9. Maximum ratings (beyond which useful life may be impaired)
 
 | Parameter | Limit |
@@ -1111,6 +1060,8 @@ sequenceDiagram
 | Ambient temperature under bias | 0 to +70 °C |
 | Voltage at any pin relative to GND | −0.5 to +7 V |
 | Power dissipation | **750 mW** (earlier manual; Rev. B says 1 W) |
+
+<a name="capacitances"></a>
 
 ## 10. Capacitances
 
@@ -1128,6 +1079,8 @@ Conditions: T_A = 25 °C, VCC = GND = 0 V.
 <!-- Technical Manual original PDF page 38/55 -->
 
 <sub>Original PDF page 38 · [View source](AMY_tech_manual.pdf#page=38)</sub>
+
+<a name="dc-characteristics"></a>
 
 ## 11. D.C. CHARACTERISTICS
 
@@ -1151,6 +1104,8 @@ Conditions: ambient temperature 0 to 70 °C; VCC = +5 V **±5%**<sup>*</sup>.
 
 <sub>Original PDF page 39 · [View source](AMY_tech_manual.pdf#page=39)</sub>
 
+<a name="ac-characteristics"></a>
+
 ## 12. A.C. characteristics
 
 ### 12.1 Clock & reset — earlier Technical Manual
@@ -1169,15 +1124,9 @@ Conditions: ambient 0–70 °C; VCC = +5 V **±5%**<sup>*</sup>.
 
 RESET is held low during power-up and for at least 2 ms after the supply is valid. The later Rev. B document specifies a 100 ns minimum clock period and a 10 t_p RESET pulse instead.
 
-```mermaid
-sequenceDiagram
-    participant P as Power/clock
-    participant R as RESET (active low)
-    P->>P: Supply and clock become valid
-    Note over P,R: Keep RESET low for at least 2 ms after valid supply
-    P->>R: Release RESET
-    Note over R: Minimum RESET-low pulse 2 clock periods
-```
+![Tech Reset Sequence](assets/vector/tech_reset_sequence.svg)
+
+*Power-up and RESET waveforms redrawn as native SVG.*
 
 
 ---
@@ -1215,21 +1164,13 @@ Conditions: ambient 0–70 °C; C_L = 150 pF unless otherwise noted; VCC = 5 V *
 
 **Output timing, INDIVIDUAL voice mode (rotated scan).**
 
-```mermaid
-sequenceDiagram
-    participant CLK as CLK
-    participant O as OUTSTB
-    participant V as V0
-    participant S as SAMP(0–15)
-    participant E as OE
-    Note over CLK,E: One sample period = 80 or 128 clock periods
-    CLK->>O: Output strobe for active voice
-    O->>S: Current voice sample valid
-    Note over V: V0 marks voice zero once per sample period
-    E->>S: OE high puts output bus into high impedance
-```
+![Output](assets/vector/output.svg)
 
-*Mermaid is only an event summary. See the original PDF timing waveform at [page 41](AMY_tech_manual.pdf#page=41) for numbered timing intervals and analog transitions.*
+[Editable WaveJSON source](diagrams/output.wave.json)
+
+*Digital output timing reconstructed using WaveDrom-style WaveJSON.*
+
+*Waveform is schematic; consult the original PDF timing waveform at [page 41](AMY_tech_manual.pdf#page=41) for numbered timing intervals and analog transitions.*
 
 <details><summary>Original Atari diagram / timing scan — PDF page 41</summary>
 
@@ -1309,18 +1250,17 @@ sequenceDiagram
 
 <sub>Original PDF page 44 · [View source](AMY_tech_manual.pdf#page=44)</sub>
 
-```mermaid
-sequenceDiagram
-    participant CPU as Multiplexed-bus CPU
-    participant AMY as AMY 1
-    CPU->>AMY: DB0–1 carry register address, followed by ALE pulse
-    CPU->>AMY: Assert CS and RD
-    AMY-->>CPU: DB0–7 read data valid
-    CPU->>AMY: RD deasserted
-    Note over CPU,AMY: For a write, assert WR and drive DB0–7 instead
-```
+![Ale Read](assets/vector/ale_read.svg)
 
-*ALE-mode timing figures from the original PDF; event order preserved, actual nanosecond setup/hold limits are in §12.3.*
+[Editable WaveJSON source](diagrams/ale_read.wave.json)
+
+![Ale Write](assets/vector/ale_write.svg)
+
+[Editable WaveJSON source](diagrams/ale_write.wave.json)
+
+*Separate ALE-mode read and write timing waveforms, as in the original Atari scan.*
+
+*ALE-mode waveforms are schematic reconstructions; the original numbered timing references and nanosecond limits remain in §12.3 and the scanned figure.*
 
 <details><summary>Original Atari diagram / timing scan — PDF page 44</summary>
 
@@ -1335,17 +1275,17 @@ sequenceDiagram
 
 <sub>Original PDF page 45 · [View source](AMY_tech_manual.pdf#page=45)</sub>
 
-```mermaid
-sequenceDiagram
-    participant CPU as CPU (A0/A1 address pins)
-    participant AMY as AMY 1
-    CPU->>AMY: Drive A1/A0 to select register
-    CPU->>AMY: Assert CS and RD (read) or WR (write)
-    Note over CPU,AMY: For reads AMY drives DB0–7, for writes CPU drives DB0–7
-    CPU->>AMY: Release strobe, then CS
-```
+![Address Read](assets/vector/address_read.svg)
 
-*Address-pin-mode timing figures from the original PDF. Mermaid does not preserve the analog-like waveforms.*
+[Editable WaveJSON source](diagrams/address_read.wave.json)
+
+![Address Write](assets/vector/address_write.svg)
+
+[Editable WaveJSON source](diagrams/address_write.wave.json)
+
+*Separate address-pin-mode read and write timing waveforms, as in the original Atari scan.*
+
+*Address-pin-mode timing figures from the original PDF. The timing drawing is schematic and does not replace Atari’s numbered constraints.*
 
 <details><summary>Original Atari diagram / timing scan — PDF page 45</summary>
 
@@ -1359,6 +1299,8 @@ sequenceDiagram
 <!-- Technical Manual original PDF page 46/55 -->
 
 <sub>Original PDF page 46 · [View source](AMY_tech_manual.pdf#page=46)</sub>
+
+<a name="appendix-i"></a>
 
 ## APPENDIX I.
 

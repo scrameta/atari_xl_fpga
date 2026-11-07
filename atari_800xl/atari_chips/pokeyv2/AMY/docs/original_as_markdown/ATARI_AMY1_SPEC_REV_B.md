@@ -6,18 +6,17 @@
 >
 > Original document: Atari Semiconductor Group, device C021859, document D021859, Rev. B listed on the revision sheet as **22 February 1984** (Rev. A **30 September 1983**); printed form footers still show **6/83**. The source PDF contains 60 scanned pages (cover + 59 numbered pages).
 >
-> **Fidelity convention:** pages link to the original PDF; original diagrams and dense tables are also provided as cropped scan images. Mermaid drawings are semantic redrawings, **not** substitutes for electrical schematic or timing accuracy. Appendix I Tables A/B/C have complete numerical rows, checked against the source scans. Source images remain alongside them for historical verification. No 2026 FPGA changes are included.
+> **Fidelity convention:** pages link to the original PDF; original diagrams and dense tables are also provided as cropped scan images. Editable vector block diagrams and WaveDrom timing drawings are interpretive redrawings, **not** substitutes for the original electrical timing figures. Appendix I Tables A/B/C have complete numerical rows, checked against the source scans. Source images remain alongside them for historical verification. No 2026 FPGA changes are included.
 
 ## Navigation
 
-- [1–5. General description, features, block and pins](#1-general-description)
-- [6. Functional description](#6-functional-description)
-- [7. Register organization and command set](#7-register-organization)
-- [8. Operating procedure](#8-operating-procedure)
-- [9–12. Electrical and timing characteristics](#9-maximum-ratings-beyond-which-useful-life-may-be-impaired)
-- [Appendix I. Slope and pitch tables](#appendix-i)
-- [Appendix II. Musical specifications](#appendix-ii)
-- [Appendix III. Test mode](#appendix-iii)
+[1. General description](#general-description) · [2. Features](#features) · [3. Block diagram](#block-diagram) · [4. Pin assignment](#pin-assignment) · [5. Pin description](#pin-description)
+
+[6. Functional description](#functional-description) · [7. Register organization](#register-organization) · [8. Operating procedure](#operating-procedure)
+
+[9. Maximum ratings](#maximum-ratings) · [10. Capacitances](#capacitances) · [11. D.C. characteristics](#dc-characteristics) · [12. A.C. characteristics](#ac-characteristics)
+
+[Appendix I — Slope and pitch tables](#appendix-i) · [Appendix II — Musical specifications](#appendix-ii) · [Appendix III — Test mode](#appendix-iii)
 
 ---
 
@@ -168,9 +167,13 @@ The original AMY 1 was revised to Rev. A with a higher permitted clock speed (10
 
 > **Diagram edition (v6):** Flowcharts and functional block diagrams use Mermaid. Numerical plots, word-layout figures and analogue/reset circuits use native SVG; digital bus/output and command-completion timing uses editable WaveJSON with generated SVG previews. Timing diagrams are schematic; the original scans and electrical tables remain authoritative.
 
+<a name="general-description"></a>
+
 ## 1. GENERAL DESCRIPTION
 
 AMY 1 is a digital, pipeline architectured, additive music synthesizer chip. There are 8 voices maximum assignable with a total of 64 harmonic oscillators, available in groups of two, for voice assignment. AMY 1 has 72 independent, piecewise linear envelope generators: 8 fundamental frequency envelopes and 64 harmonic amplitude envelopes. A complete sound system requires addition of a D/A converter IC (up to 16 bit). To provide higher level commands, the system will generally include a controlling processor such as the Intel 8051 single chip microcomputer.
+
+<a name="features"></a>
 
 ## 2. FEATURES
 
@@ -189,21 +192,17 @@ AMY 1 is a digital, pipeline architectured, additive music synthesizer chip. The
 - 72 on-chip envelope generators
 - Approximately 37,000 transistors
 
+<a name="block-diagram"></a>
+
 ### 3. BLOCK DIAGRAM
 
-```mermaid
-flowchart LR
-  CPU[Processor interface and interrupt logic] <--> FG[Frequency and amplitude generation]
-  NG[Noise generator] <--> FG
-  FG --> PH[Phase generation]
-  PH --> SN[Sine argument formation]
-  FG --> SN
-  SN --> SA[Sample formation and accumulator]
-  CPU <--> SA
-  SA --> OUT[16-bit SAMP0–15 digital output]
-```
+![AMY-1 system-bus interface and main functional blocks](assets/vector/overview_rev_b.svg)
 
-*Functional recreation of the block diagram on printed page 5.*
+*Vector functional redrawing from Atari’s block diagram and pin descriptions; unlike the original miniature figure, the bus and control signals are labelled. See the original scan below for exact historical layout.*
+
+*Figure shown on printed page 5; SVG redraw uses the pin descriptions to label the external system bus.*
+
+<a name="pin-assignment"></a>
 
 ### 4. PIN ASSIGNMENT
 
@@ -248,6 +247,8 @@ flowchart LR
 
 <sub>Original scan 07 · [View PDF page 7](./AMY_1_spec_confidential_binder_ver_2.pdf#page=7)</sub>
 
+
+<a name="pin-description"></a>
 
 ## 5. PIN DESCRIPTION
 
@@ -297,27 +298,19 @@ flowchart LR
 <sub>Original scan 09 · [View PDF page 9](./AMY_1_spec_confidential_binder_ver_2.pdf#page=9)</sub>
 
 
+<a name="functional-description"></a>
+
 ## 6. FUNCTIONAL DESCRIPTION
 
 ### 6.1 Internal Architecture
 
 AMY 1 consists of 8 major blocks as shown in Figure 1 below.
 
-```mermaid
-flowchart LR
-    CPU[uP interface] <--> BUS[System bus interface]
-    BUS <--> ENV[Envelope generators]
-    NG[Noise generator] --> ENV
-    ENV --> EXP[Exponential ROM]
-    EXP -->|F, DISP| PH[Phase generation and argument formation]
-    PH --> SIN[SIN ROM]
-    SIN --> ACC[Output accumulator]
-    ACC --> OUT[16-bit digital output]
-    BUS --> SEQ[Sequencer]
-    SEQ --> CTRL[Control bus]
-```
+![AMY-1 simplified internal architecture, including system bus interface](assets/vector/internal_architecture.svg)
 
-**Figure 1. Simplified block diagram** — re-created from the PDF.
+*Figure 1 redrawn as SVG with the system bus interface, sequencer and control bus.*
+
+**Figure 1. Simplified block diagram** — SVG redrawing from the original scan.
 
 The System Bus Interface block provides the user with a standard microprocessor interface. The user sends all commands and passes frequency and amplitude breakpoint data and current values over the "µP Interface" lines (RESET, RD, WR, CS, DB0–DB7, ALE, INT/RDY, A1, A0).
 
@@ -591,6 +584,8 @@ The destination 0 yields a nonzero frequency. The effective Hz resolution is app
 
 <sub>Original scan 18 · [View PDF page 18](./AMY_1_spec_confidential_binder_ver_2.pdf#page=18)</sub>
 
+
+<a name="register-organization"></a>
 
 ## 7. REGISTER ORGANIZATION
 
@@ -1073,6 +1068,8 @@ Command: `00010 V2 V1 V0`. Bits A1:A0 select the type; other bits of register A 
 <sub>Original scan 34 · [View PDF page 34](./AMY_1_spec_confidential_binder_ver_2.pdf#page=34)</sub>
 
 
+<a name="operating-procedure"></a>
+
 ## 8. OPERATING PROCEDURE
 
 ### 8.1 Initialization
@@ -1226,6 +1223,8 @@ In READY mode, INT/RDY falls on receipt of a command and rises on completion. In
 <sub>Original scan 40 · [View PDF page 40](./AMY_1_spec_confidential_binder_ver_2.pdf#page=40)</sub>
 
 
+<a name="maximum-ratings"></a>
+
 ## 9. MAXIMUM RATINGS
 
 | Parameter | Absolute limit |
@@ -1234,6 +1233,8 @@ In READY mode, INT/RDY falls on receipt of a command and rises on completion. In
 | Ambient temperature under bias | 0 to +70 °C |
 | Any pin voltage relative to GND | −0.5 to +7 V |
 | Power dissipation | 1 W |
+
+<a name="capacitances"></a>
 
 ## 10. CAPACITANCES
 
@@ -1252,6 +1253,8 @@ Conditions: T_A = 25 °C; VCC = GND = 0 V.
 
 <sub>Original scan 41 · [View PDF page 41](./AMY_1_spec_confidential_binder_ver_2.pdf#page=41)</sub>
 
+
+<a name="dc-characteristics"></a>
 
 ## 11. D.C. CHARACTERISTICS
 
@@ -1274,6 +1277,8 @@ Conditions: ambient temperature 0 to 70 °C; VCC = +5 V ±5%.
 
 <sub>Original scan 42 · [View PDF page 42](./AMY_1_spec_confidential_binder_ver_2.pdf#page=42)</sub>
 
+
+<a name="ac-characteristics"></a>
 
 ## 12. A.C. CHARACTERISTICS
 
@@ -1479,6 +1484,8 @@ Conditions: ambient 0–70 °C; C_L = 150 pF unless otherwise noted; VCC = 5 V �
 
 <sub>Original scan 49 · [View PDF page 49](./AMY_1_spec_confidential_binder_ver_2.pdf#page=49)</sub>
 
+
+<a name="appendix-i"></a>
 
 ## APPENDIX I.
 
@@ -2046,6 +2053,8 @@ Table C shows actual semitone/sec and decibel/sec slopes achieved by various 8 b
 <sub>Original scan 59 · [View PDF page 59](./AMY_1_spec_confidential_binder_ver_2.pdf#page=59)</sub>
 
 
+<a name="appendix-ii"></a>
+
 ## APPENDIX II — Musical Specifications
 
 *For a 4 MHz internal clock with 64 harmonics enabled (the original OCR interleaves the table columns).* 
@@ -2077,6 +2086,8 @@ Table C shows actual semitone/sec and decibel/sec slopes achieved by various 8 b
 
 <sub>Original scan 60 · [View PDF page 60](./AMY_1_spec_confidential_binder_ver_2.pdf#page=60)</sub>
 
+
+<a name="appendix-iii"></a>
 
 ## APPENDIX III — Test Mode
 
