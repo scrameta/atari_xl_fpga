@@ -1,0 +1,37 @@
+{
+  "head": {
+    "text": "A1/A0 address-pin mode — write cycle"
+  },
+  "signal": [
+    {
+      "name": "CS#",
+      "wave": "1.0.........1...0..."
+    },
+    {
+      "name": "A1:A0",
+      "wave": "x.=.........x...=...",
+      "data": [
+        "Address valid",
+        "Next"
+      ]
+    },
+    {
+      "name": "WR#",
+      "wave": "1....0...1......0..."
+    },
+    {
+      "name": "DB0–7",
+      "wave": "x....=.....x....=...",
+      "data": [
+        "Write data",
+        "Next"
+      ]
+    }
+  ],
+  "foot": {
+    "text": "Write: t_ww ≥200 ns; t_aw/t_dw ≥50 ns."
+  },
+  "config": {
+    "hscale": 2
+  }
+}

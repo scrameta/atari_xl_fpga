@@ -1,0 +1,37 @@
+{
+  "head": {
+    "text": "A1/A0 address-pin mode — read cycle"
+  },
+  "signal": [
+    {
+      "name": "CS#",
+      "wave": "1.0.........1...0..."
+    },
+    {
+      "name": "A1:A0",
+      "wave": "x.=.........x...=...",
+      "data": [
+        "Address valid",
+        "Next"
+      ]
+    },
+    {
+      "name": "RD#",
+      "wave": "1....0...1......0..."
+    },
+    {
+      "name": "DB0–7",
+      "wave": "x......=...x....=...",
+      "data": [
+        "Read data",
+        "Next"
+      ]
+    }
+  ],
+  "foot": {
+    "text": "Read: t_rr ≥200 ns; t_rd/t_ao/t_cd ≤150 ns."
+  },
+  "config": {
+    "hscale": 2
+  }
+}

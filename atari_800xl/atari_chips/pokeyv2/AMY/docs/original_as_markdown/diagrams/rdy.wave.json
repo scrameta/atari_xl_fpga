@@ -1,0 +1,25 @@
+{
+  "head": {
+    "text": "Host command completion — RDY mode (schematic)"
+  },
+  "signal": [
+    {
+      "name": "CS#",
+      "wave": "1.0.....1........."
+    },
+    {
+      "name": "WR#",
+      "wave": "1...0..1.........."
+    },
+    {
+      "name": "RDY",
+      "wave": "1......0......1..."
+    }
+  ],
+  "foot": {
+    "text": "RDY mode: pin returns high on completion; pulse width/latency not represented."
+  },
+  "config": {
+    "hscale": 2
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "head": {
+    "text": "Host command completion — INT mode (schematic)"
+  },
+  "signal": [
+    {
+      "name": "CS#",
+      "wave": "1.0.....1........."
+    },
+    {
+      "name": "WR#",
+      "wave": "1...0..1.........."
+    },
+    {
+      "name": "INT",
+      "wave": "0.............1.0."
+    }
+  ],
+  "foot": {
+    "text": "INT mode: completion pulse, nominal one clock period per historical description."
+  },
+  "config": {
+    "hscale": 2
+  }
+}

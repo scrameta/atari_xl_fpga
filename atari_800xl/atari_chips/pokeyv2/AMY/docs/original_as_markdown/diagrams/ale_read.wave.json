@@ -1,0 +1,42 @@
+{
+  "head": {
+    "text": "ALE (multiplexed address) mode — read cycle"
+  },
+  "signal": [
+    {
+      "name": "ALE",
+      "wave": "0..1.0.........1.0.."
+    },
+    {
+      "name": "DB0–7",
+      "wave": "x..=.x.=....x..=....",
+      "data": [
+        "A1:A0",
+        "Read data",
+        "Next cycle"
+      ]
+    },
+    {
+      "name": "Internal address",
+      "wave": "x....=........x=....",
+      "data": [
+        "Latched A1:A0",
+        "Next address"
+      ]
+    },
+    {
+      "name": "CS#",
+      "wave": "1....0.......1..0..."
+    },
+    {
+      "name": "RD#",
+      "wave": "1......0....1.....0."
+    }
+  ],
+  "foot": {
+    "text": "Read: t_rr ≥200 ns; t_rd/t_ao/t_cd ≤150 ns."
+  },
+  "config": {
+    "hscale": 2
+  }
+}
