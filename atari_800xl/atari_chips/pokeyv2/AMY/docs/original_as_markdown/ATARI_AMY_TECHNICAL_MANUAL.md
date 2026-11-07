@@ -2,7 +2,7 @@
 
 > **Working Markdown transcription of Atari’s 55-page Technical Manual**, based on the supplied scanned PDF. This is an **earlier document than the AMY 1 Rev. B specification**, not a corrected or merged copy. It retains its different pin assignments, clock and reset limits, and noise descriptions. The text has been editorially reconstructed against matched sections of the later document and the original scans, so it is not yet a page-perfect critical transcription.
 >
-> Source: [`AMY_tech_manual.pdf`](AMY_tech_manual.pdf). All page headings below refer to **physical PDF pages** (the source does not use the same later Rev. B binder pagination). Original figure crops are supplied alongside Mermaid redrawings. Tables in Appendix I include only reliable OCR rows; original scanned tables are embedded for the complete printed values.
+> Source: [`AMY_tech_manual.pdf`](AMY_tech_manual.pdf). All page headings below refer to **physical PDF pages** (the source does not use the same later Rev. B binder pagination). Original figure crops are supplied alongside Mermaid redrawings. Appendix I Tables A/B/C now include complete numerical transcriptions using the Technical Manual’s original decimal encoding; source scans remain alongside for comparison.
 
 ## Contents
 
@@ -1131,7 +1131,9 @@ Conditions: T_A = 25 °C, VCC = GND = 0 V.
 
 ## 11. D.C. CHARACTERISTICS
 
-Conditions: ambient temperature 0 to 70 °C; the printed source says VCC = +5 V ±10%, with a handwritten correction to **±5%** (PDF p. 38).
+Conditions: ambient temperature 0 to 70 °C; VCC = +5 V **±5%**<sup>*</sup>.
+
+**<sup>*</sup> Handwritten correction:** The typeset Technical Manual says **±10%**; the original scan (PDF p. 38) crosses this out and writes **5%**. The handwritten value is used above.
 
 | Symbol | Parameter | Min | Max | Units | Test conditions |
 |---|---|---:|---:|---|---|
@@ -1153,7 +1155,9 @@ Conditions: ambient temperature 0 to 70 °C; the printed source says VCC = +5 V 
 
 ### 12.1 Clock & reset — earlier Technical Manual
 
-Conditions: ambient 0–70 °C; VCC is printed as ±10% with a handwritten correction to **±5%** (PDF p. 39).
+Conditions: ambient 0–70 °C; VCC = +5 V **±5%**<sup>*</sup>.
+
+**<sup>*</sup> Handwritten correction:** The typeset Technical Manual says **±10%**; the original scan (PDF p. 39) replaces it with **5%**. The handwritten value is used above.
 
 | No. | Symbol | Parameter | Min | Max | Unit |
 |---:|---|---|---:|---:|---|
@@ -1185,7 +1189,9 @@ sequenceDiagram
 
 ### 12.2 Output Section
 
-Conditions: ambient 0–70 °C; C_L = 150 pF unless otherwise noted; VCC = 5 V ±5%; **2 MHz ≤ CLK ≤ 5 MHz** (as printed in this A.C. output table, irrespective of the broader clock specification).
+Conditions: ambient 0–70 °C; C_L = 150 pF unless otherwise noted; VCC = 5 V **±5%**<sup>*</sup>; **2 MHz ≤ CLK ≤ 5 MHz** (as printed in this A.C. output table, irrespective of the broader clock specification).
+
+**<sup>*</sup> Handwritten correction:** The typeset output-table condition has **±10%** crossed out and **5%** written in the Technical Manual (PDF p. 40). The handwritten value is used above.
 
 | No. | Symbol | Parameter | Min | Max | Unit |
 |---:|---|---|---:|---:|---|
@@ -1240,7 +1246,7 @@ sequenceDiagram
 
 ### 12.3 System Bus Interface (Read/Write, address pin and ALE modes)
 
-> **Transcription alert (printed columns):** In the Atari scan, rows **6–8** put 150 ns under **Min**, while rows **19, 21 and 29** put 50 ns under **Max**. Those placements seem unusual for access/setup times but are reproduced **as printed**; do not use them as engineering limits without checking the timing waveforms and independent evidence. (PDF pp. 42–43.)
+> **Editorial convention:** Timing values in six rows are placed under their physically intended Min/Max headings; the asterisks identify corrections to the original *printed column placement*. Atari’s unaltered table is visible on PDF pp. 42–43. The other timing rows remain as printed.
 
 | No. | Symbol | Parameter | Min | Max | Unit |
 |---:|---|---|---:|---:|---|
@@ -1249,9 +1255,9 @@ sequenceDiagram
 | 3 | t_af | ALE float time | 10 | 100 | ns |
 | 4 | t_chr | CS hold time after RD | 0 | — | ns |
 | 5 | t_cr | CS active to RD | 0 | — | ns |
-| 6 | t_rd | Read access time | 150 | — | ns |
-| 7 | t_ao | Address to data valid | 150 | — | ns |
-| 8 | t_cd | CS active to data valid | 150 | — | ns |
+| 6 | t_rd | Read access time | — | 150<sup>*</sup> | ns |
+| 7 | t_ao | Address to data valid | — | 150<sup>*</sup> | ns |
+| 8 | t_cd | CS active to data valid | — | 150<sup>*</sup> | ns |
 | 9 | t_rdh | Data hold after RD | — | 10 | ns |
 | 10 | t_ahr | Address hold after RD | 0 | — | ns |
 | 11 | t_rdead1 | RD dead time, address-pin mode | 100 | — | ns |
@@ -1260,6 +1266,8 @@ sequenceDiagram
 | 14 | t_rdead2 | RD dead time, ALE mode | 250 | — | ns |
 | 15 | t_apw | ALE pulse width | 50 | — | ns |
 | 16 | t_cycr2 | ALE-mode read cycle time | 450 | — | ns |
+
+**<sup>*</sup> Editorial correction (rows 6–8):** Atari prints `150 ns` in the **Min** column. Here it is shown in **Max**, consistent with a worst-case read-access/data-valid delay. The numeric value is unchanged; this is a column correction, not a new measurement. See original PDF p. 42.
 
 *All times are from the original scan; labels and active-low edges should be checked against the corresponding waveforms.*
 
@@ -1276,9 +1284,9 @@ sequenceDiagram
 |---:|---|---|---:|---:|---|
 | 17 | t_chw | CS hold after WR | 0 | — | ns |
 | 18 | t_ahw | Address hold after WR | 0 | — | ns |
-| 19 | t_aw | Address setup to WR | — | 50 | ns |
+| 19 | t_aw | Address setup to WR | 50<sup>*</sup> | — | ns |
 | 20 | t_cw | CS setup to WR | 0 | — | ns |
-| 21 | t_dw | Data setup to WR | — | 50 | ns |
+| 21 | t_dw | Data setup to WR | 50<sup>*</sup> | — | ns |
 | 22 | t_ww | WR pulse width | 200 | — | ns |
 | 23 | t_wd | Data hold after WR | 0 | — | ns |
 | 24 | t_wdead1 | WR dead time, address-pin mode | 100 | — | ns |
@@ -1286,11 +1294,13 @@ sequenceDiagram
 | 26 | t_alewr | ALE to WR | 50 | — | ns |
 | 27 | t_cycwale | Write cycle time, ALE mode | 400 | — | ns |
 | 28 | t_wdead2 | WR dead time, ALE mode | 200 | — | ns |
-| 29 | t_dwa | Data valid to ALE falling edge | — | 50 | ns |
+| 29 | t_dwa | Data valid to ALE falling edge | 50<sup>*</sup> | — | ns |
 | 30 | t_wda | Data hold after ALE falling edge | 0 | — | ns |
 | 31 | t_alerd | ALE falling edge to RD falling edge | 20 | — | ns |
 
-*Numbered entries correspond to the original timing waveform pages. Values in the Min/Max columns follow the printed source, including unusual placements of some setup-time values. Verify the intended timing direction before hardware use.*
+**<sup>*</sup> Editorial correction (rows 19, 21 and 29):** Atari prints `50 ns` in the **Max** column. Here it is shown in **Min**, consistent with required address/data setup times. The numeric value is unchanged; this is a column correction, not a new measurement. See original PDF p. 43.
+
+*All other rows follow the printed table. For hardware design, cross-check against the original bus waveforms.*
 
 ---
 
@@ -1361,6 +1371,9 @@ fields corresponding to the Atari Tone value.
 Table B is in the same format as Table A, but the "Note" field was dropped as the values listed are "in between" 2 semitones (or notes on a piano). Table B shows that the actual frequency resolution at 440 Hz is approximately 0.4 Hz (1.5 cents).
 
 Table C shows actual semitone/sec and decibel/sec slopes achieved by various 8 bit slope values. The M (mantissa) and E (exponent) fields are separated to give a feeling for the exponential coding scheme of slope byte. (Data valid for 4 MHz internal clock frequency and 64 harmonic mode).
+> **Transcription note (number base).** This earlier Technical Manual presents MSB/LSB, positive and negative slope byte values, and mantissas in **decimal**. The later Rev. B specification prints them in **hexadecimal**. Both documents retain the number bases printed in their respective scans.
+
+
 
 ---
 
@@ -1369,59 +1382,63 @@ Table C shows actual semitone/sec and decibel/sec slopes achieved by various 8 b
 
 <sub>Original PDF page 47 · [View source](AMY_tech_manual.pdf#page=47)</sub>
 
-**Table A — OCR transcription (incomplete)** — continuation, Technical Manual source page 47. Values below retain OCR uncertainties and should be checked against the scan.
+**Table A — complete transcription of PDF page 47.**
 
-| Atari tone (dec) | MSB (hex) | LSB (hex) | Frequency (Hz) | Note |
+> **EDITORIAL REVIEW FLAG — printed low-frequency values.** Tone 140 is **5.4 Hz** and tone 204 is **5.7 Hz** in both original tables. These are clearly legible, but are slightly lower than a direct calculation from the stated 440.04 Hz reference. I have retained Atari’s printed values.
+
+| Atari tone (dec) | MSB (dec) | LSB (dec) | Frequency (Hz) | Note |
 |---:|---:|---:|---:|---|
-| 140 | 0 | 8c | 5.4 | F |
-| 268 | 1 | c | 6.1 | G |
-| 332 | 1 | 4c | 6.4 | G#/Ab |
-| 396 | 1 | 8c | 6.8 | A |
-| 460 | 1 | cc | 7.2 | A#/Bb |
-| 524 | 2 | c | 7.7 | B |
-| 588 | 2 | 4c | 8.1 | c |
-| 652 | 2 | 8c | 8.6 | c#/Db |
-| 716 | 2 | cc | 9.1 | D |
-| 780 | 3 | c | 9.7 | D#/Eb |
-| 844 | 3 | 4c | 10.3 | E |
-| 908 | 3 | 8c | 10.9 | F |
-| 972 | 3 | cc | 11.5 | F#/Gb |
-| 1036 | 4 | c | 12.2 | G |
-| 1100 | 4 | 4c | 12.9 | G#/Ab |
-| 1164 | 4 | 8c | 13.7 | A |
-| 1228 | 4 | cc | 14.5 | A#/Bb |
-| 1292 | 5 | c | 15.4 | B |
-| 1356 | 5 | 4c | 16.3 | c |
-| 1420 | 5 | 8c | 17.3 | C#/Db |
-| 1484 | 5 | cc | 18.3 | D |
-| 1548 | 6 | c | 19.4 | D#/Eb |
-| 1612 | 6 | 4c | 20.6 | E |
-| 1676 | 6 | 8c | 21.8 | F |
-| 1740 | 6 | cc | 23.1 | F#/Gb |
-| 1804 | 7 | Cc | 24.5 | G |
-| 1868 | 7 | 4c | 25.9 | G#/Ab |
-| 1932 | 7 | 8c | 27.5 | A |
-| 1996 | 7 | cc | 29.1 | At /Bb |
-| 2060 | 8 | c | 30.8 | B |
-| 2124 | 8 | 4c | 32.7 | c |
-| 2188 | 8 | 8c | 34.6 | C#/Db |
-| 2252 | 8 | cc | 36.7 | D |
-| 2316 | 9 | c | 38.8 | D#/Eb |
-| 2380 | 9 | 4c | 41.2 | E |
-| 2444 | 9 | 8c | 43.6 | F |
-| 2508 | 9 | cc | 46.2 | F#/Gb |
-| 2572 | A | c | 49 | G |
-| 2636 | A | 4c | 51.9 | G#/Ab |
-| 2700 | A | 8c | 55 | A |
-| 2764 | A | cc | 58.2 | Ad /Bb |
-| 2828 | B | c | 61.7 | B |
-| 2892 | B | 4c | 65.4 | c |
-| 2956 | B | 8c | 69.3 | C#/Db |
-| 3020 | B | cc | 73.4 | D |
-| 3084 | c | c | 77.7 | D#/Eb |
+| 140 | 0 | 140 | 5.4 | F |
+| 204 | 0 | 204 | 5.7 | F#/Gb |
+| 268 | 1 | 12 | 6.1 | G |
+| 332 | 1 | 76 | 6.4 | G#/Ab |
+| 396 | 1 | 140 | 6.8 | A |
+| 460 | 1 | 204 | 7.2 | A#/Bb |
+| 524 | 2 | 12 | 7.7 | B |
+| 588 | 2 | 76 | 8.1 | C |
+| 652 | 2 | 140 | 8.6 | C#/Db |
+| 716 | 2 | 204 | 9.1 | D |
+| 780 | 3 | 12 | 9.7 | D#/Eb |
+| 844 | 3 | 76 | 10.3 | E |
+| 908 | 3 | 140 | 10.9 | F |
+| 972 | 3 | 204 | 11.5 | F#/Gb |
+| 1036 | 4 | 12 | 12.2 | G |
+| 1100 | 4 | 76 | 12.9 | G#/Ab |
+| 1164 | 4 | 140 | 13.7 | A |
+| 1228 | 4 | 204 | 14.5 | A#/Bb |
+| 1292 | 5 | 12 | 15.4 | B |
+| 1356 | 5 | 76 | 16.3 | C |
+| 1420 | 5 | 140 | 17.3 | C#/Db |
+| 1484 | 5 | 204 | 18.3 | D |
+| 1548 | 6 | 12 | 19.4 | D#/Eb |
+| 1612 | 6 | 76 | 20.6 | E |
+| 1676 | 6 | 140 | 21.8 | F |
+| 1740 | 6 | 204 | 23.1 | F#/Gb |
+| 1804 | 7 | 12 | 24.5 | G |
+| 1868 | 7 | 76 | 25.9 | G#/Ab |
+| 1932 | 7 | 140 | 27.5 | A |
+| 1996 | 7 | 204 | 29.1 | A#/Bb |
+| 2060 | 8 | 12 | 30.8 | B |
+| 2124 | 8 | 76 | 32.7 | C |
+| 2188 | 8 | 140 | 34.6 | C#/Db |
+| 2252 | 8 | 204 | 36.7 | D |
+| 2316 | 9 | 12 | 38.8 | D#/Eb |
+| 2380 | 9 | 76 | 41.2 | E |
+| 2444 | 9 | 140 | 43.6 | F |
+| 2508 | 9 | 204 | 46.2 | F#/Gb |
+| 2572 | 10 | 12 | 49 | G |
+| 2636 | 10 | 76 | 51.9 | G#/Ab |
+| 2700 | 10 | 140 | 55 | A |
+| 2764 | 10 | 204 | 58.2 | A#/Bb |
+| 2828 | 11 | 12 | 61.7 | B |
+| 2892 | 11 | 76 | 65.4 | C |
+| 2956 | 11 | 140 | 69.3 | C#/Db |
+| 3020 | 11 | 204 | 73.4 | D |
+| 3084 | 12 | 12 | 77.7 | D#/Eb |
+| 3148 | 12 | 76 | 82.4 | E |
+| 3212 | 12 | 140 | 87.3 | F |
+| 3276 | 12 | 204 | 92.5 | F#/Gb |
 
-
-> Table transcription is provisional: irregular OCR rows or misread digits require checking against the scan.
 
 <details><summary>Full original printed table — source PDF page 47</summary>
 
@@ -1436,53 +1453,59 @@ Table C shows actual semitone/sec and decibel/sec slopes achieved by various 8 b
 
 <sub>Original PDF page 48 · [View source](AMY_tech_manual.pdf#page=48)</sub>
 
-**Table A — OCR transcription (incomplete)** — continuation, Technical Manual source page 48. Values below retain OCR uncertainties and should be checked against the scan.
+**Table A — complete transcription of PDF page 48.**
 
-| Atari tone (dec) | MSB (hex) | LSB (hex) | Frequency (Hz) | Note |
+| Atari tone (dec) | MSB (dec) | LSB (dec) | Frequency (Hz) | Note |
 |---:|---:|---:|---:|---|
-| 3148 | c | 4c | 82.4 | E |
-| 3212 | c | 8c | 87.3 | F |
-| 3276 | c | ce | 92.5 | F#/Gb |
-| 3340 | D | Cc | 98 | G |
-| 3404 | D | 4c | 103.8 | G#/Ab |
-| 3468 | D | 8c | 110 | A |
-| 3532 | D | cc | 116.5 | A#/Bb |
-| 3596 | E | Cc | 123.4 | B |
-| 3660 | E | 4C | 130.8 | Cc |
-| 3724 | E | 8c | 138.6 | c#/Db |
-| 3788 | E | cc | 146.8 | D |
-| 3852 | F | Cc | 155.5 | D#/Eb |
-| 3980 | F | 8C | 174.6 | F |
-| 4044 | F | cc | 185 | . F#/Gb |
-| 4172 | 10 | 4c | 207.6 | G#/Ab |
-| 4236 | 10 | 8c | 220 | ~ A |
-| 4300 | 10 | cc | 233.1 | A#/Bb |
-| 4364 | 11 | c | 246.9 | B |
-| 4492 | 11 | 8c | 277.2 | C#/Db |
-| 4556 | 11 | cc | 293.6 | D |
-| 4620 | 12 | Cc | 311.1 | D#/Eb |
-| 4684 | 12 | 4c | 329.6 | E |
-| 4748 | 12 | 8c | 349.2 | F |
-| 4812 | 12 | cc | 370 | F#/Gb |
-| 4876 | 13 | c | 392 | G |
-| 4940 | 13 | 4c | 415.3 | G#/Ab |
-| 5004 | 13 | 8c | 440 | A |
-| 5068 | 13 | cc | 466.2 | A#/Bb |
-| 5132 | 14 | c | 493.9 | B |
-| 5196 | 14 | 4c | 523.3 | c |
-| 5260 | 14 | 8c | 554.4 | C#/Db |
-| 5324 | 14 | cc | 587.3 | D |
-| 5452 | 15 | 4c | 659.3 | E |
-| 5516 | 15 | 8c | 698.5 | F |
-| 5580 | 15 | cc | 740 | F#/Gb |
-| 5644 | 16 | c | 784 | G |
-| 5708 | 16 | 4c | 830.7 | Gi#/Ab |
-| 5772 | 16 | 8c | 880 | A |
-| 5836 | 16 | cc | 932.4 | Ad#/Bb |
-| 6028 | 17 | 8c | 1108.8 | c#/Db |
+| 3340 | 13 | 12 | 98 | G |
+| 3404 | 13 | 76 | 103.8 | G#/Ab |
+| 3468 | 13 | 140 | 110 | A |
+| 3532 | 13 | 204 | 116.5 | A#/Bb |
+| 3596 | 14 | 12 | 123.4 | B |
+| 3660 | 14 | 76 | 130.8 | C |
+| 3724 | 14 | 140 | 138.6 | C#/Db |
+| 3788 | 14 | 204 | 146.8 | D |
+| 3852 | 15 | 12 | 155.5 | D#/Eb |
+| 3916 | 15 | 76 | 164.8 | E |
+| 3980 | 15 | 140 | 174.6 | F |
+| 4044 | 15 | 204 | 185 | F#/Gb |
+| 4108 | 16 | 12 | 196 | G |
+| 4172 | 16 | 76 | 207.6 | G#/Ab |
+| 4236 | 16 | 140 | 220 | A |
+| 4300 | 16 | 204 | 233.1 | A#/Bb |
+| 4364 | 17 | 12 | 246.9 | B |
+| 4428 | 17 | 76 | 261.6 | C |
+| 4492 | 17 | 140 | 277.2 | C#/Db |
+| 4556 | 17 | 204 | 293.6 | D |
+| 4620 | 18 | 12 | 311.1 | D#/Eb |
+| 4684 | 18 | 76 | 329.6 | E |
+| 4748 | 18 | 140 | 349.2 | F |
+| 4812 | 18 | 204 | 370 | F#/Gb |
+| 4876 | 19 | 12 | 392 | G |
+| 4940 | 19 | 76 | 415.3 | G#/Ab |
+| 5004 | 19 | 140 | 440 | A |
+| 5068 | 19 | 204 | 466.2 | A#/Bb |
+| 5132 | 20 | 12 | 493.9 | B |
+| 5196 | 20 | 76 | 523.3 | C |
+| 5260 | 20 | 140 | 554.4 | C#/Db |
+| 5324 | 20 | 204 | 587.3 | D |
+| 5388 | 21 | 12 | 622.3 | D#/Eb |
+| 5452 | 21 | 76 | 659.3 | E |
+| 5516 | 21 | 140 | 698.5 | F |
+| 5580 | 21 | 204 | 740 | F#/Gb |
+| 5644 | 22 | 12 | 784 | G |
+| 5708 | 22 | 76 | 830.7 | G#/Ab |
+| 5772 | 22 | 140 | 880 | A |
+| 5836 | 22 | 204 | 932.4 | A#/Bb |
+| 5900 | 23 | 12 | 987.8 | B |
+| 5964 | 23 | 76 | 1046.6 | C |
+| 6028 | 23 | 140 | 1108.8 | C#/Db |
+| 6092 | 23 | 204 | 1174.7 | D |
+| 6156 | 24 | 12 | 1244.6 | D#/Eb |
+| 6220 | 24 | 76 | 1318.6 | E |
+| 6284 | 24 | 140 | 1397 | F |
+| 6348 | 24 | 204 | 1480.1 | F#/Gb |
 
-
-> Table transcription is provisional: irregular OCR rows or misread digits require checking against the scan.
 
 <details><summary>Full original printed table — source PDF page 48</summary>
 
@@ -1497,38 +1520,39 @@ Table C shows actual semitone/sec and decibel/sec slopes achieved by various 8 b
 
 <sub>Original PDF page 49 · [View source](AMY_tech_manual.pdf#page=49)</sub>
 
-**Table A — OCR transcription (incomplete)** — continuation, Technical Manual source page 49. Values below retain OCR uncertainties and should be checked against the scan.
+**Table A — complete transcription of PDF page 49.**
 
-| Atari tone (dec) | MSB (hex) | LSB (hex) | Frequency (Hz) | Note |
+| Atari tone (dec) | MSB (dec) | LSB (dec) | Frequency (Hz) | Note |
 |---:|---:|---:|---:|---|
-| 6092 | 17 | cc | 1174.7 | D |
-| 6156 | 18 | c | 1244.6 | D#/Eb . |
-| 6220 | 18 | 4c | 1318.6 | E |
-| 6284 | 18 | 8c | 1397 | F |
-| 6348 | 18 | cc | 1480.1 | F#/Gb |
-| 6476 | 19 | 4c | 1661.4 | G#/Ab |
-| 6604 | 19 | cc | 1864.8 | A#/Bb |
-| 6668 | 1A | Cc | 1975.7 | B |
-| 6732 | 1A | 4c | 2093.2 | c |
-| 6796 | 1A | 8C | 2217.7 | c#/Db |
-| 6860 | 1A | cc | 2349.5 | D |
-| 6924 | 1B | c | 2489.2 | D#/Eb |
-| 6988 | 1B | 4C | 2637.3 | E |
-| 7052 | 18 | 8c | 2794.1 | F |
-| 7116 | 1B | cc | 2960.2 | F#/Gb |
-| 7244 | 1c | 4c | 3322.7 | Gi#/Ab |
-| 7308 | 1c | 8c | 3520.3 | A |
-| 7372 | 1c | cc | 3729.7 | A#/Bb |
-| 7500 | 1D | 4c | 4186.4 | c |
-| 7564 | 1D | 8c | 4435.4 | C#/Db |
-| 7692 | 1E | c | 4978.5 | D#/Eb |
-| 7756 | 1E | 4c | 5274.6 | E |
-| 7820 | 1E | 8C | 5588.2 | F |
-| 7884 | 1E | cc | 5920.5 | F#/Gb |
-| 8140 | 1F | cc | 7459.4 | A#/Bb |
+| 6412 | 25 | 12 | 1568.1 | G |
+| 6476 | 25 | 76 | 1661.4 | G#/Ab |
+| 6540 | 25 | 140 | 1760.1 | A |
+| 6604 | 25 | 204 | 1864.8 | A#/Bb |
+| 6668 | 26 | 12 | 1975.7 | B |
+| 6732 | 26 | 76 | 2093.2 | C |
+| 6796 | 26 | 140 | 2217.7 | C#/Db |
+| 6860 | 26 | 204 | 2349.5 | D |
+| 6924 | 27 | 12 | 2489.2 | D#/Eb |
+| 6988 | 27 | 76 | 2637.3 | E |
+| 7052 | 27 | 140 | 2794.1 | F |
+| 7116 | 27 | 204 | 2960.2 | F#/Gb |
+| 7180 | 28 | 12 | 3136.3 | G |
+| 7244 | 28 | 76 | 3322.7 | G#/Ab |
+| 7308 | 28 | 140 | 3520.3 | A |
+| 7372 | 28 | 204 | 3729.7 | A#/Bb |
+| 7436 | 29 | 12 | 3951.4 | B |
+| 7500 | 29 | 76 | 4186.4 | C |
+| 7564 | 29 | 140 | 4435.4 | C#/Db |
+| 7628 | 29 | 204 | 4699.1 | D |
+| 7692 | 30 | 12 | 4978.5 | D#/Eb |
+| 7756 | 30 | 76 | 5274.6 | E |
+| 7820 | 30 | 140 | 5588.2 | F |
+| 7884 | 30 | 204 | 5920.5 | F#/Gb |
+| 7948 | 31 | 12 | 6272.6 | G |
+| 8012 | 31 | 76 | 6645.5 | G#/Ab |
+| 8076 | 31 | 140 | 7040.7 | A |
+| 8140 | 31 | 204 | 7459.4 | A#/Bb |
 
-
-> Table transcription is provisional: irregular OCR rows or misread digits require checking against the scan.
 
 <details><summary>Full original printed table — source PDF page 49</summary>
 
@@ -1543,60 +1567,66 @@ Table C shows actual semitone/sec and decibel/sec slopes achieved by various 8 b
 
 <sub>Original PDF page 50 · [View source](AMY_tech_manual.pdf#page=50)</sub>
 
-**Table B — OCR transcription (incomplete)** — continuation, Technical Manual source page 50. Values below retain OCR uncertainties and should be checked against the scan.
+**Table B — complete transcription of PDF page 50.**
 
-| Atari tone (dec) | MSB (hex) | LSB (hex) | Frequency (Hz) | Notes |
-|---:|---:|---:|---:|---|
-| 4941 | 13 | 4D | 415.7 | Range: 2 semitones |
-| 4942 | 13 | 4E | 416 | Resolution: 1 Atari Tone |
-| 4943 | 13 | 4F | 416.4 | (1/64 st) |
-| 4944 | 13 | 50 | 416.8 | Centered around A (440 Hz) |
-| 4945 | 13 | 51 | 417.2 |  |
-| 4946 | 13 | 52 | 417.5 |  |
-| 4947 | 13 | 53 | 417.9 |  |
-| 4948 | 13 | 54 | 418.3 |  |
-| 4949 | 13 | 55 | 418.7 |  |
-| 4950 | 13 | 56 | 419.1 |  |
-| 4951 | 13 | 57 | 419.4 |  |
-| 4952 | 13 | 58 | 419.8 |  |
-| 4953 | 13 | 59 | 420.2 |  |
-| 4954 | 13 | 5A | 420.6 |  |
-| 4955 | 13 | 5B | 421 |  |
-| 4956 | 13 | 5c | 421.3 |  |
-| 4957 | 13 | 5D | 421.7 |  |
-| 4958 | 13 | 5E | 422.1 |  |
-| 4959 | 13 | 5F | 422.5 |  |
-| 4960 | 13 | 60 | 422.9 |  |
-| 4961 | 13 | 61 | 423.2 |  |
-| 4962 | 13 | 62 | 423.6 |  |
-| 4963 | 13 | 63 | 424 |  |
-| 4964 | 13 | 64 | 424.4 |  |
-| 4965 | 13 | 65 | 424.8 |  |
-| 4966 | 13 | 66 | 425.2 |  |
-| 4967 | 13 | 67 | 425.5 |  |
-| 4968 | 13 | 68 | 425.9 |  |
-| 4969 | 13 | 69 | 426.3 |  |
-| 4970 | 13 | 6A | 426.7 |  |
-| 4971 | 13 | 6B | 427.1 |  |
-| 4972 | 13 | 6C | 427.5 |  |
-| 4973 | 13 | 6D | 427.8 |  |
-| 4974 | 13 | 6E | 428.2 |  |
-| 4975 | 13 | 6F | 428.6 |  |
-| 4976 | 13 | 70 | 429 |  |
-| 4977 | 13 | 71 | 429.4 |  |
-| 4978 | 13 | 72 | 429.8 |  |
-| 4979 | 13 | 73 | 430.2 |  |
-| 4980 | 13 | 74 | 430.6 |  |
-| 4981 | 13 | 75 | 431 |  |
-| 4982 | 13 | 76 | 431.3 |  |
-| 4983 | 13 | 77 | 431.7 |  |
-| 4984 | 13 | 78 | 432.1 |  |
-| 4985 | 13 | 79 | 432.5 |  |
-| 4986 | 13 | 7A | 432.9 |  |
-| 4987 | 13 | 7B | 433.3 |  |
+| Atari tone (dec) | MSB (dec) | LSB (dec) | Frequency (Hz) |
+|---:|---:|---:|---:|
+| 4941 | 19 | 77 | 415.7 |
+| 4942 | 19 | 78 | 416 |
+| 4943 | 19 | 79 | 416.4 |
+| 4944 | 19 | 80 | 416.8 |
+| 4945 | 19 | 81 | 417.2 |
+| 4946 | 19 | 82 | 417.5 |
+| 4947 | 19 | 83 | 417.9 |
+| 4948 | 19 | 84 | 418.3 |
+| 4949 | 19 | 85 | 418.7 |
+| 4950 | 19 | 86 | 419.1 |
+| 4951 | 19 | 87 | 419.4 |
+| 4952 | 19 | 88 | 419.8 |
+| 4953 | 19 | 89 | 420.2 |
+| 4954 | 19 | 90 | 420.6 |
+| 4955 | 19 | 91 | 421 |
+| 4956 | 19 | 92 | 421.3 |
+| 4957 | 19 | 93 | 421.7 |
+| 4958 | 19 | 94 | 422.1 |
+| 4959 | 19 | 95 | 422.5 |
+| 4960 | 19 | 96 | 422.9 |
+| 4961 | 19 | 97 | 423.2 |
+| 4962 | 19 | 98 | 423.6 |
+| 4963 | 19 | 99 | 424 |
+| 4964 | 19 | 100 | 424.4 |
+| 4965 | 19 | 101 | 424.8 |
+| 4966 | 19 | 102 | 425.2 |
+| 4967 | 19 | 103 | 425.5 |
+| 4968 | 19 | 104 | 425.9 |
+| 4969 | 19 | 105 | 426.3 |
+| 4970 | 19 | 106 | 426.7 |
+| 4971 | 19 | 107 | 427.1 |
+| 4972 | 19 | 108 | 427.5 |
+| 4973 | 19 | 109 | 427.8 |
+| 4974 | 19 | 110 | 428.2 |
+| 4975 | 19 | 111 | 428.6 |
+| 4976 | 19 | 112 | 429 |
+| 4977 | 19 | 113 | 429.4 |
+| 4978 | 19 | 114 | 429.8 |
+| 4979 | 19 | 115 | 430.2 |
+| 4980 | 19 | 116 | 430.6 |
+| 4981 | 19 | 117 | 431 |
+| 4982 | 19 | 118 | 431.3 |
+| 4983 | 19 | 119 | 431.7 |
+| 4984 | 19 | 120 | 432.1 |
+| 4985 | 19 | 121 | 432.5 |
+| 4986 | 19 | 122 | 432.9 |
+| 4987 | 19 | 123 | 433.3 |
+| 4988 | 19 | 124 | 433.7 |
+| 4989 | 19 | 125 | 434.1 |
+| 4990 | 19 | 126 | 434.5 |
+| 4991 | 19 | 127 | 434.9 |
+| 4992 | 19 | 128 | 435.3 |
+| 4993 | 19 | 129 | 435.6 |
 
 
-> Table transcription is provisional: irregular OCR rows or misread digits require checking against the scan.
+*Atari’s printed note: range of two semitones; resolution of one Atari tone (1/64 semitone); centred around A (440 Hz).*
 
 <details><summary>Full original printed table — source PDF page 50</summary>
 
@@ -1611,49 +1641,61 @@ Table C shows actual semitone/sec and decibel/sec slopes achieved by various 8 b
 
 <sub>Original PDF page 51 · [View source](AMY_tech_manual.pdf#page=51)</sub>
 
-**Table B — OCR transcription (incomplete)** — continuation, Technical Manual source page 51. Values below retain OCR uncertainties and should be checked against the scan.
+**Table B — complete transcription of PDF page 51.**
 
-| Atari tone (dec) | MSB (hex) | LSB (hex) | Frequency (Hz) | Notes |
-|---:|---:|---:|---:|---|
-| 4988 | 13 | 7c | 433.7 |  |
-| 4989 | 13 | 7D | 434.1 |  |
-| 4990 | 13 | 7E | 434.5 |  |
-| 4991 | 13 | 7F | 434.9 |  |
-| 4992 | 13 | 80 | 435.3 |  |
-| 4993 | 13 | 81 | 435.6 |  |
-| 4994 | 13 | 82 | 436 |  |
-| 4996 | 13 | 84 | 436.8 |  |
-| 4997 | 13 | 85 | 437.2 |  |
-| 4998 | 13 | 86 | 437.6 |  |
-| 4999 | 13 | 87 | 438 |  |
-| 5000 | 13 | 88 | 438.4 |  |
-| 5001 | 13 | 89 | 438.8 |  |
-| 5002 | 13 | 8A | 439.2 |  |
-| 5003 | 13 | 8B | 439.6 |  |
-| 5004 | 13 | 8c | 440 |  |
-| 5006 | 13 | 8E | 440.8 |  |
-| 5007 | 13 | 8F | 441.2 |  |
-| 5008 | 13 | 90 | 441.6 |  |
-| 5010 | 13 | 92 | 442.4 |  |
-| 5011 | 13 | 93 | 442.8 |  |
-| 5012 | 13 | 94 | 443.2 |  |
-| 5013 | 13 | 95 | 443.6 |  |
-| 5014 | 13 | 96 | 444 |  |
-| 5015 | 13 | 97 | 444.4 |  |
-| 5016 | 13 | 98 | 444.8 |  |
-| 5017 | 13 | 99 | 445.2 |  |
-| 5018 | 13 | 9A | 445.6 |  |
-| 5019 | 13 | 9B | 446 |  |
-| 5021 | 13 | 9D | 446.8 |  |
-| 5022 | 13 | 9E | 447.2 |  |
-| 5026 | 13 | A2 | 448.8 |  |
-| 5027 | 13 | A3 | 449.2 |  |
-| 5028 | 13 | A4 | 449.6 |  |
-| 5031 | 13 | A7 | 450.8 |  |
-| 5034 | 13 | AA | 452.1 |  |
+| Atari tone (dec) | MSB (dec) | LSB (dec) | Frequency (Hz) |
+|---:|---:|---:|---:|
+| 4994 | 19 | 130 | 436 |
+| 4995 | 19 | 131 | 436.4 |
+| 4996 | 19 | 132 | 436.8 |
+| 4997 | 19 | 133 | 437.2 |
+| 4998 | 19 | 134 | 437.6 |
+| 4999 | 19 | 135 | 438 |
+| 5000 | 19 | 136 | 438.4 |
+| 5001 | 19 | 137 | 438.8 |
+| 5002 | 19 | 138 | 439.2 |
+| 5003 | 19 | 139 | 439.6 |
+| 5004 | 19 | 140 | 440 |
+| 5005 | 19 | 141 | 440.4 |
+| 5006 | 19 | 142 | 440.8 |
+| 5007 | 19 | 143 | 441.2 |
+| 5008 | 19 | 144 | 441.6 |
+| 5009 | 19 | 145 | 442 |
+| 5010 | 19 | 146 | 442.4 |
+| 5011 | 19 | 147 | 442.8 |
+| 5012 | 19 | 148 | 443.2 |
+| 5013 | 19 | 149 | 443.6 |
+| 5014 | 19 | 150 | 444 |
+| 5015 | 19 | 151 | 444.4 |
+| 5016 | 19 | 152 | 444.8 |
+| 5017 | 19 | 153 | 445.2 |
+| 5018 | 19 | 154 | 445.6 |
+| 5019 | 19 | 155 | 446 |
+| 5020 | 19 | 156 | 446.4 |
+| 5021 | 19 | 157 | 446.8 |
+| 5022 | 19 | 158 | 447.2 |
+| 5023 | 19 | 159 | 447.6 |
+| 5024 | 19 | 160 | 448 |
+| 5025 | 19 | 161 | 448.4 |
+| 5026 | 19 | 162 | 448.8 |
+| 5027 | 19 | 163 | 449.2 |
+| 5028 | 19 | 164 | 449.6 |
+| 5029 | 19 | 165 | 450 |
+| 5030 | 19 | 166 | 450.4 |
+| 5031 | 19 | 167 | 450.8 |
+| 5032 | 19 | 168 | 451.3 |
+| 5033 | 19 | 169 | 451.7 |
+| 5034 | 19 | 170 | 452.1 |
+| 5035 | 19 | 171 | 452.5 |
+| 5036 | 19 | 172 | 452.9 |
+| 5037 | 19 | 173 | 453.3 |
+| 5038 | 19 | 174 | 453.7 |
+| 5039 | 19 | 175 | 454.1 |
+| 5040 | 19 | 176 | 454.5 |
+| 5041 | 19 | 177 | 454.9 |
+| 5042 | 19 | 178 | 455.3 |
+| 5043 | 19 | 179 | 455.8 |
 
-
-> Table transcription is provisional: irregular OCR rows or misread digits require checking against the scan.
 
 <details><summary>Full original printed table — source PDF page 51</summary>
 
@@ -1668,36 +1710,35 @@ Table C shows actual semitone/sec and decibel/sec slopes achieved by various 8 b
 
 <sub>Original PDF page 52 · [View source](AMY_tech_manual.pdf#page=52)</sub>
 
-**Table B — OCR transcription (incomplete)** — continuation, Technical Manual source page 52. Values below retain OCR uncertainties and should be checked against the scan.
+**Table B — complete transcription of PDF page 52.**
 
-| Atari tone (dec) | MSB (hex) | LSB (hex) | Frequency (Hz) | Notes |
-|---:|---:|---:|---:|---|
-| 5036 | 13 | AC | 452.9 |  |
-| 5037 | 13 | AD | 453.3 |  |
-| 5038 | 13 | AE | 453.7 | > |
-| 5039 | 13 | AF | 454.1 |  |
-| 5042 | 13 | B2 | 455.3 |  |
-| 5043 | 13 | B3 | 455.8 |  |
-| 5044 | 13 | B4 | 456.2 |  |
-| 5046 | 13 | B6 | 457 |  |
-| 5047 | 13 | B7 | 457.4 |  |
-| 5048 | 13 | B8 | 457.8 |  |
-| 5050 | 13 | BA | 458.6 |  |
-| 5051 | 13 | BB | 459.1 |  |
-| 5052 | 13 | BC | 459.5 |  |
-| 5053 | 13 | BD | 459.9 |  |
-| 5054 | 13 | BE | 460.3 |  |
-| 5055 | 13 | BF | 460.7 |  |
-| 5058 | 13 | c2 | 462 |  |
-| 5059 | 13 | c3 | 462.4 |  |
-| 5060 | 13 | c4 | 462.8 |  |
-| 5062 | 13 | c6 | 463.6 |  |
-| 5063 | 13 | c7 | 464.1 |  |
-| 5066 | 13 | CA | 465.3 |  |
-| 5067 | 13 | cB | 465.7 |  |
+| Atari tone (dec) | MSB (dec) | LSB (dec) | Frequency (Hz) |
+|---:|---:|---:|---:|
+| 5044 | 19 | 180 | 456.2 |
+| 5045 | 19 | 181 | 456.6 |
+| 5046 | 19 | 182 | 457 |
+| 5047 | 19 | 183 | 457.4 |
+| 5048 | 19 | 184 | 457.8 |
+| 5049 | 19 | 185 | 458.2 |
+| 5050 | 19 | 186 | 458.6 |
+| 5051 | 19 | 187 | 459.1 |
+| 5052 | 19 | 188 | 459.5 |
+| 5053 | 19 | 189 | 459.9 |
+| 5054 | 19 | 190 | 460.3 |
+| 5055 | 19 | 191 | 460.7 |
+| 5056 | 19 | 192 | 461.1 |
+| 5057 | 19 | 193 | 461.6 |
+| 5058 | 19 | 194 | 462 |
+| 5059 | 19 | 195 | 462.4 |
+| 5060 | 19 | 196 | 462.8 |
+| 5061 | 19 | 197 | 463.2 |
+| 5062 | 19 | 198 | 463.6 |
+| 5063 | 19 | 199 | 464.1 |
+| 5064 | 19 | 200 | 464.5 |
+| 5065 | 19 | 201 | 464.9 |
+| 5066 | 19 | 202 | 465.3 |
+| 5067 | 19 | 203 | 465.7 |
 
-
-> Table transcription is provisional: irregular OCR rows or misread digits require checking against the scan.
 
 <details><summary>Full original printed table — source PDF page 52</summary>
 
@@ -1712,57 +1753,62 @@ Table C shows actual semitone/sec and decibel/sec slopes achieved by various 8 b
 
 <sub>Original PDF page 53 · [View source](AMY_tech_manual.pdf#page=53)</sub>
 
-**Table C — OCR transcription (incomplete)** — continuation; values from unverified OCR.
+**Table C — complete transcription of PDF page 53.**
 
-| + slope (hex) | – slope (hex) | Semitones/s | dB/s | Mantissa (hex) | Exponent |
-|---|---|---:|---:|---|---|
-| 0 | 80 | 0 | te) | 0 | 0 |
-| 1 | oF | 0.11 | 1.9 | 1 | 0 |
-| 2 | 9E | 0.23 | 3.81 | 2 | 0 |
-| 3 | 9D | 0.35 | 5.72 | 3 | 0 |
-| 4 | 9c | 0.47 | 7.62 | 4 | 0 |
-| 5 | 9B | 0.59 | 9.53 | 5 | 0 |
-| 6 | 9A | 0.71 | 11.44 | 6 | 0 |
-| 7 | 99 | 0.83 | 13.35 | 7 | ie) |
-| 8 | 98 | 0.95 | 15.25 | 8 | (0) |
-| 9 | 97 | 1.07 | 17.16 | 9 | te) |
-| A | 96 | 1,19 | 19.07 | A | 0 |
-| B | 95 | 1.31 | 20.98 | B | 0 |
-| c | 94 | 1.43 | 22.88 | Cc | 0 |
-| D | 93 | 1.54 | 24.79 | D | 0 |
-| E | 92 | 1.66 | 26.7 | E | ie) |
-| F | 91 | 1.78 | 28.61 | F | 0 |
-| 10 | 90 | 1.9 | 30.51 | 10 | i) |
-| 11 | 8F | 2.02 | 32,42 | li | 0 |
-| 12 | 8E | 2.14 | 34.33 | 12 | i) |
-| 13 | 8D | 2.26 | - | 36.23 | 13 i) |
-| 14 | 8c | 2.38 | 38,14 | 14 | 0 |
-| 15 | 8B | 2.5 | 40.05 | 15 | 0 |
-| 16 | 8A | 2.62 | 41.96 | 16 | 0 |
-| 17 | 89 | 2.74 | 43.86 | 17 | it) |
-| 18 | 88 | 2.86 | 45.77 | 18 | 0 |
-| 19 | 87 | 2.98 | 47.68 | 19 | 0 |
-| 1A | 86 | 3.09 | 49.59 | 1A | it) |
-| 1B | 85 | 3.21 | 51.49 | 1B | 0 |
-| 1c | 84 | 3.33 | 53.4 | 1c | 0 |
-| 1E | 82 | 3.57 | 57.22 | 1E | 0 |
-| 1F | 81 | 3.69 | 59.12 | 1F | 0 |
-| 21 | BF | 0.47 | 7.62 | 1 | 1 |
-| 22 | BE | 0.95 | 15,25 | 2 | 1 |
-| 23 | BD | 1.43 | 22.88 | 3 | 1 |
-| 24 | BC | 1.9 | 30.51 | 4 | 1 |
-| 25 | BB | 2.38 | 38.14 | 5 | 1 |
-| 26 | BA | 2.86 | 45.77 | 6 | 1 |
-| 27 | B9 | 3.33 | 53.4 | 7 | 1 |
-| 29 | B7 | 4.29 | 68.66 | 9 | 1 |
-| 2A | B6 | 4.76 | 76.29 | A | 1 |
-| 2B | B5 | 5.24 | 83.92 | B | 1 |
-| 2c | B4 | 5.72 | 91.55 | c | 1 |
-| 2D | B3 | 6.19 | 99.18 | D | 1 |
-| 2E | B2 | 6.67 | 106.81 | E | 1 |
+| + slope (dec) | − slope (dec) | Semitones/s | dB/s | M (dec) | E (dec) |
+|---:|---:|---:|---:|---:|---:|
+| 0 | 128 | 0 | 0 | 0 | 0 |
+| 1 | 159 | 0.11 | 1.9 | 1 | 0 |
+| 2 | 158 | 0.23 | 3.81 | 2 | 0 |
+| 3 | 157 | 0.35 | 5.72 | 3 | 0 |
+| 4 | 156 | 0.47 | 7.62 | 4 | 0 |
+| 5 | 155 | 0.59 | 9.53 | 5 | 0 |
+| 6 | 154 | 0.71 | 11.44 | 6 | 0 |
+| 7 | 153 | 0.83 | 13.35 | 7 | 0 |
+| 8 | 152 | 0.95 | 15.25 | 8 | 0 |
+| 9 | 151 | 1.07 | 17.16 | 9 | 0 |
+| 10 | 150 | 1.19 | 19.07 | 10 | 0 |
+| 11 | 149 | 1.31 | 20.98 | 11 | 0 |
+| 12 | 148 | 1.43 | 22.88 | 12 | 0 |
+| 13 | 147 | 1.54 | 24.79 | 13 | 0 |
+| 14 | 146 | 1.66 | 26.7 | 14 | 0 |
+| 15 | 145 | 1.78 | 28.61 | 15 | 0 |
+| 16 | 144 | 1.9 | 30.51 | 16 | 0 |
+| 17 | 143 | 2.02 | 32.42 | 17 | 0 |
+| 18 | 142 | 2.14 | 34.33 | 18 | 0 |
+| 19 | 141 | 2.26 | 36.23 | 19 | 0 |
+| 20 | 140 | 2.38 | 38.14 | 20 | 0 |
+| 21 | 139 | 2.5 | 40.05 | 21 | 0 |
+| 22 | 138 | 2.62 | 41.96 | 22 | 0 |
+| 23 | 137 | 2.74 | 43.86 | 23 | 0 |
+| 24 | 136 | 2.86 | 45.77 | 24 | 0 |
+| 25 | 135 | 2.98 | 47.68 | 25 | 0 |
+| 26 | 134 | 3.09 | 49.59 | 26 | 0 |
+| 27 | 133 | 3.21 | 51.49 | 27 | 0 |
+| 28 | 132 | 3.33 | 53.4 | 28 | 0 |
+| 29 | 131 | 3.45 | 55.31 | 29 | 0 |
+| 30 | 130 | 3.57 | 57.22 | 30 | 0 |
+| 31 | 129 | 3.69 | 59.12 | 31 | 0 |
+| 32 | 160 | 0 | 0 | 0 | 1 |
+| 33 | 191 | 0.47 | 7.62 | 1 | 1 |
+| 34 | 190 | 0.95 | 15.25 | 2 | 1 |
+| 35 | 189 | 1.43 | 22.88 | 3 | 1 |
+| 36 | 188 | 1.9 | 30.51 | 4 | 1 |
+| 37 | 187 | 2.38 | 38.14 | 5 | 1 |
+| 38 | 186 | 2.86 | 45.77 | 6 | 1 |
+| 39 | 185 | 3.33 | 53.4 | 7 | 1 |
+| 40 | 184 | 3.81 | 61.03 | 8 | 1 |
+| 41 | 183 | 4.29 | 68.66 | 9 | 1 |
+| 42 | 182 | 4.76 | 76.29 | 10 | 1 |
+| 43 | 181 | 5.24 | 83.92 | 11 | 1 |
+| 44 | 180 | 5.72 | 91.55 | 12 | 1 |
+| 45 | 179 | 6.19 | 99.18 | 13 | 1 |
+| 46 | 178 | 6.67 | 106.81 | 14 | 1 |
+| 47 | 177 | 7.15 | 114.44 | 15 | 1 |
+| 48 | 176 | 7.62 | 122.07 | 16 | 1 |
 
 
-> Table transcription is provisional: irregular OCR rows or misread digits require checking against the scan.
+*The slope code 0 occurs at each exponent with M = 0, as printed in Atari’s table. Negative codes use the chip’s sign/exponent/mantissa encoding.*
 
 <details><summary>Full original printed table — source PDF page 53</summary>
 
@@ -1777,45 +1823,58 @@ Table C shows actual semitone/sec and decibel/sec slopes achieved by various 8 b
 
 <sub>Original PDF page 54 · [View source](AMY_tech_manual.pdf#page=54)</sub>
 
-**Table C — OCR transcription (incomplete)** — continuation; values from unverified OCR.
+**Table C — complete transcription of PDF page 54.**
 
-| + slope (hex) | – slope (hex) | Semitones/s | dB/s | Mantissa (hex) | Exponent |
-|---|---|---:|---:|---|---|
-| 31 | AF | 8.1 | 129.69 | il | 1 |
-| 32 | AE | 8.58 | 137,32 | 12 | 1 |
-| 33 | AD | 9.05 | 144.95 | 13 | 1 |
-| 34 | AC | 9.53 | 152.58 | 14 | 1 |
-| 35 | AB | 10.01 | 160.21 | 15 | 1 |
-| 36 | AA | 10.49 | 167.84 | 16 | 1 |
-| 38 | a8 | 11.44 | 183.1 | 18 | 1 |
-| 39 | a7 | 11.92 | 190,73 | 19 | 1 |
-| 3A | A6 | 12.39 | 198.36 | 1a | 1 |
-| 3B | A5 | 12.87 | 205.99 | 1B | 1 |
-| 3c | Aa | 13,35 | 213.62 | 1c | 1 |
-| 3D | A3 | 13.82 | 221,25 | 1D | 1 |
-| 41 | DF | 1.9 | 30.51 | 1 | 2 |
-| 42 | DE | 3.81 | 61.03 | 2 | 2 |
-| 45 | DB | 9.53 | 152.58 | 5 | 2 |
-| 46 | DA | 11.44 | 183.1 | 6 | 2 |
-| 47 | D9 | 13.35 | 213.62 | 7 | 2 |
-| 48 | D8 | 15.25 | 244.14 | 8 | 2 |
-| 49 | D7 | 17.16 | 274.65 | 9 | 2 |
-| 4a | D6 | 19.07 | 305.17 | A | 2 |
-| 4c | D4 | 22.88 | 366.21 | c | 2 |
-| 4D | D3 | 24.79 | 396.72 | D | 2 |
-| 4E | D2 | 26.7 | 427.24 | E | 2 |
-| 51 | cF | 32.42 | 518.79 | ul | 2 |
-| 52 | cE | 34,33 | 549.31 | 12 | 2 |
-| 54 | cc | 38.14 | 610.35 | 14 | 2 |
-| 55 | cB | 40.05 | 640.86 | 15 | 2 |
-| 56 | cA | 41.96 | 671.38 | 16 | 2 |
-| 58 | ca | 45.77 | 732.42 | 18 | 2 |
-| 5B | c5 | 51.49 | 823.97 | 1B | 2 |
-| 5c | C4 | 53.4 | 854.49 | 1c | 2 |
-| 5D | c3 | 55.31 | 885 | 1D | 2 |
+| + slope (dec) | − slope (dec) | Semitones/s | dB/s | M (dec) | E (dec) |
+|---:|---:|---:|---:|---:|---:|
+| 49 | 175 | 8.1 | 129.69 | 17 | 1 |
+| 50 | 174 | 8.58 | 137.32 | 18 | 1 |
+| 51 | 173 | 9.05 | 144.95 | 19 | 1 |
+| 52 | 172 | 9.53 | 152.58 | 20 | 1 |
+| 53 | 171 | 10.01 | 160.21 | 21 | 1 |
+| 54 | 170 | 10.49 | 167.84 | 22 | 1 |
+| 55 | 169 | 10.96 | 175.47 | 23 | 1 |
+| 56 | 168 | 11.44 | 183.1 | 24 | 1 |
+| 57 | 167 | 11.92 | 190.73 | 25 | 1 |
+| 58 | 166 | 12.39 | 198.36 | 26 | 1 |
+| 59 | 165 | 12.87 | 205.99 | 27 | 1 |
+| 60 | 164 | 13.35 | 213.62 | 28 | 1 |
+| 61 | 163 | 13.82 | 221.25 | 29 | 1 |
+| 62 | 162 | 14.3 | 228.88 | 30 | 1 |
+| 63 | 161 | 14.78 | 236.51 | 31 | 1 |
+| 64 | 192 | 0 | 0 | 0 | 2 |
+| 65 | 223 | 1.9 | 30.51 | 1 | 2 |
+| 66 | 222 | 3.81 | 61.03 | 2 | 2 |
+| 67 | 221 | 5.72 | 91.55 | 3 | 2 |
+| 68 | 220 | 7.62 | 122.07 | 4 | 2 |
+| 69 | 219 | 9.53 | 152.58 | 5 | 2 |
+| 70 | 218 | 11.44 | 183.1 | 6 | 2 |
+| 71 | 217 | 13.35 | 213.62 | 7 | 2 |
+| 72 | 216 | 15.25 | 244.14 | 8 | 2 |
+| 73 | 215 | 17.16 | 274.65 | 9 | 2 |
+| 74 | 214 | 19.07 | 305.17 | 10 | 2 |
+| 75 | 213 | 20.98 | 335.69 | 11 | 2 |
+| 76 | 212 | 22.88 | 366.21 | 12 | 2 |
+| 77 | 211 | 24.79 | 396.72 | 13 | 2 |
+| 78 | 210 | 26.7 | 427.24 | 14 | 2 |
+| 79 | 209 | 28.61 | 457.76 | 15 | 2 |
+| 80 | 208 | 30.51 | 488.28 | 16 | 2 |
+| 81 | 207 | 32.42 | 518.79 | 17 | 2 |
+| 82 | 206 | 34.33 | 549.31 | 18 | 2 |
+| 83 | 205 | 36.23 | 579.83 | 19 | 2 |
+| 84 | 204 | 38.14 | 610.35 | 20 | 2 |
+| 85 | 203 | 40.05 | 640.86 | 21 | 2 |
+| 86 | 202 | 41.96 | 671.38 | 22 | 2 |
+| 87 | 201 | 43.86 | 701.9 | 23 | 2 |
+| 88 | 200 | 45.77 | 732.42 | 24 | 2 |
+| 89 | 199 | 47.68 | 762.93 | 25 | 2 |
+| 90 | 198 | 49.59 | 793.45 | 26 | 2 |
+| 91 | 197 | 51.49 | 823.97 | 27 | 2 |
+| 92 | 196 | 53.4 | 854.49 | 28 | 2 |
+| 93 | 195 | 55.31 | 885 | 29 | 2 |
+| 94 | 194 | 57.22 | 915.52 | 30 | 2 |
+| 95 | 193 | 59.12 | 946.04 | 31 | 2 |
 
-
-> Table transcription is provisional: irregular OCR rows or misread digits require checking against the scan.
 
 <details><summary>Full original printed table — source PDF page 54</summary>
 
@@ -1830,37 +1889,45 @@ Table C shows actual semitone/sec and decibel/sec slopes achieved by various 8 b
 
 <sub>Original PDF page 55 · [View source](AMY_tech_manual.pdf#page=55)</sub>
 
-**Table C — OCR transcription (incomplete)** — continuation; values from unverified OCR.
+**Table C — complete transcription of PDF page 55.**
 
-| + slope (hex) | – slope (hex) | Semitones/s | dB/s | Mantissa (hex) | Exponent |
-|---|---|---:|---:|---|---|
-| 61 | FF | 7.62 | 122.07 | 1 | 3 |
-| 62 | FE | 15.25 | 244.14 | 2 | 3 |
-| 63 | FD | 22.88 | 366.21 | 3 | 3 |
-| 64 | Fc | 30.51 | 488.28 | 4 | 3 |
-| 65 | FB | 38.14 | 610.35 | 5 | 3 |
-| 66 | FA | 45.77 | 732.42 | 6 | 3 |
-| 67 | F9 | 53.4 | 854.49 | 7 | 3 |
-| 69 | F7 | 68.66 | 1098.63 | 9 | 3 |
-| 6A | F6 | 76.29 | 1220.7 | A | 3 |
-| 6B | F5 | 83.92 | 1342.77 | B | 3 |
-| 6c | F4 | 91.55 | 1464.84 | c | 3 |
-| 6D | F3 | 99.18 | 1586.91 | D | 3 |
-| 6E | F2 | 106.81 | 1708.98 | E | 3 |
-| 72 | EE | 137.32 | 2197.26 | 12 | 3 |
-| 73 | ED | 144.95 | 2319.33 | 13 | 3 |
-| 74 | EC | 152.58 | 2441.4 | 14 | 3 |
-| 75 | EB | 160.21 | 2563.47 | 15 | 3 |
-| 76 | EA | 167.84 | 2685.54 | 16 | 3 |
-| 77 | E9 | 175.47 | 2807.61 | 17 | 3 |
-| 78 | E8 | 183.1 | 2929.68 | 18 | 3 |
-| 79 | E7 | 190.73 | 3051.75 | 19 | 3 |
-| 7A | E6 | 198.36 | 3173.82 | 1A | 3 |
-| 7D | E3 | 221.25 | 3540.03 | ip | 3 |
-| 7E | E2 | 228.88 | 3662.1 | 1E | 3 |
+> **EDITORIAL REVIEW FLAG — pitch-slope maximum.** The top row of Table C gives **236.51 semitones/s** (and **3784.17 dB/s**), whereas the musical specifications state a maximum fundamental-frequency slope of about **118 semitones/s**. Both values are clear in the original scans. This may reflect a frequency-path update-rate distinction; no numerical correction has been assumed. See `APPENDIX_I_QA_REVIEW.md`.
 
+| + slope (dec) | − slope (dec) | Semitones/s | dB/s | M (dec) | E (dec) |
+|---:|---:|---:|---:|---:|---:|
+| 96 | 224 | 0 | 0 | 0 | 3 |
+| 97 | 255 | 7.62 | 122.07 | 1 | 3 |
+| 98 | 254 | 15.25 | 244.14 | 2 | 3 |
+| 99 | 253 | 22.88 | 366.21 | 3 | 3 |
+| 100 | 252 | 30.51 | 488.28 | 4 | 3 |
+| 101 | 251 | 38.14 | 610.35 | 5 | 3 |
+| 102 | 250 | 45.77 | 732.42 | 6 | 3 |
+| 103 | 249 | 53.4 | 854.49 | 7 | 3 |
+| 104 | 248 | 61.03 | 976.56 | 8 | 3 |
+| 105 | 247 | 68.66 | 1098.63 | 9 | 3 |
+| 106 | 246 | 76.29 | 1220.7 | 10 | 3 |
+| 107 | 245 | 83.92 | 1342.77 | 11 | 3 |
+| 108 | 244 | 91.55 | 1464.84 | 12 | 3 |
+| 109 | 243 | 99.18 | 1586.91 | 13 | 3 |
+| 110 | 242 | 106.81 | 1708.98 | 14 | 3 |
+| 111 | 241 | 114.44 | 1831.05 | 15 | 3 |
+| 112 | 240 | 122.07 | 1953.12 | 16 | 3 |
+| 113 | 239 | 129.69 | 2075.19 | 17 | 3 |
+| 114 | 238 | 137.32 | 2197.26 | 18 | 3 |
+| 115 | 237 | 144.95 | 2319.33 | 19 | 3 |
+| 116 | 236 | 152.58 | 2441.4 | 20 | 3 |
+| 117 | 235 | 160.21 | 2563.47 | 21 | 3 |
+| 118 | 234 | 167.84 | 2685.54 | 22 | 3 |
+| 119 | 233 | 175.47 | 2807.61 | 23 | 3 |
+| 120 | 232 | 183.1 | 2929.68 | 24 | 3 |
+| 121 | 231 | 190.73 | 3051.75 | 25 | 3 |
+| 122 | 230 | 198.36 | 3173.82 | 26 | 3 |
+| 123 | 229 | 205.99 | 3295.89 | 27 | 3 |
+| 124 | 228 | 213.62 | 3417.96 | 28 | 3 |
+| 125 | 227 | 221.25 | 3540.03 | 29 | 3 |
+| 126 | 226 | 228.88 | 3662.1 | 30 | 3 |
+| 127 | 225 | 236.51 | 3784.17 | 31 | 3 |
 
-> Table transcription is provisional: irregular OCR rows or misread digits require checking against the scan.
 
 <details><summary>Full original printed table — source PDF page 55</summary>
 
