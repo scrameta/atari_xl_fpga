@@ -4,7 +4,7 @@
 >
 > This document represents the **original Atari Rev. B specification only** — no FPGA changes have been added. The source scan is included in this archive as [`AMY_1_spec_confidential_binder_ver_2.pdf`](AMY_1_spec_confidential_binder_ver_2.pdf).
 >
-> Original document: Atari Semiconductor Group, device C021859, document D021859, dated June 1983. The source PDF contains 60 scanned pages (cover + 59 numbered pages).
+> Original document: Atari Semiconductor Group, device C021859, document D021859, Rev. B listed on the revision sheet as **22 February 1984** (Rev. A **30 September 1983**); printed form footers still show **6/83**. The source PDF contains 60 scanned pages (cover + 59 numbered pages).
 >
 > **Fidelity convention:** pages link to the original PDF; original diagrams and dense tables are also provided as cropped scan images. Mermaid drawings are semantic redrawings, **not** substitutes for electrical schematic or timing accuracy. In Appendix I some OCR rows remain missing or uncertain: use the source scan for precise numerical values. No 2026 FPGA changes are included.
 
@@ -42,15 +42,18 @@ CONFIDENTIAL
 
 COMPANY CONFIDENTIAL
 
-NOTICE TO ALL PERSONS RECEIVING THIS DOCUMENT CONFIDENTIAL: Reproduction forbidden without the specific written permission of Atari, Inc. Sunnyvale, California. This document is only conditionally Issued and neltner receipt nor possession thereof confers or transfers any right In, oF license to use the Subject matter of the dacument or any design or technical information shown thereon, nor any right to reproduct this document or any part tharaot, except
+NOTICE TO ALL PERSONS RECEIVING THIS DOCUMENT CONFIDENTIAL:
 
-for manufacture under the corporation's written !icen:
+Reproduction forbidden without the specific written permission of Atari, Inc., Sunnyvale, California. This document is only conditionally issued and neither receipt nor possession thereof confers or transfers any right in, or license to use the subject matter of the document or any design or technical information shown thereon, nor any right to reproduce this document or any part thereof, except for manufacture under the corporation’s written license.
 
-ORAFTED BY
+ATARI, INCORPORATED — 275 GIBRALTAR DRIVE — SUNNYVALE, CA 94086
 
-ARI
+| Revision | Device revision | Original title-sheet date | Note |
+|---|---|---|---|
+| A | N/C | 9/30/83 | See revision descriptions on printed page 2 |
+| B | N/C | 2/22/84 | This copy's latest recorded revision |
 
-ATARI, INCORPORATED 275 GIBRALTAR DRIVE SUNNYVALE, CA 94086
+*Revision dates transcribed from the title sheet; the printed form footer says 6/83, which is a different date.*
 
 
 
@@ -1195,12 +1198,12 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  NINIT[Set NZINIT; keep SEQRUN = 0] --> LOAD[Load noise RAM initial conditions]
-  LOAD --> CLEAR[Clear NZINIT; keep SEQRUN = 0]
+  NINIT[Set NZINIT and keep SEQRUN = 0] --> LOAD[Load noise RAM initial conditions]
+  LOAD --> CLEAR[Clear NZINIT and keep SEQRUN = 0]
   CLEAR --> VT[Assign voice types]
   VT --> ZERO[Clear all harmonic amplitudes with immediate zero breakpoint]
   ZERO --> ASSIGN[Assign last-harmonic-pair flags]
-  ASSIGN --> RUN[Set SEQRUN = 1; enter run state]
+  ASSIGN --> RUN[Set SEQRUN = 1 and enter run state]
 ```
 
 **Initialization flowchart, parts 2–3** — merges the continuation across printed pp. 35–36.
@@ -1339,13 +1342,13 @@ Conditions: ambient temperature 0 to 70 °C; VCC = +5 V ±5%.
 
 Conditions: T_A = 0 to 70 °C; VCC = +5 V ±5%.
 
-| No. | Parameter | Min | Max | Unit |
-|---:|---|---:|---:|---|
-| 1 | Clock period | 100 | 500 | ns |
-| 2 | Clock high time | 0.4 × t_p | 0.6 × t_p | — |
-| 3 | Clock rise time | — | 10 | ns |
-| 4 | Clock fall time | — | 10 | ns |
-| 5 | RESET pulse width | 10 × t_p | — | — |
+| No. | Symbol | Parameter | Min | Max | Unit |
+|---:|---|---|---:|---:|---|
+| 1 | t_p | Clock period | 100 | 500 | ns |
+| 2 | t_0 | Clock high time | 0.4 × t_p | 0.6 × t_p | — |
+| 3 | t_cr | Clock rise time | — | 10 | ns |
+| 4 | t_cf | Clock fall time | — | 10 | ns |
+| 5 | t_rpw | RESET pulse width | 10 × t_p | — | — |
 
 Hold RESET low during power-up for at least 2 ms after the supply reaches +5 V ±5%.
 
@@ -1360,20 +1363,20 @@ Hold RESET low during power-up for at least 2 ms after the supply reaches +5 V �
 
 ### 12.2 Output Section
 
-Conditions: ambient 0–70 °C, C_L=150 pF unless otherwise noted; VCC=5 V ±5%.
+Conditions: ambient 0–70 °C; C_L = 150 pF unless otherwise noted; VCC = 5 V ±5%; **2 MHz ≤ CLK ≤ 5 MHz** (as printed in this A.C. output table, irrespective of the broader clock specification).
 
-| No. | Parameter | Min | Max | Unit |
-|---:|---|---:|---:|---|
-| 1 | CLK to OUTSTB low | 0 | 150 | ns |
-| 2 | CLK to OUTSTB high | 0 | 150 | ns |
-| 3 | CLK to V0 falling edge | 0 | 150 | ns |
-| 4 | CLK to V0 rising edge | 0 | 150 | ns |
-| 5 | Sample period, 40 harmonic mode | 80 × t_p | 80 × t_p | — |
-| 5 | Sample period, 64 harmonic mode | 128 × t_p | 128 × t_p | — |
-| 6 | Sample bus hold time from CLK | 20 | — | ns |
-| 7 | CLK to SAMP0–15 data valid | — | 150 | ns |
-| 8 | OE rising to SAMP0–15 high impedance | 0 | 150 | ns |
-| 9 | OE falling to SAMP0–15 valid | 0 | 150 | ns |
+| No. | Symbol | Parameter | Min | Max | Unit |
+|---:|---|---|---:|---:|---|
+| 1 | t_col | CLK to OUTSTB low | 0 | 150 | ns |
+| 2 | t_cot | CLK to OUTSTB high | 0 | 150 | ns |
+| 3 | t_cvt | CLK to V0 falling edge | 0 | 150 | ns |
+| 4 | t_cvl | CLK to V0 rising edge | 0 | 150 | ns |
+| 5 | t_s | Sample period, 40 harmonic mode | 80 × t_p | 80 × t_p | — |
+| 5 | t_s | Sample period, 64 harmonic mode | 128 × t_p | 128 × t_p | — |
+| 6 | t_sh | Sample bus hold time from CLK | 20 | — | ns |
+| 7 | t_csh1 | CLK to SAMP0–15 data valid | — | 150 | ns |
+| 8 | t_csf | OE rising to SAMP0–15 high impedance | 0 | 150 | ns |
+| 9 | t_cse | OE falling to SAMP0–15 valid | 0 | 150 | ns |
 
 
 ---
@@ -1397,7 +1400,7 @@ sequenceDiagram
     CLK->>O: Output strobe for active voice
     O->>S: Current voice sample valid
     Note over V: V0 marks voice zero once per sample period
-    E->>S: OE high: output bus tri-stated
+    E->>S: OE high puts output bus into high impedance
 ```
 
 *Mermaid is only an event summary. See the original PDF timing waveform at [page 44](./AMY_1_spec_confidential_binder_ver_2.pdf#page=44) for numbered timing intervals and analog transitions.*
@@ -1421,24 +1424,26 @@ sequenceDiagram
 
 ### 12.3 System Bus Interface (Read/Write, address pin and ALE modes)
 
-| No. | Parameter | Min | Max | Units |
-|---:|---|---:|---:|---|
-| 1 | Address valid to RD | 0 | — | ns |
-| 2 | RD pulse width | 200 | — | ns |
-| 3 | ALE float time | 10 | 100 | ns |
-| 4 | CS hold time after RD | 0 | — | ns |
-| 5 | CS active to RD | 0 | — | ns |
-| 6 | Read access time | — | 150 | ns |
-| 7 | Address to data valid | — | 150 | ns |
-| 8 | CS active to data valid | — | 150 | ns |
-| 9 | Data hold after RD | — | 10 | ns |
-| 10 | Address hold after RD | 0 | — | ns |
-| 11 | RD dead time, address-pin mode | 100 | — | ns |
-| 12 | Read cycle time, address-pin mode | 300 | — | ns |
-| 13 | Read float time, RD to DB0–7 high-Z | 10 | 100 | ns |
-| 14 | RD dead time, ALE mode | 250 | — | ns |
-| 15 | ALE pulse width | 50 | — | ns |
-| 16 | ALE-mode read cycle time | 450 | — | ns |
+> **Transcription alert (printed columns):** In the Atari scan, rows **6–8** put 150 ns under **Min**, while rows **19, 21 and 29** put 50 ns under **Max**. Those placements seem unusual for access/setup times but are reproduced **as printed**; do not use them as engineering limits without checking the timing waveforms and independent evidence. (PDF pp. 45–46.)
+
+| No. | Symbol | Parameter | Min | Max | Unit |
+|---:|---|---|---:|---:|---|
+| 1 | t_ar | Address valid to RD | 0 | — | ns |
+| 2 | t_rr | RD pulse width | 200 | — | ns |
+| 3 | t_af | ALE float time | 10 | 100 | ns |
+| 4 | t_chr | CS hold time after RD | 0 | — | ns |
+| 5 | t_cr | CS active to RD | 0 | — | ns |
+| 6 | t_rd | Read access time | 150 | — | ns |
+| 7 | t_ao | Address to data valid | 150 | — | ns |
+| 8 | t_cd | CS active to data valid | 150 | — | ns |
+| 9 | t_rdh | Data hold after RD | — | 10 | ns |
+| 10 | t_ahr | Address hold after RD | 0 | — | ns |
+| 11 | t_rdead1 | RD dead time, address-pin mode | 100 | — | ns |
+| 12 | t_cycr1 | Read cycle time, address-pin mode | 300 | — | ns |
+| 13 | t_rdf | Read float time, RD to DB0–7 high-Z | 10 | 100 | ns |
+| 14 | t_rdead2 | RD dead time, ALE mode | 250 | — | ns |
+| 15 | t_apw | ALE pulse width | 50 | — | ns |
+| 16 | t_cycr2 | ALE-mode read cycle time | 450 | — | ns |
 
 *All times are from the original scan; labels and active-low edges should be checked against the corresponding waveforms.*
 
@@ -1453,25 +1458,25 @@ sequenceDiagram
 
 *System Bus Interface (continued)*
 
-| No. | Parameter | Min | Max | Units |
-|---:|---|---:|---:|---|
-| 17 | CS hold after WR | 0 | — | ns |
-| 18 | Address hold after WR | 0 | — | ns |
-| 19 | Address setup to WR | 50 | — | ns |
-| 20 | CS setup to WR | 0 | — | ns |
-| 21 | Data setup to WR | 50 | — | ns |
-| 22 | WR pulse width | 200 | — | ns |
-| 23 | Data hold after WR | 0 | — | ns |
-| 24 | WR dead time, address-pin mode | 100 | — | ns |
-| 25 | Write cycle time, address-pin mode | 300 | — | ns |
-| 26 | ALE to WR | 50 | — | ns |
-| 27 | Write cycle time, ALE mode | 400 | — | ns |
-| 28 | WR dead time, ALE mode | 200 | — | ns |
-| 29 | Data valid to ALE falling edge | 50 | — | ns |
-| 30 | Data hold after ALE falling edge | 0 | — | ns |
-| 31 | ALE falling edge to RD falling edge | 20 | — | ns |
+| No. | Symbol | Parameter | Min | Max | Unit |
+|---:|---|---|---:|---:|---|
+| 17 | t_chw | CS hold after WR | 0 | — | ns |
+| 18 | t_ahw | Address hold after WR | 0 | — | ns |
+| 19 | t_aw | Address setup to WR | — | 50 | ns |
+| 20 | t_cw | CS setup to WR | 0 | — | ns |
+| 21 | t_dw | Data setup to WR | — | 50 | ns |
+| 22 | t_ww | WR pulse width | 200 | — | ns |
+| 23 | t_wd | Data hold after WR | 0 | — | ns |
+| 24 | t_wdead1 | WR dead time, address-pin mode | 100 | — | ns |
+| 25 | t_cycw | Write cycle time, address-pin mode | 300 | — | ns |
+| 26 | t_alewr | ALE to WR | 50 | — | ns |
+| 27 | t_cycwale | Write cycle time, ALE mode | 400 | — | ns |
+| 28 | t_wdead2 | WR dead time, ALE mode | 200 | — | ns |
+| 29 | t_dwa | Data valid to ALE falling edge | — | 50 | ns |
+| 30 | t_wda | Data hold after ALE falling edge | 0 | — | ns |
+| 31 | t_alerd | ALE falling edge to RD falling edge | 20 | — | ns |
 
-*Numbered entries correspond to the original timing waveform pages; item 31 must be double-checked before relying on timing values in an FPGA design.*
+*Numbered entries correspond to the original timing waveform pages. Values in the Min/Max columns follow the printed source, including unusual placements of some setup-time values. Verify the intended timing direction before hardware use.*
 
 
 ---
@@ -1486,8 +1491,8 @@ sequenceDiagram
 sequenceDiagram
     participant CPU as Multiplexed-bus CPU
     participant AMY as AMY 1
-    CPU->>AMY: DB0–1 = register address; ALE pulse
-    CPU->>AMY: CS asserted; RD asserted
+    CPU->>AMY: DB0–1 carry register address, followed by ALE pulse
+    CPU->>AMY: Assert CS and RD
     AMY-->>CPU: DB0–7 read data valid
     CPU->>AMY: RD deasserted
     Note over CPU,AMY: For a write, assert WR and drive DB0–7 instead
@@ -1518,7 +1523,7 @@ sequenceDiagram
     participant AMY as AMY 1
     CPU->>AMY: Drive A1/A0 to select register
     CPU->>AMY: Assert CS and RD (read) or WR (write)
-    Note over CPU,AMY: Read: AMY drives DB0–7; write: CPU drives DB0–7
+    Note over CPU,AMY: For reads AMY drives DB0–7, for writes CPU drives DB0–7
     CPU->>AMY: Release strobe, then CS
 ```
 
@@ -2147,15 +2152,28 @@ Table C shows actual semitone/sec and decibel/sec slopes achieved by various 8 b
 
 ## APPENDIX III — Test Mode
 
-The document describes an internal Sentry test mode, not intended for use by software designers. Reserved package pins must be grounded during ordinary operation. In test mode, the output accumulator and noise generation are disabled and internal pipeline data is directed to the sample bus.
+This appendix describes the **Sentry manufacturing test mode**. Atari explicitly states that system designers should not use it for any purpose. The original names and combinations below are reproduced from printed page 59 (PDF page 60), including apparent overlaps.
 
-| Pin or function | Pin number | Normal operation | Test operation |
-|---|---:|---|---|
-| OUTSTB/T1 | 38 | Output strobe | Test input T1 |
-| V0/T0 | 39 | Voice-zero marker | Test input T0 |
-| Reserved test pins | 1, 2 | Grounded | Internal test selection and control |
+| Pin | Type | Package pin | Normal operation (`TEST=0`) | When TEST pin is high |
+|---|---|---:|---|---|
+| OUTSTB/T1 | I/O | 38 | Active-low output strobe; low indicates valid SAMP data | Input T1 for Sentry testing |
+| V0/T0 | I/O | 39 | Voice-zero marker; goes high for one OUTSTB pulse per sample period in individual-output mode | Input T0 for Sentry testing |
+| BOUT/CSYNC (Reserved) | I/O | 1 | Serial noise-term output when TEST is low | Input for synchronizing the internal clock (Sentry only) |
+| TEST (Reserved) | Input | 2 | Ground for normal operation | High enables test mode |
 
-Test selections described include a two-harmonic counter, a path exposing the eight least-significant bits of the exponential ROM to the internal bus, and a path exposing the slope register. **The exact pin-test combination table is not reliable in the supplied OCR and requires transcription from the scan.**
+### Printed test-mode selection table
 
+| TEST pin | T0 | T1 | Function **as printed** |
+|---:|---:|---:|---|
+| 0 | X | X | Normal Mode |
+| 1 | 0 | X | TST0 — Enable 2 Harmonic Counter |
+| 1 | 0 | 1 | TST1 — Enable 8 LSBs of XROM to the Internal Bus |
+| 1 | 1 | 0 | TST2 — Enable Slope Register to the Internal Bus |
+
+**Source ambiguity requiring review:** The main pin description (printed p. 7) calls pins 1–2 reserved and says to ground them when unused, while Appendix III describes pin 1 as a serial noise-term output when TEST is low. In addition, TST0 uses `T0=0, T1=X`, which **overlaps TST1** (`T0=0, T1=1`). We have not changed the printed `X` to `0`, even though that might resolve the overlap. `X` conventionally means “don't care”, making the two rows ambiguous.
+
+> When the TEST pin is enabled, Atari states that the accumulator is disabled and data through the pipeline goes directly to the SAMP bus. The noise generator is also disabled in this mode.
+
+The original scanned table is at [PDF page 60](AMY_1_spec_confidential_binder_ver_2.pdf#page=60).
 
 ---

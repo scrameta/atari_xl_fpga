@@ -1022,12 +1022,12 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  NINIT[Set NZINIT; keep SEQRUN = 0] --> LOAD[Load noise RAM initial conditions]
-  LOAD --> CLEAR[Clear NZINIT; keep SEQRUN = 0]
+  NINIT[Set NZINIT and keep SEQRUN = 0] --> LOAD[Load noise RAM initial conditions]
+  LOAD --> CLEAR[Clear NZINIT and keep SEQRUN = 0]
   CLEAR --> VT[Assign voice types]
   VT --> ZERO[Clear all harmonic amplitudes with immediate zero breakpoint]
   ZERO --> ASSIGN[Assign last-harmonic-pair flags]
-  ASSIGN --> RUN[Set SEQRUN = 1; enter run state]
+  ASSIGN --> RUN[Set SEQRUN = 1 and enter run state]
 ```
 
 **Initialization flowchart, parts 2–3** — merges the continuation across printed pp. 35–36.
@@ -1131,7 +1131,7 @@ Conditions: T_A = 25 °C, VCC = GND = 0 V.
 
 ## 11. D.C. CHARACTERISTICS
 
-Conditions: ambient temperature 0 to 70 °C; VCC = +5 V ±5%.
+Conditions: ambient temperature 0 to 70 °C; the printed source says VCC = +5 V ±10%, with a handwritten correction to **±5%** (PDF p. 38).
 
 | Symbol | Parameter | Min | Max | Units | Test conditions |
 |---|---|---:|---:|---|---|
@@ -1139,7 +1139,7 @@ Conditions: ambient temperature 0 to 70 °C; VCC = +5 V ±5%.
 | V_IH | Input high voltage | 2.0 | VCC+0.5 | V | — |
 | V_OL | Output low voltage | — | 0.45 | V | I_OL = 2 mA |
 | V_OH | Output high voltage | 2.4 | — | V | I_OH = −100 µA |
-| I_L | Input leakage current | — | 10 | µA | 0 ≤ V_in ≤ 7.0 V |
+| I_L | Input leakage current | — | 10 | µA | 0 ≤ V_in ≤ VCC |
 | I_O | Output leakage current | — | 10 | µA | 0.45 ≤ V_out ≤ VCC |
 
 ---
@@ -1153,15 +1153,15 @@ Conditions: ambient temperature 0 to 70 °C; VCC = +5 V ±5%.
 
 ### 12.1 Clock & reset — earlier Technical Manual
 
-Conditions: ambient 0–70 °C, VCC = +5 V ±5%.
+Conditions: ambient 0–70 °C; VCC is printed as ±10% with a handwritten correction to **±5%** (PDF p. 39).
 
-| No. | Parameter | Minimum | Maximum | Unit |
-|---:|---|---:|---:|---|
-| 1 | Clock period | **200** | 500 | ns |
-| 2 | Clock high time | 0.4 t_p | 0.6 t_p | clock periods |
-| 3 | Clock rise time | — | **30** | ns |
-| 4 | Clock fall time | — | **30** | ns |
-| 5 | RESET pulse width | **2 t_p** | — | clock periods |
+| No. | Symbol | Parameter | Min | Max | Unit |
+|---:|---|---|---:|---:|---|
+| 1 | t_p | Clock period | **200** | 500 | ns |
+| 2 | t_0 | Clock high time | 0.4 t_p | 0.6 t_p | clock periods |
+| 3 | t_cr | Clock rise time | — | **30** | ns |
+| 4 | t_cf | Clock fall time | — | **30** | ns |
+| 5 | t_rpw | RESET pulse width | **2 t_p** | — | clock periods |
 
 RESET is held low during power-up and for at least 2 ms after the supply is valid. The later Rev. B document specifies a 100 ns minimum clock period and a 10 t_p RESET pulse instead.
 
@@ -1185,20 +1185,20 @@ sequenceDiagram
 
 ### 12.2 Output Section
 
-Conditions: ambient 0–70 °C, C_L=150 pF unless otherwise noted; VCC=5 V ±5%.
+Conditions: ambient 0–70 °C; C_L = 150 pF unless otherwise noted; VCC = 5 V ±5%; **2 MHz ≤ CLK ≤ 5 MHz** (as printed in this A.C. output table, irrespective of the broader clock specification).
 
-| No. | Parameter | Min | Max | Unit |
-|---:|---|---:|---:|---|
-| 1 | CLK to OUTSTB low | 0 | 150 | ns |
-| 2 | CLK to OUTSTB high | 0 | 150 | ns |
-| 3 | CLK to V0 falling edge | 0 | 150 | ns |
-| 4 | CLK to V0 rising edge | 0 | 150 | ns |
-| 5 | Sample period, 40 harmonic mode | 80 × t_p | 80 × t_p | — |
-| 5 | Sample period, 64 harmonic mode | 128 × t_p | 128 × t_p | — |
-| 6 | Sample bus hold time from CLK | 20 | — | ns |
-| 7 | CLK to SAMP0–15 data valid | — | 150 | ns |
-| 8 | OE rising to SAMP0–15 high impedance | 0 | 150 | ns |
-| 9 | OE falling to SAMP0–15 valid | 0 | 150 | ns |
+| No. | Symbol | Parameter | Min | Max | Unit |
+|---:|---|---|---:|---:|---|
+| 1 | t_col | CLK to OUTSTB low | 0 | 150 | ns |
+| 2 | t_cot | CLK to OUTSTB high | 0 | 150 | ns |
+| 3 | t_cvt | CLK to V0 falling edge | 0 | 150 | ns |
+| 4 | t_cvl | CLK to V0 rising edge | 0 | 150 | ns |
+| 5 | t_s | Sample period, 40 harmonic mode | 80 × t_p | 80 × t_p | — |
+| 5 | t_s | Sample period, 64 harmonic mode | 128 × t_p | 128 × t_p | — |
+| 6 | t_sh | Sample bus hold time from CLK | 20 | — | ns |
+| 7 | t_csh1 | CLK to SAMP0–15 data valid | — | 150 | ns |
+| 8 | t_csf | OE rising to SAMP0–15 high impedance | 0 | 150 | ns |
+| 9 | t_cse | OE falling to SAMP0–15 valid | 0 | 150 | ns |
 
 ---
 
@@ -1220,10 +1220,10 @@ sequenceDiagram
     CLK->>O: Output strobe for active voice
     O->>S: Current voice sample valid
     Note over V: V0 marks voice zero once per sample period
-    E->>S: OE high: output bus tri-stated
+    E->>S: OE high puts output bus into high impedance
 ```
 
-*Mermaid is only an event summary. See the original PDF timing waveform at [page 44](AMY_tech_manual.pdf#page=41) for numbered timing intervals and analog transitions.*
+*Mermaid is only an event summary. See the original PDF timing waveform at [page 41](AMY_tech_manual.pdf#page=41) for numbered timing intervals and analog transitions.*
 
 <details><summary>Original Atari diagram / timing scan — PDF page 41</summary>
 
@@ -1240,24 +1240,26 @@ sequenceDiagram
 
 ### 12.3 System Bus Interface (Read/Write, address pin and ALE modes)
 
-| No. | Parameter | Min | Max | Units |
-|---:|---|---:|---:|---|
-| 1 | Address valid to RD | 0 | — | ns |
-| 2 | RD pulse width | 200 | — | ns |
-| 3 | ALE float time | 10 | 100 | ns |
-| 4 | CS hold time after RD | 0 | — | ns |
-| 5 | CS active to RD | 0 | — | ns |
-| 6 | Read access time | — | 150 | ns |
-| 7 | Address to data valid | — | 150 | ns |
-| 8 | CS active to data valid | — | 150 | ns |
-| 9 | Data hold after RD | — | 10 | ns |
-| 10 | Address hold after RD | 0 | — | ns |
-| 11 | RD dead time, address-pin mode | 100 | — | ns |
-| 12 | Read cycle time, address-pin mode | 300 | — | ns |
-| 13 | Read float time, RD to DB0–7 high-Z | 10 | 100 | ns |
-| 14 | RD dead time, ALE mode | 250 | — | ns |
-| 15 | ALE pulse width | 50 | — | ns |
-| 16 | ALE-mode read cycle time | 450 | — | ns |
+> **Transcription alert (printed columns):** In the Atari scan, rows **6–8** put 150 ns under **Min**, while rows **19, 21 and 29** put 50 ns under **Max**. Those placements seem unusual for access/setup times but are reproduced **as printed**; do not use them as engineering limits without checking the timing waveforms and independent evidence. (PDF pp. 42–43.)
+
+| No. | Symbol | Parameter | Min | Max | Unit |
+|---:|---|---|---:|---:|---|
+| 1 | t_ar | Address valid to RD | 0 | — | ns |
+| 2 | t_rr | RD pulse width | 200 | — | ns |
+| 3 | t_af | ALE float time | 10 | 100 | ns |
+| 4 | t_chr | CS hold time after RD | 0 | — | ns |
+| 5 | t_cr | CS active to RD | 0 | — | ns |
+| 6 | t_rd | Read access time | 150 | — | ns |
+| 7 | t_ao | Address to data valid | 150 | — | ns |
+| 8 | t_cd | CS active to data valid | 150 | — | ns |
+| 9 | t_rdh | Data hold after RD | — | 10 | ns |
+| 10 | t_ahr | Address hold after RD | 0 | — | ns |
+| 11 | t_rdead1 | RD dead time, address-pin mode | 100 | — | ns |
+| 12 | t_cycr1 | Read cycle time, address-pin mode | 300 | — | ns |
+| 13 | t_rdf | Read float time, RD to DB0–7 high-Z | 10 | 100 | ns |
+| 14 | t_rdead2 | RD dead time, ALE mode | 250 | — | ns |
+| 15 | t_apw | ALE pulse width | 50 | — | ns |
+| 16 | t_cycr2 | ALE-mode read cycle time | 450 | — | ns |
 
 *All times are from the original scan; labels and active-low edges should be checked against the corresponding waveforms.*
 
@@ -1270,25 +1272,25 @@ sequenceDiagram
 
 *System Bus Interface (continued)*
 
-| No. | Parameter | Min | Max | Units |
-|---:|---|---:|---:|---|
-| 17 | CS hold after WR | 0 | — | ns |
-| 18 | Address hold after WR | 0 | — | ns |
-| 19 | Address setup to WR | 50 | — | ns |
-| 20 | CS setup to WR | 0 | — | ns |
-| 21 | Data setup to WR | 50 | — | ns |
-| 22 | WR pulse width | 200 | — | ns |
-| 23 | Data hold after WR | 0 | — | ns |
-| 24 | WR dead time, address-pin mode | 100 | — | ns |
-| 25 | Write cycle time, address-pin mode | 300 | — | ns |
-| 26 | ALE to WR | 50 | — | ns |
-| 27 | Write cycle time, ALE mode | 400 | — | ns |
-| 28 | WR dead time, ALE mode | 200 | — | ns |
-| 29 | Data valid to ALE falling edge | 50 | — | ns |
-| 30 | Data hold after ALE falling edge | 0 | — | ns |
-| 31 | ALE falling edge to RD falling edge | 20 | — | ns |
+| No. | Symbol | Parameter | Min | Max | Unit |
+|---:|---|---|---:|---:|---|
+| 17 | t_chw | CS hold after WR | 0 | — | ns |
+| 18 | t_ahw | Address hold after WR | 0 | — | ns |
+| 19 | t_aw | Address setup to WR | — | 50 | ns |
+| 20 | t_cw | CS setup to WR | 0 | — | ns |
+| 21 | t_dw | Data setup to WR | — | 50 | ns |
+| 22 | t_ww | WR pulse width | 200 | — | ns |
+| 23 | t_wd | Data hold after WR | 0 | — | ns |
+| 24 | t_wdead1 | WR dead time, address-pin mode | 100 | — | ns |
+| 25 | t_cycw | Write cycle time, address-pin mode | 300 | — | ns |
+| 26 | t_alewr | ALE to WR | 50 | — | ns |
+| 27 | t_cycwale | Write cycle time, ALE mode | 400 | — | ns |
+| 28 | t_wdead2 | WR dead time, ALE mode | 200 | — | ns |
+| 29 | t_dwa | Data valid to ALE falling edge | — | 50 | ns |
+| 30 | t_wda | Data hold after ALE falling edge | 0 | — | ns |
+| 31 | t_alerd | ALE falling edge to RD falling edge | 20 | — | ns |
 
-*Numbered entries correspond to the original timing waveform pages; item 31 must be double-checked before relying on timing values in an FPGA design.*
+*Numbered entries correspond to the original timing waveform pages. Values in the Min/Max columns follow the printed source, including unusual placements of some setup-time values. Verify the intended timing direction before hardware use.*
 
 ---
 
@@ -1301,8 +1303,8 @@ sequenceDiagram
 sequenceDiagram
     participant CPU as Multiplexed-bus CPU
     participant AMY as AMY 1
-    CPU->>AMY: DB0–1 = register address; ALE pulse
-    CPU->>AMY: CS asserted; RD asserted
+    CPU->>AMY: DB0–1 carry register address, followed by ALE pulse
+    CPU->>AMY: Assert CS and RD
     AMY-->>CPU: DB0–7 read data valid
     CPU->>AMY: RD deasserted
     Note over CPU,AMY: For a write, assert WR and drive DB0–7 instead
@@ -1329,7 +1331,7 @@ sequenceDiagram
     participant AMY as AMY 1
     CPU->>AMY: Drive A1/A0 to select register
     CPU->>AMY: Assert CS and RD (read) or WR (write)
-    Note over CPU,AMY: Read: AMY drives DB0–7; write: CPU drives DB0–7
+    Note over CPU,AMY: For reads AMY drives DB0–7, for writes CPU drives DB0–7
     CPU->>AMY: Release strobe, then CS
 ```
 
