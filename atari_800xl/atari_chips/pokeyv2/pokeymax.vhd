@@ -1016,7 +1016,7 @@ amy1 : entity work.amy1_top
 GENERIC MAP(
 	USE_TICK => false,
 	STEP_NUM => 3,
-	STEP_DEN => 8,
+	STEP_DEN => 7,
 	ENGINE_UNIT_LOG2 => 15,
 	ENGINE => true
 )
