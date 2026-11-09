@@ -45,6 +45,7 @@ entity amy1_noise_generator is
   port (
     clk       : in  std_logic;
     ce        : in  std_logic;                     -- chip clock enable: registers update
+    reset : in std_logic := '0';
     -- sequencer
     p         : in  std_logic_vector(0 to 3);      -- slot phase P0..P3
     sync      : in  std_logic;                     -- last slot of the sample period
@@ -56,9 +57,11 @@ entity amy1_noise_generator is
     host_data : in  std_logic_vector(2 downto 0);  -- host write data (A2..0)
     host_wr   : out std_logic;                     -- the host write is happening
     -- envelope generator
-    noise_gen : in  std_logic;                     -- the voice's generator (voice type 2)
+    noise_gen : in  std_logic;                     -- original noise generator selection
+    white_sel : in  std_logic := '0';              -- Rev C type-3 white excitation
     mute      : in  std_logic;                     -- force the noise word to zero
     noise     : out std_logic_vector(11 downto 0); -- noise word, two's complement
+    random_byte : out std_logic_vector(7 downto 0);
     serial    : out std_logic;                     -- VAL adder sum (the BOUT pin)
     -- Noise RAM
     ram_addr  : out std_logic_vector(5 downto 0);
@@ -116,6 +119,7 @@ architecture rtl of amy1_noise_generator is
   signal gen     : std_logic;             -- generator accessed (RAM address bit 0 = not gen)
   signal word    : std_logic_vector(11 downto 0);
   signal psync   : std_logic;             -- the pass ends (P3 of row 31): sync with 64 harmonics
+  signal white_lfsr_reg, white_lfsr_next : std_logic_vector(15 downto 0) := x"ACE1";
   signal gsel    : std_logic;             -- the generator of the next pass
 
 begin
@@ -302,10 +306,37 @@ begin
   end process;
 
   -----------------------------------------------------------------------------
+  -- Rev C white excitation: maximal-length 16-bit LFSR, advanced once per slot.
+  -- 12-bit two's complement perturbation into the original logarithmic noise path.
+  -- No RAM ports or legacy generator state are modified.
+  -----------------------------------------------------------------------------
+  process(clk)
+  begin
+    if rising_edge(clk) then
+      white_lfsr_reg <= white_lfsr_next;
+    end if;
+  end process;
+
+  process(white_lfsr_reg, reset, ce, p, host_mode)
+    variable feedback : std_logic;
+  begin
+    white_lfsr_next <= white_lfsr_reg;
+    if reset = '1' then
+      white_lfsr_next <= x"ACE1";
+    elsif ce = '1' and p(0) = '1' and host_mode = '0' then
+      feedback := white_lfsr_reg(15) xor white_lfsr_reg(13) xor
+                  white_lfsr_reg(12) xor white_lfsr_reg(10);
+      white_lfsr_next <= white_lfsr_reg(14 downto 0) & feedback;
+    end if;
+  end process;
+
+  -----------------------------------------------------------------------------
   -- Outputs
   -----------------------------------------------------------------------------
   word   <= word1_reg when noise_gen = '1' else word0_reg;
-  noise  <= word when mute = '0' else (others => '0');
+  noise  <= (others => '0') when mute = '1' else
+            white_lfsr_reg(11 downto 0) when white_sel = '1' else word;
+  random_byte <= white_lfsr_reg(15 downto 8);
   serial <= val_sum;
   hwr_next <= '1' when p(2) = '1' and cmd.op = OP_WR_NOISE and host_mode = '1' else '0';
   host_wr  <= hwr_reg;

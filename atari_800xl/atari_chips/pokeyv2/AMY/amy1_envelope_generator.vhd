@@ -71,7 +71,10 @@ entity amy1_envelope_generator is
     -- outputs
     log        : out std_logic_vector(12 downto 0);  -- to exp_rom
     fan        : out std_logic;                      -- silence (to exp_rom, clrdisp)
-    noise_gen  : out std_logic;                      -- the voice's noise generator
+    noise_gen  : out std_logic;
+    ext_enable : in std_logic := '0';
+    voice_atten : in std_logic_vector(7 downto 0) := (others => '0');
+    white_sel  : out std_logic;                      -- the voice's noise generator
     slope_rate : out std_logic_vector(1 downto 0);   -- to the timebase (ssen)
     fjump      : out std_logic;                      -- P1 after a frequency jump: its current value
     last_pair  : out std_logic;                      -- LHP flag seen: next voice
@@ -137,6 +140,9 @@ architecture rtl of amy1_envelope_generator is
   signal bover, bneg : std_logic;
   signal log_v   : std_logic_vector(12 downto 0);
   signal logz    : std_logic;
+  signal atten_log : std_logic_vector(12 downto 0);
+  signal atten_mute : std_logic;
+  signal atten_units : std_logic_vector(7 downto 0);
 
 begin
 
@@ -298,7 +304,15 @@ begin
 
   log_v <= nzd_reg when (nv = '1' or p(0) = '1' or p(2) = '1') else
            std_logic_vector(chi_reg);
-  logz  <= '1' when log_v(12 downto 5) = "00000000" else '0';
+  -- 1 attenuation unit = 1/4 dB = 32 of AMY's 1/128 dB logarithmic units.
+  -- Do not allow subtraction to wrap around to a loud amplitude.
+  -- P0 is frequency, never apply voice gain to the oscillator pitch.
+  atten_units <= x"00" when p(0) = '1' else voice_atten;
+  atten_mute <= '1' when unsigned(log_v) <= unsigned(atten_units & "00000") and
+                           atten_units /= x"00" else '0';
+  atten_log <= std_logic_vector(unsigned(log_v) - unsigned(atten_units & "00000"))
+               when atten_units /= x"00" and atten_mute = '0' else log_v;
+  logz <= '1' when atten_log(12 downto 5) = "00000000" or atten_mute = '1' else '0';
 
   -----------------------------------------------------------------------------
   -- Next state
@@ -429,7 +443,7 @@ begin
   -----------------------------------------------------------------------------
   -- Outputs
   -----------------------------------------------------------------------------
-  log <= log_v;
+  log <= atten_log;
 
   -- FAN: silence this harmonic
   process (p, nv, logz, nzv_reg, neg_reg, lz_reg)
@@ -441,6 +455,7 @@ begin
   end process;
 
   noise_gen  <= vt_reg(1);
+  white_sel  <= ext_enable when vt_reg = "11" else '0';
   slope_rate <= ss_reg;
   upenff     <= not upenffn;
   upenha     <= not upenffn when odd = '1' else not upd_reg;

@@ -6,7 +6,7 @@
 --   M9K 2, true dual port 1024 x 5:  SROMINT (512 x 5) on port A,
 --                                    XROMINT (128 x 5) at word 512 on port B,
 --                                    NOISE (64 x 3) at word 640
---   M9K 3, simple dual port 128 x 30: HARMBRKPOINT | HARMCURNTVAL | LHPRAM in words
+--   M9K 3, simple dual port 128 x 36: HARMBRKPOINT | HARMCURNTVAL | LHPRAM in words
 --                                    0..63, PHASERAM (8 x 20) in words 64..71
 --   M9K 4, simple dual port 256 x 36: VOICE18 | VOICE3 in words 0..15; words
 --                                    16..255 belong to the aux port (amy1_top's
@@ -50,7 +50,7 @@ architecture packed of amy1_mem is
   end function;
 
   -- the clks after a ce: e1 (ce_d1 high before it), e2 (ce_d2 high before it)
-  signal ce_d1, ce_d2 : std_logic := '0';
+  signal ce_d1, ce_d2, ce_d3, ce_d4, ce_d5, ce_d6, ce_d7, ce_d8 : std_logic := '0';
 
   -- M9K 1 and 2
   signal rom_a_qa, rom_a_qb : std_logic_vector(17 downto 0);
@@ -64,24 +64,42 @@ architecture packed of amy1_mem is
   signal rom_b_addr_b : std_logic_vector(9 downto 0);
   signal xromint_hold : std_logic_vector(4 downto 0) := (others => '0');
 
-  -- M9K 3 and 4
-  type harm_t  is array (0 to 127) of std_logic_vector(29 downto 0);
+  -- M9K3 is 128 x 36 (one block). The first 64 words are the original
+  -- 30-bit harmonic state + 6 detuning bits. Unused addresses hold Rev C data:
+  --  64..71 voice phases (historical), 72..87 4 x 6-bit stochasticity,
+  --  88..119 2 x 18-bit accumulated phase offsets, 120..127 unused.
+  type harm_t is array (0 to 127) of std_logic_vector(35 downto 0);
   type voice_t is array (0 to 255) of std_logic_vector(35 downto 0);
-  signal harm  : harm_t;
+  signal harm : harm_t;
   signal voice : voice_t;
-  signal harm_rd   : std_logic_vector(29 downto 0);
-  signal harm_hold : std_logic_vector(29 downto 0) := (others => '0');
-  signal harm_q    : std_logic_vector(29 downto 0);
-  signal phase_we_d   : std_logic := '0';
+  signal harm_rd : std_logic_vector(35 downto 0);
+  signal harm_hold : std_logic_vector(35 downto 0) := (others => '0');
+  signal harm_q : std_logic_vector(35 downto 0);
+  signal phase_hold : std_logic_vector(19 downto 0) := (others => '0');
+  signal detune_hold_reg, detune_hold_next : std_logic_vector(5 downto 0) := (others => '0');
+  signal stoch_hold_reg, stoch_hold_next : std_logic_vector(5 downto 0) := (others => '0');
+  signal off_new_reg, off_new_next : std_logic_vector(17 downto 0) := (others => '0');
+  signal phase_we_d : std_logic := '0';
   signal phase_addr_d : std_logic_vector(2 downto 0) := (others => '0');
   signal phase_data_d : std_logic_vector(19 downto 0) := (others => '0');
+  signal det_valid_reg, det_valid_next : std_logic_vector(63 downto 0) := (others => '0');
+  signal stoch_valid_reg, stoch_valid_next : std_logic_vector(63 downto 0) := (others => '0');
+  signal off_valid_reg, off_valid_next : std_logic_vector(63 downto 0) := (others => '0');
+  signal ext_req_reg, ext_req_next : std_logic := '0';
+  signal ext_pending_reg, ext_pending_next : std_logic := '0';
+  signal ext_ack_reg, ext_ack_next : std_logic := '0';
+  signal ext_kind_reg, ext_kind_next : std_logic_vector(1 downto 0) := "00";
+  signal ext_index_reg, ext_index_next : std_logic_vector(5 downto 0) := (others => '0');
+  signal ext_value_reg, ext_value_next : std_logic_vector(7 downto 0) := (others => '0');
+  signal ext_rd_addr, offset_addr, stochastic_addr : std_logic_vector(6 downto 0);
+
   signal voice_rd : std_logic_vector(35 downto 0);
   signal voice_hold : std_logic_vector(20 downto 0) := (others => '0');
   signal voice_q : std_logic_vector(20 downto 0);
   signal aux_rack_i, aux_wack_i, voice_wr : std_logic;
   signal harm_we, harm_re, voice_we, voice_re : std_logic;
   signal harm_waddr, harm_raddr   : std_logic_vector(6 downto 0);
-  signal harm_wdata               : std_logic_vector(29 downto 0);
+  signal harm_wdata               : std_logic_vector(35 downto 0);
   signal voice_waddr, voice_raddr : std_logic_vector(7 downto 0);
   signal voice_wdata              : std_logic_vector(35 downto 0);
 
@@ -92,6 +110,12 @@ begin
     if rising_edge(clk) then
       ce_d1 <= ce;
       ce_d2 <= ce_d1;
+      ce_d3 <= ce_d2;
+      ce_d4 <= ce_d3;
+      ce_d5 <= ce_d4;
+      ce_d6 <= ce_d5;
+      ce_d7 <= ce_d6;
+      ce_d8 <= ce_d7;
     end if;
   end process;
 
@@ -172,50 +196,85 @@ begin
   noise_q   <= rom_b_qb(2 downto 0);
 
   ---------------------------------------------------------------------------
-  -- M9K 3: the harmonic RAMs and PHASERAM, one read port and one write port:
-  --   words 0..63   one per harmonic: 29 LHPRAM | 28..16 HARMCURNTVAL | 15..0 HARMBRKPOINT
-  --   words 64..71  PHASERAM, one per voice (19..0)
-  --   e1  read the harmonic word (held from e2 for the rest of the chip clock)
-  --   e2  read the phase word (its data stays until the next e1)
-  --   ce  write the harmonic word, merged with this clock's read of it
-  --   e1  write the phase word of the chip clock before (registered at its ce), so the
-  --       phase read at e2 sees it
-  -- The read data is registered, so the M9K needs no pass-through logic.
-  -- (Quartus infers a block RAM only from one write and one registered read, each with
-  -- one address: the addresses and data are multiplexed first.)
-  harm_wr_p: process (load_we, load_addr, load_data, ce, lhpram_we, harmcurntval_we,
-                      harmbrkpoint_we, harmbrkpoint_addr, harmbrkpoint_wdata, harmcurntval_wdata,
-                      lhpram_wdata, harm_hold, phase_we_d, phase_addr_d, phase_data_d)
-    variable w : std_logic_vector(29 downto 0);
+  -- M9K 3: harmonic RAM / phase RAM / extra coefficients / phase offsets.
+  -- Clock scheduling at 8.192 MHz: 14 system CLK edges per internal chip ce.
+  -- e1 harmonic read + previous phase write
+  -- e2 phase read
+  -- e3 capture phase, read the *audio* harmonic detuning word
+  -- e4 capture detune, read stochasticity word
+  -- e5 capture stochasticity, read offset state word
+  -- e6 calculate, write & capture updated phase offset
+  -- e7 read pending extension-command coefficient word
+  -- e8 RMW extension-command word and acknowledge (if pending)
+  -- No extra M9K or read/write ports. THIS REQUIRES >=9 CLK CYCLES PER CE.
+  stochastic_addr <= std_logic_vector(to_unsigned(72 +
+    to_integer(unsigned(phase_slot(5 downto 2))), 7));
+  offset_addr <= std_logic_vector(to_unsigned(88 +
+    to_integer(unsigned(phase_slot(5 downto 1))), 7));
+  ext_rd_addr <= '0' & ext_index_reg when ext_kind_reg = "01" else
+    std_logic_vector(to_unsigned(72 + to_integer(unsigned(ext_index_reg(5 downto 2))), 7));
+
+  harm_wr_p: process(load_we, load_addr, load_data, ce,
+                     lhpram_we, harmcurntval_we, harmbrkpoint_we,
+                     harm_hold, harmbrkpoint_wdata, harmcurntval_wdata,
+                     lhpram_wdata, harmbrkpoint_addr, phase_we_d,
+                     phase_addr_d, phase_data_d, ce_d6, ext_enable, offset_step,
+                     harm_rd, phase_slot, offset_wdata, offset_addr,
+                     ce_d8, ext_req_reg, ext_kind_reg, ext_value_reg,
+                     ext_index_reg, ext_rd_addr)
+    variable w : std_logic_vector(35 downto 0);
+    variable n : natural range 0 to 3;
   begin
-    harm_we    <= '0';
+    harm_we <= '0';
     harm_waddr <= '0' & harmbrkpoint_addr;
-    harm_wdata <= (29 downto 20 => '0') & phase_data_d;
+    harm_wdata <= (35 downto 20 => '0') & phase_data_d;
+    w := (others => '0');
     if load_we = '1' and in_unit(load_addr, HARM_BASE, 6) then
-      harm_we    <= '1';
+      harm_we <= '1';
       harm_waddr <= '0' & load_addr(5 downto 0);
-      harm_wdata <= load_data(29 downto 0);
+      harm_wdata <= (35 downto 30 => '0') & load_data(29 downto 0);
     elsif load_we = '1' and in_unit(load_addr, PHASERAM_BASE, 3) then
-      harm_we    <= '1';
+      harm_we <= '1';
       harm_waddr <= "1000" & load_addr(2 downto 0);
-      harm_wdata <= (29 downto 20 => '0') & load_data(19 downto 0);
+      harm_wdata <= (35 downto 20 => '0') & load_data(19 downto 0);
     elsif ce = '1' and (lhpram_we = '1' or harmcurntval_we = '1' or harmbrkpoint_we = '1') then
-      w := harm_hold;                      -- this clock's read of the same word
-      if harmbrkpoint_we = '1' then w(15 downto 0)  := harmbrkpoint_wdata; end if;
+      w := harm_hold;
+      if harmbrkpoint_we = '1' then w(15 downto 0) := harmbrkpoint_wdata; end if;
       if harmcurntval_we = '1' then w(28 downto 16) := harmcurntval_wdata; end if;
-      if lhpram_we = '1'       then w(29)           := lhpram_wdata(0);    end if;
-      harm_we    <= '1';
-      harm_wdata <= w;
+      if lhpram_we = '1' then w(29) := lhpram_wdata(0); end if;
+      harm_we <= '1'; harm_wdata <= w;
     elsif phase_we_d = '1' then
-      harm_we    <= '1';
-      harm_waddr <= "1000" & phase_addr_d;
+      harm_we <= '1'; harm_waddr <= "1000" & phase_addr_d;
+    elsif ce_d6 = '1' and ext_enable = '1' and offset_step = '1' then
+      w := harm_rd;
+      if phase_slot(0) = '0' then
+        w(17 downto 0) := offset_wdata;
+      else
+        w(35 downto 18) := offset_wdata;
+      end if;
+      harm_we <= '1'; harm_waddr <= offset_addr; harm_wdata <= w;
+    elsif ce_d8 = '1' and ext_req_reg = '1' then
+      w := harm_rd;
+      if ext_kind_reg = "01" then
+        w(35 downto 30) := ext_value_reg(5 downto 0);
+      else
+        n := to_integer(unsigned(ext_index_reg(1 downto 0)));
+        w(n*6+5 downto n*6) := ext_value_reg(5 downto 0);
+      end if;
+      harm_we <= '1'; harm_waddr <= ext_rd_addr; harm_wdata <= w;
     end if;
   end process;
 
-  harm_raddr <= '0' & harmbrkpoint_addr when ce_d1 = '1' else "1000" & phaseram_addr;
-  harm_re    <= ce_d1 or ce_d2;
+  harm_raddr <= '0' & harmbrkpoint_addr when ce_d1 = '1' else
+                "1000" & phaseram_addr when ce_d2 = '1' else
+                '0' & phase_slot when ce_d3 = '1' else
+                stochastic_addr when ce_d4 = '1' else
+                offset_addr when ce_d5 = '1' else
+                ext_rd_addr;
+  harm_re <= ce_d1 or ce_d2 or ce_d3 or ce_d4 or ce_d5 or
+             (ce_d7 and ext_req_reg);
 
-  harm_ram: process (clk)
+  harm_ram: process(clk)
   begin
     if rising_edge(clk) then
       if harm_we = '1' then
@@ -227,12 +286,116 @@ begin
     end if;
   end process;
 
-  process (clk)
+  ---------------------------------------------------------------------------
+  -- All extension control state is explicit *_reg / *_next, so the clocked
+  -- process only copies next values. The RAM array itself stays synchronous
+  -- and separate to preserve M9K inference.
+  ext_state_regs: process(clk)
+  begin
+    if rising_edge(clk) then
+      det_valid_reg <= det_valid_next;
+      stoch_valid_reg <= stoch_valid_next;
+      off_valid_reg <= off_valid_next;
+      ext_req_reg <= ext_req_next;
+      ext_pending_reg <= ext_pending_next;
+      ext_ack_reg <= ext_ack_next;
+      ext_kind_reg <= ext_kind_next;
+      ext_index_reg <= ext_index_next;
+      ext_value_reg <= ext_value_next;
+      off_new_reg <= off_new_next;
+      detune_hold_reg <= detune_hold_next;
+      stoch_hold_reg <= stoch_hold_next;
+      if ext_reset = '0' and ext_we = '1' and ext_kind /= "00" then
+        assert ext_req_reg = '0' and ext_pending_reg = '0'
+          report "extension RAM write overrun" severity failure;
+      end if;
+    end if;
+  end process;
+
+  ext_state_comb: process(ext_reset, ext_we, ext_kind, ext_index, ext_value,
+                          ext_req_reg, ext_pending_reg, ext_ack_reg,
+                          ext_kind_reg, ext_index_reg, ext_value_reg,
+                          det_valid_reg, stoch_valid_reg, off_valid_reg,
+                          detune_hold_reg, stoch_hold_reg, off_new_reg,
+                          ce, ce_d4, ce_d5, ce_d6, ce_d8,
+                          offset_step, offset_wdata, ext_enable, phase_slot,
+                          harm_rd)
+    variable h : natural range 0 to 63;
+    variable n : natural range 0 to 3;
+  begin
+    det_valid_next <= det_valid_reg;
+    stoch_valid_next <= stoch_valid_reg;
+    off_valid_next <= off_valid_reg;
+    ext_req_next <= ext_req_reg;
+    ext_pending_next <= ext_pending_reg;
+    ext_ack_next <= '0';
+    ext_kind_next <= ext_kind_reg;
+    ext_index_next <= ext_index_reg;
+    ext_value_next <= ext_value_reg;
+    off_new_next <= off_new_reg;
+    detune_hold_next <= detune_hold_reg;
+    stoch_hold_next <= stoch_hold_reg;
+    if ext_reset = '1' then
+      det_valid_next <= (others => '0');
+      stoch_valid_next <= (others => '0');
+      off_valid_next <= (others => '0');
+      ext_req_next <= '0';
+      ext_pending_next <= '0';
+      ext_ack_next <= '0';
+      off_new_next <= (others => '0');
+    else
+      if ext_we = '1' and ext_kind /= "00" then
+        ext_pending_next <= '1';
+        ext_kind_next <= ext_kind;
+        ext_index_next <= ext_index;
+        ext_value_next <= ext_value;
+      end if;
+      -- Arm on a complete chip-clock boundary, not between e7 and e8.
+      if ce = '1' and ext_pending_reg = '1' then
+        ext_req_next <= '1';
+        ext_pending_next <= '0';
+      end if;
+      if ce_d6 = '1' and offset_step = '1' then
+        if ext_enable = '1' then
+          off_new_next <= offset_wdata;
+          off_valid_next(to_integer(unsigned(phase_slot))) <= '1';
+        else
+          off_new_next <= (others => '0');
+        end if;
+      end if;
+      if ce_d8 = '1' and ext_req_reg = '1' then
+        h := to_integer(unsigned(ext_index_reg));
+        if ext_kind_reg = "01" then
+          det_valid_next(h) <= '1';
+        else
+          stoch_valid_next(h) <= '1';
+        end if;
+        ext_req_next <= '0';
+        ext_ack_next <= '1';
+      end if;
+    end if;
+    if ce_d4 = '1' then
+      detune_hold_next <= harm_rd(35 downto 30);
+    end if;
+    if ce_d5 = '1' then
+      n := to_integer(unsigned(phase_slot(1 downto 0)));
+      stoch_hold_next <= harm_rd(n*6+5 downto n*6);
+    end if;
+  end process;
+
+  -- Legacy RAM/phase hold registers remain simple clock-enabled pipelines.
+  harm_hold_regs: process(clk)
   begin
     if rising_edge(clk) then
       if ce_d2 = '1' then
         harm_hold <= harm_rd;
+      elsif ce_d8 = '1' and ext_req_reg = '1' and ext_kind_reg = "01" and
+            ext_index_reg = harmbrkpoint_addr then
+        -- the core's RMW at the coming ce merges harm_hold (read at e1, before
+        -- this e8 detune write): forward the new detune so it is not undone
+        harm_hold(35 downto 30) <= ext_value_reg(5 downto 0);
       end if;
+      if ce_d3 = '1' then phase_hold <= harm_rd(19 downto 0); end if;
       phase_we_d <= ce and phaseram_we;
       if ce = '1' then
         phase_addr_d <= phaseram_addr;
@@ -244,8 +407,16 @@ begin
   harm_q <= harm_rd when ce_d2 = '1' else harm_hold;
   harmbrkpoint_q <= harm_q(15 downto 0);
   harmcurntval_q <= harm_q(28 downto 16);
-  lhpram_q       <= harm_q(29 downto 29);
-  phaseram_q     <= harm_rd(19 downto 0);
+  lhpram_q <= harm_q(29 downto 29);
+  phaseram_q <= phase_hold;
+
+  detune_q <= detune_hold_reg when det_valid_reg(to_integer(unsigned(phase_slot))) = '1' else (others => '0');
+  stoch_q <= stoch_hold_reg when stoch_valid_reg(to_integer(unsigned(phase_slot))) = '1' else (others => '0');
+  offset_old_q <= (others => '0') when off_valid_reg(to_integer(unsigned(phase_slot))) = '0' else
+                  harm_rd(17 downto 0) when phase_slot(0) = '0' else
+                  harm_rd(35 downto 18);
+  offset_new_q <= off_new_reg;
+  ext_ack <= ext_ack_reg;
 
   ---------------------------------------------------------------------------
   -- M9K 4: voice RAMs, one word per voice: 20..18 VOICE3 | 17..0 VOICE18; the aux port

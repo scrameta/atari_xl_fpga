@@ -13,6 +13,18 @@ entity amy1_mem is
   port (
     clk     : in  std_logic;
     ce      : in  std_logic;                      -- one AMY internal clock
+    ext_reset : in std_logic := '0';
+    ext_enable : in std_logic := '0';
+    ext_we : in std_logic := '0';
+    ext_kind : in std_logic_vector(1 downto 0) := "00";
+    ext_index : in std_logic_vector(5 downto 0) := (others => '0');
+    ext_value : in std_logic_vector(7 downto 0) := (others => '0');
+    ext_ack : out std_logic;
+    phase_slot : in std_logic_vector(5 downto 0) := (others => '0');
+    offset_step : in std_logic := '0';
+    detune_q, stoch_q : out std_logic_vector(5 downto 0);
+    offset_old_q, offset_new_q : out std_logic_vector(17 downto 0);
+    offset_wdata : in std_logic_vector(17 downto 0) := (others => '0');
 
     load_we   : in  std_logic;                      -- write one image word
     load_addr : in  std_logic_vector(10 downto 0);
@@ -84,6 +96,12 @@ architecture rtl of amy1_mem is
   signal sromint_mem : sromint_t;
 begin
 
+  -- RTL fallback is for historical reference; extensions use the packed layout.
+  ext_ack <= '0';
+  detune_q <= (others => '0');
+  stoch_q <= (others => '0');
+  offset_old_q <= (others => '0');
+  offset_new_q <= (others => '0');
   aux_rack  <= '0';
   aux_wack  <= '0';
   aux_rdata <= (others => '0');

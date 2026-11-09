@@ -55,8 +55,8 @@ use work.amy1_mem_pkg.all;
 
 entity amy1_top is
   generic (
-    STEP_NUM     : natural := 375;
-    STEP_DEN     : natural := 896;
+    STEP_NUM     : natural := 3;
+    STEP_DEN     : natural := 7;
     USE_TICK     : boolean := false;
     STEP_SPACING : natural := 4;                       -- CLKs between steps (USE_TICK)
     FIFO_LOG2    : natural := 2;                       -- host write FIFO: 2**FIFO_LOG2 entries
@@ -64,7 +64,7 @@ entity amy1_top is
     ROM_BASE     : natural := 0;                       -- word address of amy1_mem.bin
     ENGINE       : boolean := false;                   -- the note engine, registers 8..15
     ENGINE_GLIDE : boolean := true;                    -- ... with glide slopes (~25 LEs)
-    ENGINE_UNIT_LOG2 : natural := 14                   -- ... time unit: 14 at 2 x PHI2, 15 at 4 x PHI2
+    ENGINE_UNIT_LOG2 : natural := 15                   -- ... time unit: 14 at 2 x PHI2, 15 at 4 x PHI2
   );
   port (
     CLK          : in  std_logic;
@@ -148,6 +148,16 @@ architecture vhdl of amy1_top is
   signal full                    : std_logic;
   signal individual_reg, individual_next : std_logic := '0';   -- system options bit 2
   signal reset_req_reg, reset_req_next   : std_logic := '0';   -- host asked for a chip reset
+  signal ext_enable_reg, ext_enable_next : std_logic := '0'; -- unlocked after $A5,$5A sequence
+  signal ext_key_reg, ext_key_next       : std_logic := '0';
+  signal ext_a_reg, ext_b_reg, ext_c_reg : std_logic_vector(7 downto 0) := (others => '0');
+  signal ext_a_next, ext_b_next, ext_c_next : std_logic_vector(7 downto 0);
+  signal ext_we, ext_clear, ext_ack : std_logic;
+  signal ext_kind : std_logic_vector(1 downto 0);
+  signal ext_index : std_logic_vector(5 downto 0);
+  signal ext_value : std_logic_vector(7 downto 0);
+  signal ext_command : std_logic;
+
   signal reset_taken             : std_logic;                  -- ... and it starts now
 
   -- wrapper registers
@@ -157,7 +167,7 @@ architecture vhdl of amy1_top is
 
   ---------------------------------------------------------------------------
   -- chip register port
-  type bus_t is (bus_idle, bus_wait, bus_rd_b, bus_rd_c);
+  type bus_t is (bus_idle, bus_wait, bus_rd_b, bus_rd_c, bus_ext_wait);
   signal bus_reg, bus_next       : bus_t := bus_idle;
   signal wait_reg, wait_next     : unsigned(7 downto 0) := (others => '0');  -- chip clocks waiting for RDY
   signal timeout                 : std_logic;
@@ -205,6 +215,11 @@ begin
       wr_ptr_reg     <= (others => '0');
       count_reg      <= (others => '0');
       individual_reg <= '0';
+      ext_enable_reg <= '0';
+      ext_key_reg <= '0';
+      ext_a_reg <= (others => '0');
+      ext_b_reg <= (others => '0');
+      ext_c_reg <= (others => '0');
       reset_req_reg  <= '0';
       voice_l_reg    <= (others => '1');
       voice_r_reg    <= (others => '1');
@@ -238,6 +253,11 @@ begin
       wr_ptr_reg     <= wr_ptr_next;
       count_reg      <= count_next;
       individual_reg <= individual_next;
+      ext_enable_reg <= ext_enable_next;
+      ext_key_reg <= ext_key_next;
+      ext_a_reg <= ext_a_next;
+      ext_b_reg <= ext_b_next;
+      ext_c_reg <= ext_c_next;
       reset_req_reg  <= reset_req_next;
       voice_l_reg    <= voice_l_next;
       voice_r_reg    <= voice_r_next;
@@ -259,6 +279,44 @@ begin
       aud_l_reg      <= aud_l_next;
       aud_r_reg      <= aud_r_next;
       aud_strobe_reg <= strobe_reg;
+    end if;
+  end process;
+
+  ---------------------------------------------------------------------------
+  -- Revision C extension state, separated from the register process.
+  -- 6502 writes to $D2C7 form the unlock sequence; the legacy command
+  -- operands are shadowed as they reach the chip (including engine writes).
+  process (ext_enable_reg, ext_key_reg, ext_a_reg, ext_b_reg, ext_c_reg,
+           reset_taken, timeout, WRITE_ENABLE, ADDR, DI, busy,
+           chip_we, chip_addr, chip_wdata)
+  begin
+    ext_enable_next <= ext_enable_reg;
+    ext_key_next <= ext_key_reg;
+    ext_a_next <= ext_a_reg;
+    ext_b_next <= ext_b_reg;
+    ext_c_next <= ext_c_reg;
+    if reset_taken = '1' or timeout = '1' then
+      ext_enable_next <= '0';
+      ext_key_next <= '0';
+    elsif WRITE_ENABLE = '1' and ADDR = "0111" then
+      if DI = x"A5" and busy = '0' then
+        ext_key_next <= '1';
+      elsif DI = x"5A" and ext_key_reg = '1' and busy = '0' then
+        ext_enable_next <= '1';
+        ext_key_next <= '0';
+      elsif DI = x"00" and busy = '0' then
+        ext_enable_next <= '0';
+        ext_key_next <= '0';
+      else
+        ext_key_next <= '0';
+      end if;
+    elsif chip_we = '1' then
+      case chip_addr is
+        when "01" => ext_a_next <= chip_wdata;
+        when "10" => ext_b_next <= chip_wdata;
+        when "11" => ext_c_next <= chip_wdata;
+        when others => null;
+      end case;
     end if;
   end process;
 
@@ -428,7 +486,7 @@ begin
   --   wait:   INT/RDY high again: done, or after a read command read B, then C
   process (bus_reg, wait_reg, cur_reg, resetn_reg, up_reg, rstcnt_reg, shadow_b_reg, shadow_c_reg,
            fifo_reg, rd_ptr_reg, count_reg, reset_req_reg, tick, reset_taken, timeout, intrdy,
-           rdata)
+           rdata, ext_enable_reg, ext_ack)
     variable rd_cmd : boolean;
   begin
     bus_next      <= bus_reg;
@@ -471,11 +529,28 @@ begin
           if count_reg /= 0 and up_reg = '1' and reset_req_reg = '0' then
             cur_next  <= fifo_reg(to_integer(rd_ptr_reg));
             chip_addr <= fifo_reg(to_integer(rd_ptr_reg))(9 downto 8);
-            chip_we   <= '1';
-            if fifo_reg(to_integer(rd_ptr_reg))(9 downto 8) = "00" then
-              wait_next <= (others => '0');
-              bus_next  <= bus_wait;
+            if ext_enable_reg = '1' and
+               fifo_reg(to_integer(rd_ptr_reg))(9 downto 8) = "00" and
+               ((unsigned(fifo_reg(to_integer(rd_ptr_reg))(7 downto 0)) >= to_unsigned(16#34#, 8) and
+                 unsigned(fifo_reg(to_integer(rd_ptr_reg))(7 downto 0)) <= to_unsigned(16#36#, 8)) or
+                fifo_reg(to_integer(rd_ptr_reg))(7 downto 0) = x"39") then
+              -- Extension command completes locally at this clock. The following
+              -- harmonic-RAM write is performed in this chip clock's spare edges.
+              chip_we <= '0';
+              if fifo_reg(to_integer(rd_ptr_reg))(7 downto 0) /= x"39" then
+                bus_next <= bus_ext_wait;
+              end if;
+            else
+              chip_we <= '1';
+              if fifo_reg(to_integer(rd_ptr_reg))(9 downto 8) = "00" then
+                wait_next <= (others => '0');
+                bus_next  <= bus_wait;
+              end if;
             end if;
+          end if;
+        when bus_ext_wait =>
+          if ext_ack = '1' then
+            bus_next <= bus_idle;
           end if;
         when bus_wait =>
           if tick = '1' and wait_reg /= 255 then
@@ -500,17 +575,36 @@ begin
     end if;
   end process;
 
+  ext_command <= '1' when ext_enable_reg = '1' and bus_reg = bus_idle and
+    count_reg /= 0 and up_reg = '1' and reset_req_reg = '0' and
+    fifo_reg(to_integer(rd_ptr_reg))(9 downto 8) = "00" and
+    ((unsigned(fifo_reg(to_integer(rd_ptr_reg))(7 downto 0)) >= to_unsigned(16#34#, 8) and
+      unsigned(fifo_reg(to_integer(rd_ptr_reg))(7 downto 0)) <= to_unsigned(16#36#, 8)) or
+     fifo_reg(to_integer(rd_ptr_reg))(7 downto 0) = x"39") else '0';
+  ext_we <= ext_command when fifo_reg(to_integer(rd_ptr_reg))(7 downto 0) = x"34" or
+                             fifo_reg(to_integer(rd_ptr_reg))(7 downto 0) = x"35" or
+                             fifo_reg(to_integer(rd_ptr_reg))(7 downto 0) = x"36" else '0';
+  ext_kind <= "00" when fifo_reg(to_integer(rd_ptr_reg))(7 downto 0) = x"34" else
+              "01" when fifo_reg(to_integer(rd_ptr_reg))(7 downto 0) = x"35" else "10";
+  ext_index <= ext_a_reg(5 downto 0);
+  ext_value <= ext_c_reg;
+  ext_clear <= reset_taken or timeout or
+      (WRITE_ENABLE and to_sl(ADDR = "0111") and to_sl(DI = x"00") and not busy) or
+      (ext_command and to_sl(fifo_reg(to_integer(rd_ptr_reg))(7 downto 0) = x"39"));
+
   chip_reset <= not resetn_reg;
 
   -- status / read-back
   busy <= '0' when count_reg = 0 and bus_reg = bus_idle and loaded_reg = '1'
                    and up_reg = '1' and reset_req_reg = '0' else '1';
+  -- Rev C extension control: writes at $D2C7 enable/disable extensions; reads remain status.
   with ADDR select DO <=
     shadow_b_reg           when "0010",
     shadow_c_reg           when "0011",
     voice_l_reg            when "0100",
     voice_r_reg            when "0101",
     volume_reg             when "0110",
+    busy & full & "000000" when "0111",
     eng_do                 when "1000" | "1001" | "1010" | "1011" | "1100" | "1101" | "1110" | "1111",
     busy & full & "000000" when others;
 
@@ -558,6 +652,13 @@ begin
     clk          => CLK,
     ce           => tick,
     reset        => chip_reset,
+    ext_enable   => ext_enable_reg,
+    ext_we       => ext_we,
+    ext_kind     => ext_kind,
+    ext_index    => ext_index,
+    ext_value    => ext_value,
+    ext_clear    => ext_clear,
+    ext_ack      => ext_ack,
     addr         => chip_addr,
     we           => chip_we,
     wdata        => chip_wdata,

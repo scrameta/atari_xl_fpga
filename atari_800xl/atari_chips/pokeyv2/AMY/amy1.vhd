@@ -27,6 +27,13 @@ entity amy1 is
     clk        : in  std_logic;
     ce         : in  std_logic;
     reset      : in  std_logic;                      -- synchronous, active high
+    ext_enable : in  std_logic := '0';
+    ext_we : in std_logic := '0';
+    ext_kind : in std_logic_vector(1 downto 0) := "00";
+    ext_index : in std_logic_vector(5 downto 0) := (others => '0');
+    ext_value : in std_logic_vector(7 downto 0) := (others => '0');
+    ext_clear : in std_logic := '0';
+    ext_ack : out std_logic;               -- Rev C enable; default preserves legacy modes
 
     addr       : in  std_logic_vector(1 downto 0);
     we         : in  std_logic;
@@ -76,6 +83,13 @@ architecture rtl of amy1 is
   signal voice3_we : std_logic;
   signal voice3_wdata, voice3_q : std_logic_vector(2 downto 0);
   signal octspl_q : std_logic_vector(3 downto 0);
+  signal detune_q, stoch_q : std_logic_vector(5 downto 0);
+  signal offset_old_q, offset_new_q, offset_wdata : std_logic_vector(17 downto 0);
+  signal freq_inc_q : std_logic_vector(17 downto 0);
+  signal noise_random_q : std_logic_vector(7 downto 0);
+  signal phase_slot_q : std_logic_vector(5 downto 0);
+  signal offset_step_q : std_logic;
+  signal ext_mem_ack, ext_att_ack : std_logic := '0';
   signal xrombs_addr : std_logic_vector(6 downto 0);
   signal xrombs_q : std_logic_vector(14 downto 0);
   signal xromint_addr : std_logic_vector(6 downto 0);
@@ -88,6 +102,15 @@ architecture rtl of amy1 is
   signal nf_acc, nf_fb : nf_t := (others => (others => '0'));
   signal nf_ok : std_logic_vector(1 downto 0) := "00";
 begin
+  -- Attenuation updates are local; harmonic writes wait for the packed RAM's
+  -- scheduled RMW acknowledgement before the wrapper dequeues another command.
+  process(clk)
+  begin
+    if rising_edge(clk) then
+      ext_att_ack <= ext_we and not ext_kind(1) and not ext_kind(0);
+    end if;
+  end process;
+  ext_ack <= ext_att_ack or ext_mem_ack;
 
   -- Noise generator PRB repair (NOISE_FIX): row 0 of each generator is written with the
   -- XOR of rows 0, 3, 8 and 14 from that generator's previous pass
@@ -122,7 +145,13 @@ begin
   end process;
 
   core: entity work.amy1_core port map (
-    clk => clk, ce => ce, reset => reset,
+    clk => clk, ce => ce, reset => reset, ext_enable => ext_enable,
+    ext_we => ext_we, ext_kind => ext_kind, ext_index => ext_index,
+    ext_value => ext_value, ext_clear => ext_clear,
+    detune_q => detune_q, stoch_q => stoch_q, offset_old_q => offset_old_q,
+    offset_new_q => offset_new_q, offset_wdata => offset_wdata,
+    freq_inc_q => freq_inc_q, noise_random_q => noise_random_q,
+    phase_slot => phase_slot_q, offset_step => offset_step_q,
     addr => addr, we => we, wdata => wdata, rdata => rdata, rdy => rdy,
     sample => sample, sample_stb => sample_stb, sample_v0 => sample_v0,
     noise_init => noise_init,
@@ -146,6 +175,12 @@ begin
   mem_p: if MEM_PACKED generate
     mem: entity work.amy1_mem(packed) port map (
     clk => clk, ce => ce,
+    ext_reset => reset or ext_clear, ext_enable => ext_enable,
+    ext_we => ext_we, ext_kind => ext_kind, ext_index => ext_index,
+    ext_value => ext_value, ext_ack => ext_mem_ack, phase_slot => phase_slot_q, offset_step => offset_step_q,
+    detune_q => detune_q, stoch_q => stoch_q,
+    offset_old_q => offset_old_q, offset_new_q => offset_new_q,
+    offset_wdata => offset_wdata,
     load_we => load_we, load_addr => load_addr, load_data => load_data,
     aux_re => aux_re, aux_raddr => aux_raddr, aux_rack => aux_rack, aux_rdata => aux_rdata,
     aux_we => aux_we, aux_waddr => aux_waddr, aux_wdata => aux_wdata, aux_wack => aux_wack,
@@ -171,6 +206,12 @@ begin
   mem_r: if not MEM_PACKED generate
     mem: entity work.amy1_mem(rtl) port map (
     clk => clk, ce => ce,
+    ext_reset => reset or ext_clear, ext_enable => ext_enable,
+    ext_we => ext_we, ext_kind => ext_kind, ext_index => ext_index,
+    ext_value => ext_value, ext_ack => open, phase_slot => phase_slot_q, offset_step => offset_step_q,
+    detune_q => open, stoch_q => open,
+    offset_old_q => open, offset_new_q => open,
+    offset_wdata => offset_wdata,
     load_we => load_we, load_addr => load_addr, load_data => load_data,
     aux_re => aux_re, aux_raddr => aux_raddr, aux_rack => aux_rack, aux_rdata => aux_rdata,
     aux_we => aux_we, aux_waddr => aux_waddr, aux_wdata => aux_wdata, aux_wack => aux_wack,

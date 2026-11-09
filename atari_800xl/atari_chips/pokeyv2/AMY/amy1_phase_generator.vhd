@@ -38,6 +38,10 @@ entity amy1_phase_generator is
     clrph     : in  std_logic;                      -- clear the harmonic phase
     -- exp_rom
     xo        : in  std_logic_vector(17 downto 0);  -- frequency increment / amplitude
+    ext_enable : in std_logic := '0';
+    phase_offset : in std_logic_vector(17 downto 0) := (others => '0');
+    freq_inc : out std_logic_vector(17 downto 0);
+    offset_step : out std_logic;
     clrdisp   : in  std_logic;                      -- no displacement this clock
     -- sine_rom
     arg       : out std_logic_vector(13 downto 0);  -- sine argument (SARG13..8, ARG7..0)
@@ -71,6 +75,8 @@ architecture rtl of amy1_phase_generator is
   signal dsum   : unsigned(13 downto 0);
   signal a      : unsigned(13 downto 0);  -- argument before the harmonic offset
   signal ofs    : unsigned(5 downto 0);
+  signal base_arg : unsigned(13 downto 0);
+  signal freq_reg : std_logic_vector(17 downto 0) := (others => '0');
 
 begin
 
@@ -94,7 +100,13 @@ begin
 
   -- bit-reversed harmonic number on the top 6 bits
   ofs <= unsigned'(cnt(0) & cnt(1) & cnt(2) & cnt(3) & cnt(4) & cnt(5));
-  arg <= std_logic_vector(a(13 downto 8) + ofs) & std_logic_vector(a(7 downto 0));
+  base_arg <= (a(13 downto 8) + ofs) & a(7 downto 0);
+  -- One accumulated fractional/noise phase per harmonic, 18 bits; top 14 used
+  -- by the sine ROM. When disabled, this is exactly the original expression.
+  arg <= std_logic_vector(base_arg + unsigned(phase_offset(17 downto 4))) when ext_enable = '1' else
+         std_logic_vector(base_arg);
+  freq_inc <= freq_reg;
+  offset_step <= sel_h; -- update one offset per harmonic pair, not per a/b half
 
   -- phase RAM
   wr_d      <= drive_reg and ldv3_reg;
@@ -133,6 +145,9 @@ begin
         selb_reg  <= selb_next;
         drive_reg <= drive_next;
         h_reg     <= h_next;
+        if ldv2_reg = '1' then
+          freq_reg <= xo;
+        end if;
         disp_reg  <= disp_next;
         dsum_reg  <= dsum_next;
       end if;

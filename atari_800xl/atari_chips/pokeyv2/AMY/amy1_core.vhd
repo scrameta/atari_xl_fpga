@@ -25,6 +25,19 @@ entity amy1_core is
     clk        : in  std_logic;
     ce         : in  std_logic;                      -- one AMY internal clock
     reset      : in  std_logic;                      -- synchronous, active high
+    ext_enable : in  std_logic := '0';
+    ext_we : in std_logic := '0';
+    ext_kind : in std_logic_vector(1 downto 0) := "00";
+    ext_index : in std_logic_vector(5 downto 0) := (others => '0');
+    ext_value : in std_logic_vector(7 downto 0) := (others => '0');
+    ext_clear : in std_logic := '0';
+    detune_q, stoch_q : in std_logic_vector(5 downto 0) := (others => '0');
+    offset_old_q, offset_new_q : in std_logic_vector(17 downto 0) := (others => '0');
+    offset_wdata : out std_logic_vector(17 downto 0);
+    freq_inc_q : out std_logic_vector(17 downto 0);
+    noise_random_q : out std_logic_vector(7 downto 0);
+    phase_slot : out std_logic_vector(5 downto 0);
+    offset_step : out std_logic;               -- Rev C extension enable
 
     -- registers: 0 command, 1 A, 2 B, 3 C
     addr       : in  std_logic_vector(1 downto 0);
@@ -104,7 +117,7 @@ architecture rtl of amy1_core is
   -- envelope generator
   signal log : std_logic_vector(12 downto 0);
   signal readback : std_logic_vector(12 downto 0);
-  signal fan, noise_gen, last_pair, env_wr : std_logic;
+  signal fan, noise_gen, white_sel, last_pair, env_wr : std_logic;
   signal slope_rate : std_logic_vector(1 downto 0);
 
   -- noise generator
@@ -117,10 +130,48 @@ architecture rtl of amy1_core is
   signal arg : std_logic_vector(13 downto 0);
   signal hs : std_logic_vector(12 downto 0);
   signal fjump : std_logic;
+  type att_t is array (0 to 7) of std_logic_vector(7 downto 0);
+  signal voice_att_reg, voice_att_next : att_t := (others => (others => '0'));
+  signal effective_att : std_logic_vector(7 downto 0);
+  signal synth_freq_inc : std_logic_vector(17 downto 0);
+  signal synth_random : std_logic_vector(7 downto 0);
+  -- Rev C: the harmonic slot as seen by the phase generator. The envelope/RAM
+  -- side handles harmonic g at cnt = 2g, 2g+1; the phase generator's sine
+  -- lookups for the same harmonic are 8 chip clocks later (a-clock cnt = 2g+8,
+  -- where freq_reg also holds that harmonic's voice frequency). Delaying
+  -- cnt(6:1) by 8 chip clocks gives g there, and wraps correctly with SEL40H.
+  type slot_dly_t is array (0 to 7) of std_logic_vector(5 downto 0);
+  signal slot_dly : slot_dly_t := (others => (others => '0'));
 
 begin
 
-  ----------------------------------------------------------------------------
+  -- Extension voice attenuation (logical register state). Zero is unity.
+  process(clk)
+  begin
+    if rising_edge(clk) then
+      voice_att_reg <= voice_att_next;
+    end if;
+  end process;
+
+  process(voice_att_reg, reset, ext_clear, ext_we, ext_kind, ext_index, ext_value)
+  begin
+    voice_att_next <= voice_att_reg;
+    if reset = '1' or ext_clear = '1' then
+      voice_att_next <= (others => (others => '0'));
+    elsif ext_we = '1' and ext_kind = "00" and ext_index(5 downto 3) = "000" then
+      voice_att_next(to_integer(unsigned(ext_index(2 downto 0)))) <= ext_value;
+    end if;
+  end process;
+  effective_att <= voice_att_reg(to_integer(unsigned(voice))) when ext_enable = '1' else x"00";
+  freq_inc_q <= synth_freq_inc;
+  noise_random_q <= synth_random;
+  u_phase_offset: entity work.amy1_ext_phase port map (
+    freq_inc => synth_freq_inc,
+    detune => detune_q, stochasticity => stoch_q,
+    random_byte => synth_random, old_phase => offset_old_q,
+    ext_enable => ext_enable, new_phase => offset_wdata);
+
+  ---------------------------------------------------------------------------
   -- Control
   ----------------------------------------------------------------------------
   u_host_interface: entity work.amy1_host_interface port map (
@@ -150,6 +201,18 @@ begin
     upd_freq => upd_freq, cmd => cmd, fjump => fjump,
     harm_addr => harm_a, voice_addr => voice_addr);
   harm_addr <= harm_a;
+  process (clk)
+  begin
+    if rising_edge(clk) then
+      if ce = '1' then
+        slot_dly(0) <= cnt(6 downto 1);
+        for i in 1 to 7 loop
+          slot_dly(i) <= slot_dly(i-1);
+        end loop;
+      end if;
+    end if;
+  end process;
+  phase_slot <= slot_dly(7);
 
   ----------------------------------------------------------------------------
   -- Envelopes and noise
@@ -158,21 +221,22 @@ begin
     clk => clk, ce => ce,
     p => p, p2x => p2x, odd => odd, nv => nv, ssen => ssen, ld_flo => ld_flo,
     upd_freq => upd_freq, rst => rst, clrph => config.clrph, cmd => cmd,
-    reg_a => reg_a, reg_bc => reg_bc, noise => noise,
+    reg_a => reg_a, reg_bc => reg_bc, noise => noise, voice_atten => effective_att,
     hbp_q => harmbrkpoint_q, hbp_we => harmbrkpoint_we, hbp_wdata => harmbrkpoint_wdata,
     hcv_q => harmcurntval_q, hcv_we => harmcurntval_we, hcv_wdata => harmcurntval_wdata,
     lhp_q => lhpram_q, lhp_we => lhpram_we, lhp_wdata => lhpram_wdata,
     v18_q => voice18_q, v18_we => voice18_we, v18_wdata => voice18_wdata,
     v3_q => voice3_q, v3_we => voice3_we, v3_wdata => voice3_wdata,
-    log => log, fan => fan, noise_gen => noise_gen, slope_rate => slope_rate,
+    log => log, fan => fan, noise_gen => noise_gen, white_sel => white_sel,
+    ext_enable => ext_enable, slope_rate => slope_rate,
     last_pair => last_pair, host_wr => env_wr, readback => readback, fjump => fjump);
 
   u_noise_generator: entity work.amy1_noise_generator port map (
-    clk => clk, ce => ce,
+    clk => clk, ce => ce, reset => reset,
     p => p, sync => sync, odd => odd, sel40 => config.sel40, hadr => harm_a,
     host_mode => config.nzinit, cmd => cmd, host_data => reg_a(2 downto 0),
-    host_wr => noise_wr, noise_gen => noise_gen, mute => zerob,
-    noise => noise, serial => bout,
+    host_wr => noise_wr, noise_gen => noise_gen, white_sel => white_sel, mute => zerob,
+    noise => noise, serial => bout, random_byte => synth_random,
     ram_addr => noise_addr, ram_we => noise_we, ram_wdata => noise_wdata, ram_q => noise_q);
 
   ----------------------------------------------------------------------------
@@ -186,6 +250,8 @@ begin
     clk => clk, ce => ce,
     ld_voice => ld_voice, voice => voice, cnt => cnt(6 downto 1), clrph => config.clrph,
     xo => xo, clrdisp => clrdisp, arg => arg,
+    ext_enable => ext_enable, phase_offset => offset_new_q,
+    freq_inc => synth_freq_inc, offset_step => offset_step,
     ram_addr => phaseram_addr, ram_we => phaseram_we, ram_wdata => phaseram_wdata,
     ram_q => phaseram_q);
 
