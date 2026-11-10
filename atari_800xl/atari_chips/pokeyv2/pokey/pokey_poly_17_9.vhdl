@@ -64,7 +64,9 @@ BEGIN
 			shift_next(7) <= feedback;
 			shift_next(6 downto 0) <= shift_reg(7 downto 1);
 
-			shift_next(16) <= ((feedback and select_9_17_del_reg) or (shift_reg(0) and not(select_9_17))) and not(init);
+			-- Die: in = /Init . (chain + sel9) . (xnor + /sel9) . (/sel9 + sel9_d)
+			-- On the cycle switching 9->17 only the 17-bit chain is fed in.
+			shift_next(16) <= ((feedback and select_9_17 and select_9_17_del_reg) or (shift_reg(0) and not(select_9_17))) and not(init);
 
 			cycle_delay_next <= shift_reg(9);
 		end if;

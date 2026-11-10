@@ -122,21 +122,21 @@ begin
 		
 			case state_reg is
 			when state_wait_key =>
+				-- Debounce off does not bypass the state machine: it only makes the
+				-- compare always pass, so a key registers only when the next scanned
+				-- code is also down (AHRM 5.8 "Scan algorithm"/"Keyboard debounce";
+				-- die: keyboard control PLA).
 				if (keyboard_response(0) = '0') then -- detected key press
-					if (debounce_disable = '1') then
-						keycode_latch_next <= control_pressed_reg&shift_pressed_reg&not(bincnt_reg);
-						irq_next <= '1';
-						key_held_next<= '1';
-					else
-						state_next <= state_key_bounce;
-						compare_latch_next <= bincnt_reg;
-					end if;
+					state_next <= state_key_bounce;
+					compare_latch_next <= bincnt_reg;
 				end if;
-				
+
 			when state_key_bounce =>
 				if (keyboard_response(0) = '0') then -- detected key press
-					if (my_key = '1') then -- same key
-						keycode_latch_next <= control_pressed_reg&shift_pressed_reg&not(compare_latch_reg);
+					if (my_key = '1') then -- same key (or any key with debounce off)
+						-- KBCODE takes the counter value (equal to the compare latch
+						-- when debounce is on, the second key of a pair when it is off)
+						keycode_latch_next <= control_pressed_reg&shift_pressed_reg&not(bincnt_reg);
 						irq_next <= '1';
 						key_held_next<= '1';
 						state_next <= state_valid_key;
@@ -184,6 +184,16 @@ begin
 					--
 				end case;
 			end if;
+		end if;
+
+		-- Scan disabled (SKCTL bit 1 = 0): state machine forced to state 0 and the
+		-- counter held in reset, so SKSTAT bit 2 returns to 1. KBCODE, pending IRQs
+		-- and the Shift/Control latches are kept (AHRM 5.8 "Keyboard scan enable";
+		-- die: kbScanDis presets the state latches and resets the counter).
+		if (scan_enable = '0') then
+			state_next <= state_wait_key;
+			bincnt_next <= (others=>'0');
+			key_held_next <= '0';
 		end if;
 
 		if (break_pressed_next='1' and break_pressed_reg='0') then

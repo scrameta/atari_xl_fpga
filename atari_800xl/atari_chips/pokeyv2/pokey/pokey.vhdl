@@ -283,10 +283,10 @@ ARCHITECTURE vhdl OF pokey IS
 	signal chan2_output_reg : std_logic;
 	signal chan3_output_reg : std_logic;
 
-	signal chan0_output_del_next : std_logic;
-	signal chan1_output_del_next : std_logic;
-	signal chan0_output_del_reg : std_logic;
-	signal chan1_output_del_reg : std_logic;
+	-- high-pass latch clocks: timer 3/4 pulses delayed (AHRM 5.3 "High-pass filter")
+	constant HIGHPASS_CLOCK_DELAY : natural := 1;
+	signal highpass0_clock : std_logic;
+	signal highpass1_clock : std_logic;
 	
 	signal highpass0_next : std_logic;
 	signal highpass1_next : std_logic;	
@@ -373,7 +373,7 @@ ARCHITECTURE vhdl OF pokey IS
 	signal serout_active_next : std_logic;
 	signal serout_active_reg : std_logic;
 	
-	signal serial_reset : std_logic;
+	signal serial_clock_reset : std_logic;
 	signal serout_sync_reset : std_logic;
 	signal skrest_write : std_logic;
 	
@@ -443,8 +443,17 @@ ARCHITECTURE vhdl OF pokey IS
 	
 	signal potgo_write : std_logic;
 	
-	signal pot_reset_next : std_logic;
+	signal pot_reset_next : std_logic; -- '1' = no scan in progress
 	signal pot_reset_reg : std_logic;
+
+	signal potgo_pending_next : std_logic;
+	signal potgo_pending_reg : std_logic;
+	signal pot_stop_next : std_logic;
+	signal pot_stop_reg : std_logic;
+	signal pot_counter_prev_next : std_logic_vector(7 downto 0);
+	signal pot_counter_prev_reg : std_logic_vector(7 downto 0);
+	signal pot_updated_next : std_logic_vector(7 downto 0);
+	signal pot_updated_reg : std_logic_vector(7 downto 0);
 BEGIN
 	-- register
 	process(clk,reset_n)
@@ -475,8 +484,6 @@ BEGIN
 			chan2_output_reg <= '0';
 			chan3_output_reg <= '0';
 
-			chan0_output_del_reg <= '0';
-			chan1_output_del_reg <= '0';
 
 			volume_channel_0_reg <= (others=>'0');
 			volume_channel_1_reg <= (others=>'0');
@@ -524,6 +531,10 @@ BEGIN
 			pot_counter_reg <= (others=>'0');
 			
 			pot_reset_reg <= '1';
+			potgo_pending_reg <= '0';
+			pot_stop_reg <= '0';
+			pot_counter_prev_reg <= (others=>'0');
+			pot_updated_reg <= (others=>'0');
 
 			noise_4_reg <= (others=>'0');
 			noise_5_reg <= (others=>'0');
@@ -556,8 +567,6 @@ BEGIN
 			chan2_output_reg <= chan2_output_next;
 			chan3_output_reg <= chan3_output_next;
 
-			chan0_output_del_reg <= chan0_output_del_next;
-			chan1_output_del_reg <= chan1_output_del_next;
 			
 			volume_channel_0_reg<= volume_channel_0_next;
 			volume_channel_1_reg<= volume_channel_1_next;
@@ -608,6 +617,10 @@ BEGIN
 			pot_counter_reg <= pot_counter_next;
 			
 			pot_reset_reg <= pot_reset_next;
+			potgo_pending_reg <= potgo_pending_next;
+			pot_stop_reg <= pot_stop_next;
+			pot_counter_prev_reg <= pot_counter_prev_next;
+			pot_updated_reg <= pot_updated_next;
 
 			noise_4_reg <= noise_4_next;
 			noise_5_reg <= noise_5_next;
@@ -724,6 +737,7 @@ BEGIN
 		serout_holding_load <= '0';
 		serout_holding_next <= serout_holding_reg;
 		
+		serial_clock_reset <= '0';
 		skrest_write <= '0';
 		potgo_write <= '0';
 		
@@ -787,46 +801,78 @@ BEGIN
 
 			if (addr_decoded(15) = '1') then --SKCTL
 				skctl_next <= data_in;
+
+				-- Selecting external clocks (%000) resets only the serial clock
+				-- flip-flops, not the shift registers or state machines (AHRM 5.6
+				-- "Serial port reset"; die: R on the timer 2/4 divide-by-2 latches).
+				-- The state machines are reset by init mode instead (see initmode).
+				if (data_in(6 downto 4)="000") then
+					serial_clock_reset <= '1';
+				end if;
 			end if;	
 	
 		end if;
 	end process;
 	
 	-- Read from registers
-	process(addr_decoded,kbcode,RAND_OUT,IRQST_REG,key_held,shift_held,sio_in_reg,serin_reg,keyboard_overrun_reg, serial_ip_framing_reg, serial_ip_overrun_reg, waiting_for_start_bit, pot_in, pot0_reg, pot1_reg, pot2_reg, pot3_reg, pot4_reg, pot5_reg, pot6_reg, pot7_reg, allpot_reg)
+	process(addr_decoded,kbcode,RAND_OUT,IRQST_REG,key_held,shift_held,sio_in_reg,serin_reg,keyboard_overrun_reg, serial_ip_framing_reg, serial_ip_overrun_reg, waiting_for_start_bit, pot_in, pot0_reg, pot1_reg, pot2_reg, pot3_reg, pot4_reg, pot5_reg, pot6_reg, pot7_reg, allpot_reg, pot_updated_reg, pot_counter_prev_reg)
 	begin
 		data_out <= X"FF";
 
 		if(addr_decoded(0) = '1') then --POT0
 			data_out <= pot0_reg;
+			if (pot_updated_reg(0) = '1') then -- live counter: old AND new
+				data_out <= pot0_reg and pot_counter_prev_reg;
+			end if;
 		end if;
 
 		if(addr_decoded(1) = '1') then --POT1
 			data_out <= pot1_reg;
+			if (pot_updated_reg(1) = '1') then -- live counter: old AND new
+				data_out <= pot1_reg and pot_counter_prev_reg;
+			end if;
 		end if;
 
 		if(addr_decoded(2) = '1') then --POT2
 			data_out <= pot2_reg;
+			if (pot_updated_reg(2) = '1') then -- live counter: old AND new
+				data_out <= pot2_reg and pot_counter_prev_reg;
+			end if;
 		end if;
 
 		if(addr_decoded(3) = '1') then --POT3
 			data_out <= pot3_reg;
+			if (pot_updated_reg(3) = '1') then -- live counter: old AND new
+				data_out <= pot3_reg and pot_counter_prev_reg;
+			end if;
 		end if;
 		
 		if(addr_decoded(4) = '1') then --POT4
 			data_out <= pot4_reg;
+			if (pot_updated_reg(4) = '1') then -- live counter: old AND new
+				data_out <= pot4_reg and pot_counter_prev_reg;
+			end if;
 		end if;
 
 		if(addr_decoded(5) = '1') then --POT5
 			data_out <= pot5_reg;
+			if (pot_updated_reg(5) = '1') then -- live counter: old AND new
+				data_out <= pot5_reg and pot_counter_prev_reg;
+			end if;
 		end if;
 
 		if(addr_decoded(6) = '1') then --POT6
 			data_out <= pot6_reg;
+			if (pot_updated_reg(6) = '1') then -- live counter: old AND new
+				data_out <= pot6_reg and pot_counter_prev_reg;
+			end if;
 		end if;
 
 		if(addr_decoded(7) = '1') then --POT7
 			data_out <= pot7_reg;
+			if (pot_updated_reg(7) = '1') then -- live counter: old AND new
+				data_out <= pot7_reg and pot_counter_prev_reg;
+			end if;
 		end if;
 
 		if(addr_decoded(8) = '1') then --ALLPOT
@@ -935,13 +981,13 @@ BEGIN
 	chan3_output_next <= audf3_pulse_noise;
 	
 	-- High pass filters
-	process(audctl_delayed_reg,audf2_pulse,audf3_pulse,chan0_output_reg, chan1_output_reg, chan2_output_reg, chan3_output_reg, highpass0_reg, highpass1_reg)
+	process(audctl_delayed_reg,highpass0_clock,highpass1_clock,chan0_output_reg, chan1_output_reg, chan2_output_reg, chan3_output_reg, highpass0_reg, highpass1_reg)
 	begin
 		highpass0_next <= highpass0_reg;
 		highpass1_next <= highpass1_reg;
 		
 		if (audctl_delayed_reg(2) = '1') then
-			if (audf2_pulse = '1') then
+			if (highpass0_clock = '1') then
 				highpass0_next <= chan0_output_reg;
 			end if;
 		else
@@ -949,7 +995,7 @@ BEGIN
 		end if;
 		
 		if (audctl_delayed_reg(1) = '1') then
-			if (audf3_pulse = '1') then
+			if (highpass1_clock = '1') then
 				highpass1_next <= chan1_output_reg;
 			end if;
 		else
@@ -958,16 +1004,18 @@ BEGIN
 		
 	end process;
 
-	process(chan0_output_reg,chan1_output_reg,chan0_output_del_reg,chan1_output_del_reg,enable_179)
-	begin
-		chan0_output_del_next <= chan0_output_del_reg;
-		chan1_output_del_next <= chan1_output_del_reg;
-
-		if (enable_179 = '1') then
-			chan0_output_del_next <= chan0_output_reg;
-			chan1_output_del_next <= chan1_output_reg;
-		end if;
-	end process;
+	-- The high-pass latch is clocked from the high channel's timer through a longer
+	-- path than the low channel's own output: AHRM gives ~1.5 cycles from the high
+	-- channel's clock to the XOR, so channels 1 and 3 synchronised with ch3 two
+	-- cycles ahead give a half-cycle pulse. With high-pass off, ch1/2 and ch3/4
+	-- outputs have the same timing (synchronised ch1+ch3 cancel); the die has no
+	-- clocked stage between the ch1/2 output node and the DAC.
+	highpass0_clock_delay : delay_line
+		generic map (count=>HIGHPASS_CLOCK_DELAY)
+		port map (clk=>clk, sync_reset=>'0', data_in=>audf2_pulse, enable=>enable_179, reset_n=>reset_n, data_out=>highpass0_clock);
+	highpass1_clock_delay : delay_line
+		generic map (count=>HIGHPASS_CLOCK_DELAY)
+		port map (clk=>clk, sync_reset=>'0', data_in=>audf3_pulse, enable=>enable_179, reset_n=>reset_n, data_out=>highpass1_clock);
 	
 	-- Instantiate key pokey clocks
 	-- ~1.79MHz - from 25MHz/14
@@ -988,7 +1036,6 @@ BEGIN
 		
 	-- Instantiate pokey noise circuits (lfsr)
 	initmode <= skctl_next(1) nor skctl_next(0);
-	serial_reset <= initmode;
 	poly_17_19_lfsr : pokey_poly_17_9
 		port map(clk=>clk,reset_n=>reset_n,init=>initmode,enable=>enable_179,select_9_17=>audctl_delayed_reg(7),bit_out=>noise_large,rand_out=>rand_out);
 		
@@ -1013,18 +1060,18 @@ BEGIN
 	end process;
 	
 	--AUDIO_LEFT <= "000"&count_reg(15 downto 3);
-	process(chan0_output_del_reg, chan1_output_del_reg, chan2_output_reg, chan3_output_reg, audc0_reg, audc1_reg, audc2_reg, audc3_reg, highpass0_reg, highpass1_reg)
+	process(chan0_output_reg, chan1_output_reg, chan2_output_reg, chan3_output_reg, audc0_reg, audc1_reg, audc2_reg, audc3_reg, highpass0_reg, highpass1_reg)
 	begin
 		volume_channel_0_next <= "0000";
 		volume_channel_1_next <= "0000";
 		volume_channel_2_next <= "0000";
 		volume_channel_3_next <= "0000";
 			
-		if (((chan0_output_del_reg xor highpass0_reg) or audc0_reg(4)) = '1') then
+		if (((chan0_output_reg xor highpass0_reg) or audc0_reg(4)) = '1') then
 			volume_channel_0_next <= audc0_reg(3 downto 0);
 		end if;
 		
-		if (((chan1_output_del_reg xor highpass1_reg) or audc1_reg(4)) = '1') then
+		if (((chan1_output_reg xor highpass1_reg) or audc1_reg(4)) = '1') then
 			volume_channel_1_next <= audc1_reg(3 downto 0);
 		end if;
 		
@@ -1040,7 +1087,7 @@ BEGIN
 	
 	-- serial port output	
 	-- urghhh (TODO: If timers are cleared with stimer_write, some clocks are still triggering. This workaround fixes the acid test. Investigate the proper fix)
-        serout_sync_reset <= serial_reset or stimer_write_delayed;
+        serout_sync_reset <= serial_clock_reset or stimer_write_delayed;
 	serout_clock_delay : delay_line
 		generic map (count=>2)
 		port map (clk=>clk, sync_reset=>serout_sync_reset,data_in=>serout_enable, enable=>enable_179, reset_n=>reset_n, data_out=>serout_enable_delayed);
@@ -1050,7 +1097,7 @@ BEGIN
 		port map (clk=>clk, sync_reset=>serout_sync_reset,data_in=>serin_enable, enable=>enable_179, reset_n=>reset_n, data_out=>serin_enable_delayed);
 		
 	
-	process(serout_enable_delayed, skctl_reg, serout_active_reg, serout_clock_last_reg,serout_clock_reg, serout_holding_load, serout_holding_reg, serout_holding_full_reg, serout_shift_reg, serout_bitcount_reg, serial_out_reg, twotone_reg, audf0_pulse, audf1_pulse, serial_reset)
+	process(serout_enable_delayed, skctl_reg, serout_active_reg, serout_clock_last_reg,serout_clock_reg, serout_holding_load, serout_holding_reg, serout_holding_full_reg, serout_shift_reg, serout_bitcount_reg, serial_out_reg, twotone_reg, audf0_pulse, audf1_pulse, serial_clock_reset, initmode)
 	begin
 		serout_clock_next <= serout_clock_reg;
 		serout_clock_last_next <= serout_clock_reg;
@@ -1084,24 +1131,25 @@ BEGIN
 		end if;
 		
 		-- output bits over sio
-		if (serout_clock_last_reg = '0' and serout_clock_reg = '1') then			
-			serout_shift_next <= '0'&serout_shift_reg(9 downto 1); -- next
-			serial_out_next <= serout_shift_reg(1) or not(serout_active_reg); -- i.e. next serout_shift_reg(0)
-				
-			-- reload			
+		if (serout_clock_last_reg = '0' and serout_clock_reg = '1') then
+			-- reload
 			if (serout_bitcount_reg = X"0") then
 				if (serout_holding_full_reg='1') then -- unless, more to send in holding reg?
 					serout_bitcount_next <= X"9"; -- 10 bits to send, 9 more after this
 					serout_shift_next <= '1'&serout_holding_reg&'0';
 					serial_out_next <= '0'; -- start bit (serout_shift_reg(0) after this cycle)
-					serout_holding_full_next <= '0';					
+					serout_holding_full_next <= '0';
 					serial_op_needed_interrupt <= '1'; -- more data please!
 					serout_active_next <= '1';
 				else
+					-- Idle: keep driving the last bit shifted out. After a complete
+					-- byte that is the stop bit (1); after a byte interrupted by init
+					-- mode it can be a 0 (AHRM 5.6 "Serial port reset").
 					serout_active_next <= '0';
-					serial_out_next <= '1'; -- remove blip! 
 				end if;
 			else
+				serout_shift_next <= '0'&serout_shift_reg(9 downto 1); -- next
+				serial_out_next <= serout_shift_reg(1); -- i.e. next serout_shift_reg(0)
 				serout_bitcount_next <= std_logic_vector(unsigned(serout_bitcount_reg)-1);
 			end if;
 		end if;
@@ -1110,15 +1158,30 @@ BEGIN
 		if (serout_holding_load = '1') then
 			serout_holding_full_next <= '1';
 		end if;
-		
-		if (serial_reset = '1') then
+
+		-- Two-tone divide-by-two is held at 0 while two-tone mode is off
+		-- (AHRM 5.6 "Serial port reset"; die: NOR with /SKCTL3 in the toggle loop).
+		if (skctl_reg(3) = '0') then
 			twotone_next <= '0';
-			serout_bitcount_next <= (others=>'0');
-			serout_shift_next <= (others=>'0');
-			serout_holding_full_next <= '0';
+		end if;
+
+		-- %000 serial clock mode: reset the clock flip-flops only.
+		if (serial_clock_reset = '1') then
 			serout_clock_next <= '0';
 			serout_clock_last_next <= '0';
+		end if;
+
+		-- Init mode holds the output state machine and the SEROUT-valid flag in
+		-- reset and stops the shifter, but does not change the bit currently
+		-- driven on SIO DATA OUT (AHRM 5.1 "Initialization mode"; die: Init on
+		-- the SDO state latch P input and on the SEROUT-valid NOR latch).
+		if (initmode = '1') then
+			serout_bitcount_next <= (others=>'0');
+			serout_shift_next <= serout_shift_reg;
+			serout_holding_full_next <= '0';
 			serout_active_next <= '0';
+			serial_out_next <= serial_out_reg;
+			serial_op_needed_interrupt <= '0';
 		end if;
 	end process;
 	
@@ -1134,7 +1197,7 @@ BEGIN
 	sio_in_next <= sio_in2_reg;
 		
 	waiting_for_start_bit <= '1' when serin_bitcount_reg = X"9" else '0';
-	process(serin_enable_delayed,serin_clock_last_reg,serin_clock_reg, sio_in_reg, serin_reg,serin_shift_reg, serin_bitcount_reg, serial_ip_overrun_reg, serial_ip_framing_reg, skrest_write, irqst_reg, skctl_reg, waiting_for_start_bit, serial_reset)
+	process(serin_enable_delayed,serin_clock_last_reg,serin_clock_reg, sio_in_reg, serin_reg,serin_shift_reg, serin_bitcount_reg, serial_ip_overrun_reg, serial_ip_framing_reg, skrest_write, irqst_reg, skctl_reg, waiting_for_start_bit, serial_clock_reset, initmode)
 	begin
 		serin_clock_next <= serin_clock_reg;
 		serin_clock_last_next <= serin_clock_reg;
@@ -1193,11 +1256,24 @@ BEGIN
 			serial_ip_framing_next <= '0';
 		end if;
 		
-		if (serial_reset = '1') then
+		-- %000 serial clock mode: reset the clock flip-flop only. With it at 0 the
+		-- input next samples after two input clocks (AHRM 5.6 "Serial port reset").
+		if (serial_clock_reset = '1') then
 			serin_clock_next <= '0';
+			serin_clock_last_next <= '0';
+		end if;
+
+		-- Init mode holds the input state machine and shift register in reset
+		-- (AHRM 5.1 "Initialization mode"; die: Init on the SI state latch P input).
+		-- SERIN and the SKSTAT error flags are kept.
+		if (initmode = '1') then
 			serin_bitcount_next <= X"9"; -- i.e. waiting for start bit
-			serin_shift_next <= (others=>'0');			
-		end if;		
+			serin_shift_next <= (others=>'0');
+			serin_next <= serin_reg;
+			serial_ip_ready_interrupt <= '0';
+			serial_ip_overrun_next <= serial_ip_overrun_reg and not(skrest_write);
+			serial_ip_framing_next <= serial_ip_framing_reg and not(skrest_write);
+		end if;
 	end process;
 	
 	-- serial clocks
@@ -1285,9 +1361,22 @@ gen_normal_scan : if custom_keyboard_scan=0 generate
 		port map (clk=>clk, reset_n=>reset_n, enable=>enable_15, keyboard_response=>keyboard_response, debounce_disable=>not(skctl_reg(0)), scan_enable=>skctl_reg(1), keyboard_scan=>keyboard_scan, key_held=>key_held, shift_held=>shift_held, keycode=>kbcode, other_key_irq=>other_key_irq, break_irq=>break_irq);
 end generate;
 
-	-- POT scan
-	process(potgo_write, pot_reset_reg, pot_counter_reg, pot_in, enable_15, enable_179, skctl_reg, pot0_reg, pot1_reg, pot2_reg, pot3_reg, pot4_reg, pot5_reg, pot6_reg, pot7_reg, allpot_reg)
-	begin	
+	-- POT scan (AHRM 5.9; die: pot section, sheet 3)
+	-- * POTGO clears the counter in the cycle after the write; it then counts on the
+	--   15KHz keyboard clock, or every cycle in fast mode (SKCTL bit 2).
+	-- * While a scan is active, each POTn follows the counter every cycle until its
+	--   input reaches threshold (pot_in='1'); ALLPOT is (scan active AND below
+	--   threshold), evaluated every cycle, so a bit can go back to 1.
+	-- * The terminal count of 228 takes a cycle to detect: the scan stops two cycles
+	--   after the counter reaches 228. In fast mode the counter overruns to 229 ($E5)
+	--   first, and ALLPOT reads $00 from 231 cycles after the POTGO write.
+	-- * A live POTn read on the cycle it changes returns old AND new (the
+	--   "transitional" values in AHRM 5.9 "Reading live counters").
+	-- * Dump transistors are on only in slow mode with no scan in progress.
+	process(potgo_write, potgo_pending_reg, pot_reset_reg, pot_stop_reg, pot_counter_reg, pot_in, enable_15, enable_179, skctl_reg, pot0_reg, pot1_reg, pot2_reg, pot3_reg, pot4_reg, pot5_reg, pot6_reg, pot7_reg, pot_counter_prev_reg, pot_updated_reg)
+		variable count : std_logic_vector(7 downto 0);
+		variable latch : std_logic_vector(7 downto 0);
+	begin
 		pot0_next <= pot0_reg;
 		pot1_next <= pot1_reg;
 		pot2_next <= pot2_reg;
@@ -1297,57 +1386,58 @@ end generate;
 		pot6_next <= pot6_reg;
 		pot7_next <= pot7_reg;
 
-		allpot_next <= allpot_reg;
-		
 		pot_reset_next <= pot_reset_reg;
-		
+		pot_stop_next <= pot_stop_reg;
+		potgo_pending_next <= potgo_pending_reg or potgo_write;
 		pot_counter_next <= pot_counter_reg;
-		
-		if (((enable_15 and not(skctl_reg(2))) or (enable_179 and skctl_reg(2))) = '1') then
-			pot_counter_next <= std_logic_vector(unsigned(pot_counter_reg) + 1);
-			
-			if (pot_reset_reg = '0') then
-				if (pot_in(0) = '0') then -- pot now high, latch
-					pot0_next <= pot_counter_reg;
-				end if;
-				if (pot_in(1) = '0') then -- pot now high, latch
-					pot1_next <= pot_counter_reg;
-				end if;				
-				if (pot_in(2) = '0') then -- pot now high, latch
-					pot2_next <= pot_counter_reg;
-				end if;
-				if (pot_in(3) = '0') then -- pot now high, latch
-					pot3_next <= pot_counter_reg;
-				end if;
-				if (pot_in(4) = '0') then -- pot now high, latch
-					pot4_next <= pot_counter_reg;
-				end if;
-				if (pot_in(5) = '0') then -- pot now high, latch
-					pot5_next <= pot_counter_reg;
-				end if;
-				if (pot_in(6) = '0') then -- pot now high, latch
-					pot6_next <= pot_counter_reg;
-				end if;
-				if (pot_in(7) = '0') then -- pot now high, latch
-					pot7_next <= pot_counter_reg;
-				end if;
+		pot_counter_prev_next <= pot_counter_prev_reg;
+		pot_updated_next <= pot_updated_reg;
 
-				allpot_next <= allpot_reg and not(pot_in);
-			end if;			
+		count := pot_counter_reg;
+		latch := (others=>'0');
 
-			if (pot_counter_reg = X"E4") then
-				pot_reset_next <= '1'; -- turn on pot dump transistors
-				allpot_next <= (others=>'0');
+		if (enable_179 = '1') then
+			pot_counter_prev_next <= pot_counter_reg;
+			pot_updated_next <= (others=>'0');
+
+			if (potgo_pending_reg = '1') then
+				-- counter cleared in the cycle after the POTGO write
+				potgo_pending_next <= potgo_write;
+				count := (others=>'0');
+				pot_reset_next <= '0';
+				pot_stop_next <= '0';
+				latch := not(pot_in);
+			elsif (pot_reset_reg = '0') then
+				if (pot_stop_reg = '1') then
+					pot_reset_next <= '1'; -- scan over: ALLPOT forced to $00
+				else
+					if ((enable_15 and not(skctl_reg(2))) = '1' or skctl_reg(2) = '1') then
+						count := std_logic_vector(unsigned(pot_counter_reg) + 1);
+					end if;
+					if (pot_counter_reg = X"E4") then -- 228, seen one cycle late
+						pot_stop_next <= '1';
+					end if;
+					latch := not(pot_in);
+				end if;
 			end if;
+
+			pot_counter_next <= count;
+			pot_updated_next <= latch;
+
+			if (latch(0) = '1') then pot0_next <= count; end if;
+			if (latch(1) = '1') then pot1_next <= count; end if;
+			if (latch(2) = '1') then pot2_next <= count; end if;
+			if (latch(3) = '1') then pot3_next <= count; end if;
+			if (latch(4) = '1') then pot4_next <= count; end if;
+			if (latch(5) = '1') then pot5_next <= count; end if;
+			if (latch(6) = '1') then pot6_next <= count; end if;
+			if (latch(7) = '1') then pot7_next <= count; end if;
 		end if;
-			
-		if (potgo_write = '1') then
-			pot_counter_next <= x"01";
-			pot_reset_next <= '0'; -- turn off pot dump transistors, so they start to get charged
-			allpot_next <= (others=>'1');
-		end if;		
 	end process;
-	
+
+	-- ALLPOT: 1 while a scan is in progress and the input is below threshold
+	allpot_next <= not(pot_in) when pot_reset_reg = '0' else (others=>'0');
+
 	-- Outputs
 	irq_n_out <= irq_n_reg;	
 	
@@ -1364,6 +1454,7 @@ end generate;
 	sio_clockin_oe <= not(clock_input);
 	sio_clockin_out <= serin_clock_reg;
 	
+	-- dump transistors: slow pot scan mode and no scan in progress
 	pot_reset <= pot_reset_reg and not(skctl_reg(2));
 		
 END vhdl;
