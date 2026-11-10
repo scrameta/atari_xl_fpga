@@ -96,6 +96,7 @@ architecture rtl of amy1_core is
   signal cmd_wr : std_logic;
   signal reg_a, reg_c : std_logic_vector(7 downto 0);
   signal reg_b : std_logic_vector(4 downto 0);
+  signal reg_b7, prop_clear : std_logic;
   signal reg_bc : std_logic_vector(12 downto 0);
 
   -- command unit
@@ -113,11 +114,22 @@ architecture rtl of amy1_core is
 
   -- RAM addresses
   signal harm_a : std_logic_vector(5 downto 0);
+  signal voice_addr_i : std_logic_vector(3 downto 0);
 
   -- envelope generator
   signal log : std_logic_vector(12 downto 0);
   signal readback : std_logic_vector(12 downto 0);
   signal fan, noise_gen, white_sel, last_pair, env_wr : std_logic;
+  -- Rev C: the harmonic slot as the phase generator sees it.  The envelope/RAM side
+  -- handles harmonic g at cnt = 2g, 2g+1; the phase generator's sine lookups for the
+  -- same harmonic come 8 chip clocks later (a-clock cnt = 2g+8, where freq_reg holds
+  -- that harmonic's voice frequency).  Delaying cnt(6:1) by 8 chip clocks gives g
+  -- there, and wraps correctly with SEL40H.  white_sel (the envelope side's voice
+  -- type) is delayed with it, so both refer to the harmonic being looked up.
+  type slot_dly_t is array (0 to 7) of std_logic_vector(5 downto 0);
+  signal slot_dly_reg : slot_dly_t := (others => (others => '0'));
+  signal white_dly_reg : std_logic_vector(7 downto 0) := (others => '0');
+  signal white_slot : std_logic;
   signal slope_rate : std_logic_vector(1 downto 0);
 
   -- noise generator
@@ -135,13 +147,7 @@ architecture rtl of amy1_core is
   signal effective_att : std_logic_vector(7 downto 0);
   signal synth_freq_inc : std_logic_vector(17 downto 0);
   signal synth_random : std_logic_vector(7 downto 0);
-  -- Rev C: the harmonic slot as seen by the phase generator. The envelope/RAM
-  -- side handles harmonic g at cnt = 2g, 2g+1; the phase generator's sine
-  -- lookups for the same harmonic are 8 chip clocks later (a-clock cnt = 2g+8,
-  -- where freq_reg also holds that harmonic's voice frequency). Delaying
-  -- cnt(6:1) by 8 chip clocks gives g there, and wraps correctly with SEL40H.
-  type slot_dly_t is array (0 to 7) of std_logic_vector(5 downto 0);
-  signal slot_dly : slot_dly_t := (others => (others => '0'));
+  constant zero18 : std_logic_vector(17 downto 0) := (others => '0');
 
 begin
 
@@ -168,8 +174,9 @@ begin
   u_phase_offset: entity work.amy1_ext_phase port map (
     freq_inc => synth_freq_inc,
     detune => detune_q, stochasticity => stoch_q,
-    random_byte => synth_random, old_phase => offset_old_q,
-    ext_enable => ext_enable, new_phase => offset_wdata);
+    random_byte => synth_random, old_phase => zero18,   -- the increment only: the memory adds
+                                                         -- it to the old offset (two stages)
+    ext_enable => ext_enable, white => white_slot, new_phase => offset_wdata);
 
   ---------------------------------------------------------------------------
   -- Control
@@ -177,8 +184,10 @@ begin
   u_host_interface: entity work.amy1_host_interface port map (
     clk => clk, ce => ce, addr => addr, we => we, wdata => wdata, rdata => rdata,
     ld_rb => ld_rb, ld_rc => ld_rc, readback => readback,
-    cmnd => cmnd, cmd_wr => cmd_wr, reg_a => reg_a, reg_b => reg_b, reg_c => reg_c);
+    cmnd => cmnd, cmd_wr => cmd_wr, reg_a => reg_a, reg_b => reg_b, reg_c => reg_c,
+    reg_b7 => reg_b7);
   reg_bc <= reg_b & reg_c;
+  prop_clear <= reset or ext_clear;
 
   u_command_unit: entity work.amy1_command_unit port map (
     clk => clk, ce => ce, reset => reset, cmnd => cmnd, cmd_wr => cmd_wr,
@@ -199,20 +208,24 @@ begin
     clk => clk, ce => ce,
     p => p, cnt => cnt(6 downto 2), p2x => p2x, odd => odd, cntv => cntv,
     upd_freq => upd_freq, cmd => cmd, fjump => fjump,
-    harm_addr => harm_a, voice_addr => voice_addr);
+    harm_addr => harm_a, voice_addr => voice_addr_i);
   harm_addr <= harm_a;
-  process (clk)
+  voice_addr <= voice_addr_i;
+  slot_dly: process (clk)
   begin
     if rising_edge(clk) then
       if ce = '1' then
-        slot_dly(0) <= cnt(6 downto 1);
+        slot_dly_reg(0) <= cnt(6 downto 1);
+        white_dly_reg(0) <= white_sel;
         for i in 1 to 7 loop
-          slot_dly(i) <= slot_dly(i-1);
+          slot_dly_reg(i) <= slot_dly_reg(i - 1);
+          white_dly_reg(i) <= white_dly_reg(i - 1);
         end loop;
       end if;
     end if;
   end process;
-  phase_slot <= slot_dly(7);
+  phase_slot <= slot_dly_reg(7);
+  white_slot <= white_dly_reg(7);
 
   ----------------------------------------------------------------------------
   -- Envelopes and noise
@@ -229,6 +242,7 @@ begin
     v3_q => voice3_q, v3_we => voice3_we, v3_wdata => voice3_wdata,
     log => log, fan => fan, noise_gen => noise_gen, white_sel => white_sel,
     ext_enable => ext_enable, slope_rate => slope_rate,
+    harm_addr => harm_a, voice_addr => voice_addr_i, reg_b7 => reg_b7, prop_clear => prop_clear,
     last_pair => last_pair, host_wr => env_wr, readback => readback, fjump => fjump);
 
   u_noise_generator: entity work.amy1_noise_generator port map (

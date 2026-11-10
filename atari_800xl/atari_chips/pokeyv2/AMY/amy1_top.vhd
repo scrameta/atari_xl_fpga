@@ -136,6 +136,9 @@ architecture vhdl of amy1_top is
   signal aux_re, aux_rack, aux_we, aux_wack : std_logic;
   signal aux_raddr, aux_waddr        : std_logic_vector(7 downto 0);
   signal aux_rdata, aux_wdata        : std_logic_vector(35 downto 0);
+  signal aux2_re, aux2_rack, aux2_we, aux2_wack : std_logic;
+  signal aux2_raddr, aux2_waddr      : std_logic_vector(6 downto 0);
+  signal aux2_rdata, aux2_wdata      : std_logic_vector(35 downto 0);
 
   ---------------------------------------------------------------------------
   -- write FIFO: 2**FIFO_LOG2 x {addr, data}
@@ -339,6 +342,12 @@ begin
   ROM_REQUEST <= not loaded_reg;
   ROM_ADDR    <= std_logic_vector(to_unsigned(ROM_BASE, 17) + resize(load_idx_reg, 17));
   READY       <= loaded_reg;
+
+  -- Rev C (extension phase writes at e8, aux2 port): at least 9 clocks per chip clock,
+  -- that is 6 * STEP_DEN / STEP_NUM >= 9.  3/7 of 57.344 MHz gives 14.
+  assert USE_TICK or 2 * STEP_DEN >= 3 * STEP_NUM
+    report "amy1_top: Rev C needs at least 9 clocks per chip clock (2*STEP_DEN >= 3*STEP_NUM)"
+    severity failure;
 
   ---------------------------------------------------------------------------
   -- step enable, once the memories are loaded
@@ -615,6 +624,7 @@ begin
       clk       => CLK,
       reset_n   => RESET_N,
       tick      => tick,
+      ext_enable => ext_enable_reg,
       cpu_we    => eng_cpu_we,
       cpu_addr  => ADDR(2 downto 0),
       cpu_di    => DI,
@@ -627,6 +637,14 @@ begin
       aux_waddr => aux_waddr,
       aux_wdata => aux_wdata,
       aux_wack  => aux_wack,
+      aux2_re    => aux2_re,
+      aux2_raddr => aux2_raddr,
+      aux2_rack  => aux2_rack,
+      aux2_rdata => aux2_rdata,
+      aux2_we    => aux2_we,
+      aux2_waddr => aux2_waddr,
+      aux2_wdata => aux2_wdata,
+      aux2_wack  => aux2_wack,
       push_req  => eng_push_req,
       push_addr => eng_push_addr,
       push_data => eng_push_data,
@@ -641,6 +659,11 @@ begin
     aux_we        <= '0';
     aux_waddr     <= (others => '0');
     aux_wdata     <= (others => '0');
+    aux2_re       <= '0';
+    aux2_raddr    <= (others => '0');
+    aux2_we       <= '0';
+    aux2_waddr    <= (others => '0');
+    aux2_wdata    <= (others => '0');
     eng_push_req  <= '0';
     eng_push_addr <= "00";
     eng_push_data <= (others => '0');
@@ -677,7 +700,15 @@ begin
     aux_we       => aux_we,
     aux_waddr    => aux_waddr,
     aux_wdata    => aux_wdata,
-    aux_wack     => aux_wack
+    aux_wack     => aux_wack,
+    aux2_re      => aux2_re,
+    aux2_raddr   => aux2_raddr,
+    aux2_rack    => aux2_rack,
+    aux2_rdata   => aux2_rdata,
+    aux2_we      => aux2_we,
+    aux2_waddr   => aux2_waddr,
+    aux2_wdata   => aux2_wdata,
+    aux2_wack    => aux2_wack
   );
 
   ---------------------------------------------------------------------------

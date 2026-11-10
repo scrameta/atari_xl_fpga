@@ -6,8 +6,10 @@
 --   M9K 2, true dual port 1024 x 5:  SROMINT (512 x 5) on port A,
 --                                    XROMINT (128 x 5) at word 512 on port B,
 --                                    NOISE (64 x 3) at word 640
---   M9K 3, simple dual port 128 x 36: HARMBRKPOINT | HARMCURNTVAL | LHPRAM in words
---                                    0..63, PHASERAM (8 x 20) in words 64..71
+--   M9K 3, simple dual port 256 x 36: HARMBRKPOINT | HARMCURNTVAL | LHPRAM in words
+--                                    0..63, PHASERAM (8 x 20) in words 64..71, Rev C
+--                                    coefficients in 72..119; words 128..255 belong to
+--                                    the aux2 port (the note engine's extension page)
 --   M9K 4, simple dual port 256 x 36: VOICE18 | VOICE3 in words 0..15; words
 --                                    16..255 belong to the aux port (amy1_top's
 --                                    note engine)
@@ -68,7 +70,7 @@ architecture packed of amy1_mem is
   -- 30-bit harmonic state + 6 detuning bits. Unused addresses hold Rev C data:
   --  64..71 voice phases (historical), 72..87 4 x 6-bit stochasticity,
   --  88..119 2 x 18-bit accumulated phase offsets, 120..127 unused.
-  type harm_t is array (0 to 127) of std_logic_vector(35 downto 0);
+  type harm_t is array (0 to 255) of std_logic_vector(35 downto 0);
   type voice_t is array (0 to 255) of std_logic_vector(35 downto 0);
   signal harm : harm_t;
   signal voice : voice_t;
@@ -79,6 +81,14 @@ architecture packed of amy1_mem is
   signal detune_hold_reg, detune_hold_next : std_logic_vector(5 downto 0) := (others => '0');
   signal stoch_hold_reg, stoch_hold_next : std_logic_vector(5 downto 0) := (others => '0');
   signal off_new_reg, off_new_next : std_logic_vector(17 downto 0) := (others => '0');
+  -- phase offset update, two stages: at e6 the increment (from the core's ext_phase,
+  -- registered inputs only) and the old offset word are registered; at e7 they are
+  -- added and written. No path then runs from the RAM output through the arithmetic
+  -- back into the RAM.
+  signal inc_reg, inc_next   : std_logic_vector(17 downto 0) := (others => '0');
+  signal oldw_reg, oldw_next : std_logic_vector(35 downto 0) := (others => '0');
+  signal oldh_reg, oldh_next : std_logic_vector(17 downto 0) := (others => '0');
+  signal off_sum : std_logic_vector(17 downto 0);
   signal phase_we_d : std_logic := '0';
   signal phase_addr_d : std_logic_vector(2 downto 0) := (others => '0');
   signal phase_data_d : std_logic_vector(19 downto 0) := (others => '0');
@@ -98,7 +108,8 @@ architecture packed of amy1_mem is
   signal voice_q : std_logic_vector(20 downto 0);
   signal aux_rack_i, aux_wack_i, voice_wr : std_logic;
   signal harm_we, harm_re, voice_we, voice_re : std_logic;
-  signal harm_waddr, harm_raddr   : std_logic_vector(6 downto 0);
+  signal harm_waddr, harm_raddr   : std_logic_vector(7 downto 0);
+  signal aux2_rack_i, aux2_wack_i : std_logic;
   signal harm_wdata               : std_logic_vector(35 downto 0);
   signal voice_waddr, voice_raddr : std_logic_vector(7 downto 0);
   signal voice_wdata              : std_logic_vector(35 downto 0);
@@ -203,7 +214,8 @@ begin
   -- e3 capture phase, read the *audio* harmonic detuning word
   -- e4 capture detune, read stochasticity word
   -- e5 capture stochasticity, read offset state word
-  -- e6 calculate, write & capture updated phase offset
+  -- e6 calculate the increment; register it and the offset word
+  -- e7 add, write & capture updated phase offset
   -- e7 read pending extension-command coefficient word
   -- e8 RMW extension-command word and acknowledge (if pending)
   -- No extra M9K or read/write ports. THIS REQUIRES >=9 CLK CYCLES PER CE.
@@ -219,23 +231,24 @@ begin
                      harm_hold, harmbrkpoint_wdata, harmcurntval_wdata,
                      lhpram_wdata, harmbrkpoint_addr, phase_we_d,
                      phase_addr_d, phase_data_d, ce_d6, ext_enable, offset_step,
-                     harm_rd, phase_slot, offset_wdata, offset_addr,
+                     harm_rd, phase_slot, off_sum, oldw_reg, ce_d7, offset_addr,
                      ce_d8, ext_req_reg, ext_kind_reg, ext_value_reg,
-                     ext_index_reg, ext_rd_addr)
+                     ext_index_reg, ext_rd_addr, aux2_we, aux2_waddr, aux2_wdata)
     variable w : std_logic_vector(35 downto 0);
     variable n : natural range 0 to 3;
   begin
     harm_we <= '0';
-    harm_waddr <= '0' & harmbrkpoint_addr;
+    harm_waddr <= "00" & harmbrkpoint_addr;
+    aux2_wack_i <= '0';
     harm_wdata <= (35 downto 20 => '0') & phase_data_d;
     w := (others => '0');
     if load_we = '1' and in_unit(load_addr, HARM_BASE, 6) then
       harm_we <= '1';
-      harm_waddr <= '0' & load_addr(5 downto 0);
+      harm_waddr <= "00" & load_addr(5 downto 0);
       harm_wdata <= (35 downto 30 => '0') & load_data(29 downto 0);
     elsif load_we = '1' and in_unit(load_addr, PHASERAM_BASE, 3) then
       harm_we <= '1';
-      harm_waddr <= "1000" & load_addr(2 downto 0);
+      harm_waddr <= "01000" & load_addr(2 downto 0);
       harm_wdata <= (35 downto 20 => '0') & load_data(19 downto 0);
     elsif ce = '1' and (lhpram_we = '1' or harmcurntval_we = '1' or harmbrkpoint_we = '1') then
       w := harm_hold;
@@ -244,15 +257,15 @@ begin
       if lhpram_we = '1' then w(29) := lhpram_wdata(0); end if;
       harm_we <= '1'; harm_wdata <= w;
     elsif phase_we_d = '1' then
-      harm_we <= '1'; harm_waddr <= "1000" & phase_addr_d;
-    elsif ce_d6 = '1' and ext_enable = '1' and offset_step = '1' then
-      w := harm_rd;
+      harm_we <= '1'; harm_waddr <= "01000" & phase_addr_d;
+    elsif ce_d7 = '1' and ext_enable = '1' and offset_step = '1' then
+      w := oldw_reg;
       if phase_slot(0) = '0' then
-        w(17 downto 0) := offset_wdata;
+        w(17 downto 0) := off_sum;
       else
-        w(35 downto 18) := offset_wdata;
+        w(35 downto 18) := off_sum;
       end if;
-      harm_we <= '1'; harm_waddr <= offset_addr; harm_wdata <= w;
+      harm_we <= '1'; harm_waddr <= '0' & offset_addr; harm_wdata <= w;
     elsif ce_d8 = '1' and ext_req_reg = '1' then
       w := harm_rd;
       if ext_kind_reg = "01" then
@@ -261,18 +274,34 @@ begin
         n := to_integer(unsigned(ext_index_reg(1 downto 0)));
         w(n*6+5 downto n*6) := ext_value_reg(5 downto 0);
       end if;
-      harm_we <= '1'; harm_waddr <= ext_rd_addr; harm_wdata <= w;
+      harm_we <= '1'; harm_waddr <= '0' & ext_rd_addr; harm_wdata <= w;
+    elsif aux2_we = '1' then
+      -- lowest priority: the extension page (words 128..255) is never part of a
+      -- core read-modify-write, so the write needs only a free port
+      harm_we <= '1'; harm_waddr <= '1' & aux2_waddr; harm_wdata <= aux2_wdata;
+      aux2_wack_i <= '1';
     end if;
   end process;
 
-  harm_raddr <= '0' & harmbrkpoint_addr when ce_d1 = '1' else
-                "1000" & phaseram_addr when ce_d2 = '1' else
-                '0' & phase_slot when ce_d3 = '1' else
-                stochastic_addr when ce_d4 = '1' else
-                offset_addr when ce_d5 = '1' else
-                ext_rd_addr;
+  harm_raddr <= "00" & harmbrkpoint_addr when ce_d1 = '1' else
+                "01000" & phaseram_addr when ce_d2 = '1' else
+                "00" & phase_slot when ce_d3 = '1' else
+                '0' & stochastic_addr when ce_d4 = '1' else
+                '0' & offset_addr when ce_d5 = '1' else
+                '1' & aux2_raddr when aux2_rack_i = '1' else
+                '0' & ext_rd_addr;
   harm_re <= ce_d1 or ce_d2 or ce_d3 or ce_d4 or ce_d5 or
-             (ce_d7 and ext_req_reg);
+             (ce_d7 and ext_req_reg) or aux2_rack_i;
+
+  -- aux2 reads take any clock in which the core neither reads M9K 3 nor uses harm_rd in
+  -- the next clock: the core reads at e1..e5 and e7 and uses each result one clock
+  -- later (e2..e6, e8).  With at least 9 clocks per chip clock (the Rev C minimum)
+  -- that leaves ce, e6 and e8..; at 3/7 of 57.344 MHz (14 clocks) eight per chip clock.
+  aux2_rack_i <= aux2_re and not (ce_d1 or ce_d2 or ce_d3 or ce_d4 or ce_d5 or ce_d7)
+                 and not load_we;
+  aux2_rack  <= aux2_rack_i;
+  aux2_wack  <= aux2_wack_i;
+  aux2_rdata <= harm_rd;
 
   harm_ram: process(clk)
   begin
@@ -305,6 +334,9 @@ begin
       off_new_reg <= off_new_next;
       detune_hold_reg <= detune_hold_next;
       stoch_hold_reg <= stoch_hold_next;
+      inc_reg <= inc_next;
+      oldw_reg <= oldw_next;
+      oldh_reg <= oldh_next;
       if ext_reset = '0' and ext_we = '1' and ext_kind /= "00" then
         assert ext_req_reg = '0' and ext_pending_reg = '0'
           report "extension RAM write overrun" severity failure;
@@ -317,9 +349,9 @@ begin
                           ext_kind_reg, ext_index_reg, ext_value_reg,
                           det_valid_reg, stoch_valid_reg, off_valid_reg,
                           detune_hold_reg, stoch_hold_reg, off_new_reg,
-                          ce, ce_d4, ce_d5, ce_d6, ce_d8,
+                          ce, ce_d4, ce_d5, ce_d6, ce_d7, ce_d8,
                           offset_step, offset_wdata, ext_enable, phase_slot,
-                          harm_rd)
+                          harm_rd, inc_reg, oldw_reg, oldh_reg, off_sum)
     variable h : natural range 0 to 63;
     variable n : natural range 0 to 3;
   begin
@@ -335,7 +367,41 @@ begin
     off_new_next <= off_new_reg;
     detune_hold_next <= detune_hold_reg;
     stoch_hold_next <= stoch_hold_reg;
+    inc_next <= inc_reg;
+    oldw_next <= oldw_reg;
+    oldh_next <= oldh_reg;
+    if ce_d6 = '1' then
+      inc_next <= offset_wdata;                    -- the increment (core ext_phase, old = 0)
+      oldw_next <= harm_rd;                         -- the offset word read at e5
+      if off_valid_reg(to_integer(unsigned(phase_slot))) = '0' then
+        oldh_next <= (others => '0');
+      elsif phase_slot(0) = '0' then
+        oldh_next <= harm_rd(17 downto 0);
+      else
+        oldh_next <= harm_rd(35 downto 18);
+      end if;
+    end if;
+    -- the coefficients are captured already masked by their valid bits
+    if ce_d4 = '1' then
+      if det_valid_reg(to_integer(unsigned(phase_slot))) = '1' then
+        detune_hold_next <= harm_rd(35 downto 30);
+      else
+        detune_hold_next <= (others => '0');
+      end if;
+    end if;
+    if ce_d5 = '1' then
+      if stoch_valid_reg(to_integer(unsigned(phase_slot))) = '1' then
+        stoch_hold_next <= harm_rd(to_integer(unsigned(phase_slot(1 downto 0)))*6+5 downto
+                                   to_integer(unsigned(phase_slot(1 downto 0)))*6);
+      else
+        stoch_hold_next <= (others => '0');
+      end if;
+    end if;
     if ext_reset = '1' then
+      detune_hold_next <= (others => '0');
+      stoch_hold_next <= (others => '0');
+      inc_next <= (others => '0');
+      oldh_next <= (others => '0');
       det_valid_next <= (others => '0');
       stoch_valid_next <= (others => '0');
       off_valid_next <= (others => '0');
@@ -355,9 +421,9 @@ begin
         ext_req_next <= '1';
         ext_pending_next <= '0';
       end if;
-      if ce_d6 = '1' and offset_step = '1' then
+      if ce_d7 = '1' and offset_step = '1' then
         if ext_enable = '1' then
-          off_new_next <= offset_wdata;
+          off_new_next <= off_sum;
           off_valid_next(to_integer(unsigned(phase_slot))) <= '1';
         else
           off_new_next <= (others => '0');
@@ -374,14 +440,8 @@ begin
         ext_ack_next <= '1';
       end if;
     end if;
-    if ce_d4 = '1' then
-      detune_hold_next <= harm_rd(35 downto 30);
-    end if;
-    if ce_d5 = '1' then
-      n := to_integer(unsigned(phase_slot(1 downto 0)));
-      stoch_hold_next <= harm_rd(n*6+5 downto n*6);
-    end if;
   end process;
+  off_sum <= std_logic_vector(unsigned(oldh_reg) + unsigned(inc_reg));
 
   -- Legacy RAM/phase hold registers remain simple clock-enabled pipelines.
   harm_hold_regs: process(clk)
@@ -390,9 +450,9 @@ begin
       if ce_d2 = '1' then
         harm_hold <= harm_rd;
       elsif ce_d8 = '1' and ext_req_reg = '1' and ext_kind_reg = "01" and
-            ext_index_reg = harmbrkpoint_addr then
-        -- the core's RMW at the coming ce merges harm_hold (read at e1, before
-        -- this e8 detune write): forward the new detune so it is not undone
+            ext_rd_addr = '0' & harmbrkpoint_addr then
+        -- the core's read-modify-write at the coming ce merges harm_hold (read at
+        -- e1, before this e8 detune write): forward the new detune so it is not undone
         harm_hold(35 downto 30) <= ext_value_reg(5 downto 0);
       end if;
       if ce_d3 = '1' then phase_hold <= harm_rd(19 downto 0); end if;
@@ -410,8 +470,8 @@ begin
   lhpram_q <= harm_q(29 downto 29);
   phaseram_q <= phase_hold;
 
-  detune_q <= detune_hold_reg when det_valid_reg(to_integer(unsigned(phase_slot))) = '1' else (others => '0');
-  stoch_q <= stoch_hold_reg when stoch_valid_reg(to_integer(unsigned(phase_slot))) = '1' else (others => '0');
+  detune_q <= detune_hold_reg;                      -- masked when captured
+  stoch_q <= stoch_hold_reg;
   offset_old_q <= (others => '0') when off_valid_reg(to_integer(unsigned(phase_slot))) = '0' else
                   harm_rd(17 downto 0) when phase_slot(0) = '0' else
                   harm_rd(35 downto 18);

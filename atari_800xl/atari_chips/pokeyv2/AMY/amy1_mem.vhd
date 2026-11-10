@@ -40,6 +40,18 @@ entity amy1_mem is
     aux_wdata : in  std_logic_vector(35 downto 0) := (others => '0');
     aux_wack  : out std_logic;                             -- ... done at this edge
 
+    -- auxiliary port 2 on the harmonic block RAM, words 128..255 (address 0..127 here;
+    -- the packed layout only): the note engine's Rev C extension page.  Same handshake
+    -- as the aux port; granted in any clock the core leaves the port free.
+    aux2_re    : in  std_logic := '0';
+    aux2_raddr : in  std_logic_vector(6 downto 0) := (others => '0');
+    aux2_rack  : out std_logic;
+    aux2_rdata : out std_logic_vector(35 downto 0);
+    aux2_we    : in  std_logic := '0';
+    aux2_waddr : in  std_logic_vector(6 downto 0) := (others => '0');
+    aux2_wdata : in  std_logic_vector(35 downto 0) := (others => '0');
+    aux2_wack  : out std_logic;
+
     phaseram_addr : in  std_logic_vector(2 downto 0);
     phaseram_we : in  std_logic;
     phaseram_wdata : in  std_logic_vector(19 downto 0);
@@ -105,6 +117,9 @@ begin
   aux_rack  <= '0';
   aux_wack  <= '0';
   aux_rdata <= (others => '0');
+  aux2_rack  <= '0';
+  aux2_wack  <= '0';
+  aux2_rdata <= (others => '0');
 
   -- RAM PHASERAM: 8 x 20
   phaseram_p: process (clk)

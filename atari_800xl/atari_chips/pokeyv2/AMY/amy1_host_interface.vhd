@@ -32,7 +32,8 @@ entity amy1_host_interface is
     cmd_wr   : out std_logic;                     -- the command register is being written
     reg_a    : out std_logic_vector(7 downto 0);
     reg_b    : out std_logic_vector(4 downto 0);
-    reg_c    : out std_logic_vector(7 downto 0)
+    reg_c    : out std_logic_vector(7 downto 0);
+    reg_b7   : out std_logic                      -- Rev C: B bit 7 (proportional mode, §7.6)
   );
 end entity;
 
@@ -40,6 +41,7 @@ architecture rtl of amy1_host_interface is
 
   signal cmnd_reg, a_reg, c_reg : std_logic_vector(7 downto 0) := (others => '0');
   signal b_reg : std_logic_vector(4 downto 0) := (others => '0');
+  signal b7_reg : std_logic := '0';
 
 begin
 
@@ -50,7 +52,7 @@ begin
         case addr is
           when "00"   => cmnd_reg <= wdata;
           when "01"   => a_reg <= wdata;
-          when "10"   => b_reg <= wdata(4 downto 0);
+          when "10"   => b_reg <= wdata(4 downto 0); b7_reg <= wdata(7);
           when others => c_reg <= wdata;
         end case;
       end if;
@@ -74,5 +76,6 @@ begin
   reg_a  <= a_reg;
   reg_b  <= b_reg;
   reg_c  <= c_reg;
+  reg_b7 <= b7_reg;
 
 end architecture;

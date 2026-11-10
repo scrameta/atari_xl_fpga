@@ -73,6 +73,11 @@ entity amy1_envelope_generator is
     fan        : out std_logic;                      -- silence (to exp_rom, clrdisp)
     noise_gen  : out std_logic;
     ext_enable : in std_logic := '0';
+    -- Rev C proportional mode (§7.6): RAM addresses, the B bit 7 latch, clear
+    harm_addr  : in  std_logic_vector(5 downto 0) := (others => '0');
+    voice_addr : in  std_logic_vector(3 downto 0) := (others => '0');
+    reg_b7     : in  std_logic := '0';
+    prop_clear : in  std_logic := '0';
     voice_atten : in std_logic_vector(7 downto 0) := (others => '0');
     white_sel  : out std_logic;                      -- the voice's noise generator
     slope_rate : out std_logic_vector(1 downto 0);   -- to the timebase (ssen)
@@ -143,6 +148,26 @@ architecture rtl of amy1_envelope_generator is
   signal atten_log : std_logic_vector(12 downto 0);
   signal atten_mute : std_logic;
   signal atten_units : std_logic_vector(7 downto 0);
+
+  -- Rev C proportional mode (§7.6). One flag per harmonic breakpoint and per voice
+  -- breakpoint, kept in flops beside the RAMs (the RAM words have no spare bit). They
+  -- follow the RAM contract: written at the ce of the breakpoint write, read
+  -- combinationally from the same address, so a flag is seen exactly when its slope is.
+  signal hprop_mem : std_logic_vector(63 downto 0) := (others => '0');
+  signal vprop_mem : std_logic_vector(7 downto 0) := (others => '0');
+  signal prop_h_q, prop_v_q, prop_wflag : std_logic;
+  signal prop_reg, prop_next : std_logic := '0';
+  signal prop_on : std_logic;
+  signal pval_lo : std_logic_vector(4 downto 0);
+  signal pval_hi : unsigned(12 downto 0);
+  signal sval_lo : std_logic_vector(4 downto 0);
+  signal sval_hi : unsigned(12 downto 0);
+  -- the proportional step is pipelined on clk (not ce): its inputs change only at ce,
+  -- and ce comes at least 9 clocks apart, so two clocks later the step is ready long
+  -- before the next ce uses it, and no path is longer than one stage
+  signal pd_reg  : signed(18 downto 0) := (others => '0');    -- dest - current
+  signal pk_reg  : natural range 0 to 15 := 0;
+  signal pst_reg : signed(18 downto 0) := (others => '0');    -- the step
 
 begin
 
@@ -259,9 +284,9 @@ begin
     -- bits 4..0: the frequency fraction plus the mantissa
     lo := resize(unsigned(slp_reg), 6) + resize(clo_reg, 6);
     if slpz = '1' then
-      nval_lo <= (others => '0');
+      sval_lo <= (others => '0');
     else
-      nval_lo <= std_logic_vector(lo(4 downto 0));
+      sval_lo <= std_logic_vector(lo(4 downto 0));
     end if;
     -- carry into bit 5 only in a frequency slot (the clock after P3)
     c5(0) := lo(5) and not np3_reg;
@@ -271,7 +296,78 @@ begin
     else
       op := (12 downto 5 => sign_reg) & unsigned(slp_reg);
     end if;
-    nval_hi <= chi_reg + op + c5;
+    sval_hi <= chi_reg + op + c5;
+  end process;
+
+  -- Rev C proportional step (§7.6): step = (destination - current) >> k, k = A[3:0],
+  -- at least 1 towards the destination. A frequency works on all 18 bits (current
+  -- 17..0 against the destination at 17..5), an amplitude on its 13 (the destination's
+  -- low bits are cleared). It never passes the destination, so the existing arrival
+  -- compare stops it there; a zero slope is still a jump.
+  prop_pipe: process (clk)
+    variable cur, tgt, st : signed(18 downto 0);
+  begin
+    if rising_edge(clk) then
+      -- stage 1: the difference
+      if p(0) = '1' then
+        cur := signed("0" & std_logic_vector(chi_reg) & std_logic_vector(clo_reg));
+        tgt := signed("0" & dst & "00000");
+      else
+        cur := resize(signed("0" & std_logic_vector(chi_reg)), 19);
+        tgt := resize(signed("0" & dst), 19);
+      end if;
+      pd_reg <= tgt - cur;
+      pk_reg <= to_integer(unsigned(slp_reg(3 downto 0)));
+      -- stage 2: the shift, at least 1 towards the destination
+      st := shift_right(pd_reg, pk_reg);
+      if st = 0 and pd_reg > 0 then
+        st := to_signed(1, 19);
+      end if;
+      pst_reg <= st;
+    end if;
+  end process;
+
+  process (chi_reg, clo_reg, pst_reg, p)
+    variable cur, nw : signed(18 downto 0);
+  begin
+    if p(0) = '1' then
+      cur := signed("0" & std_logic_vector(chi_reg) & std_logic_vector(clo_reg));
+    else
+      cur := resize(signed("0" & std_logic_vector(chi_reg)), 19);
+    end if;
+    nw := cur + pst_reg;
+    if p(0) = '1' then
+      pval_hi <= unsigned(nw(17 downto 5));
+      pval_lo <= std_logic_vector(nw(4 downto 0));
+    else
+      pval_hi <= unsigned(nw(12 downto 0));
+      pval_lo <= std_logic_vector(clo_reg);
+    end if;
+  end process;
+
+  prop_on <= prop_reg and ext_enable;
+  nval_hi <= pval_hi when prop_on = '1' and slpz = '0' else sval_hi;
+  nval_lo <= pval_lo when prop_on = '1' and slpz = '0' else sval_lo;
+
+  -- the flags (cleared with the other extension state: reset, lock, EXT_RESET)
+  prop_wflag <= reg_b7 and ext_enable;
+  prop_h_q <= hprop_mem(to_integer(unsigned(harm_addr)));
+  prop_v_q <= vprop_mem(to_integer(unsigned(voice_addr(3 downto 1))));
+  process (clk)
+  begin
+    if rising_edge(clk) then
+      if prop_clear = '1' then
+        hprop_mem <= (others => '0');
+        vprop_mem <= (others => '0');
+      elsif ce = '1' then
+        if enwrbp_reg = '1' then
+          hprop_mem(to_integer(unsigned(harm_addr))) <= prop_wflag;
+        end if;
+        if enwrvi_reg = '1' then
+          vprop_mem(to_integer(unsigned(voice_addr(3 downto 1)))) <= prop_wflag;
+        end if;
+      end if;
+    end if;
   end process;
 
   -- at the destination? a frequency (P0) compares 13 bits, an amplitude 8
@@ -320,17 +416,20 @@ begin
   process (p, p2x, odd, rst, ld_flo, h_val, f_val, sel_ff, slp_reg, sign_reg, ss_reg,
            dlo, dlo_reg, dhi_reg, chi_reg, clo_reg, vt_reg, nvlo_reg, nvhi_reg,
            ldnv_reg, upd_reg, rbh_reg, rbl_reg, nval_lo, nval_hi, slpz, dst, upenffn,
-           e6nz, bover, bneg, logz)
+           e6nz, bover, bneg, logz, ext_enable, prop_reg, prop_h_q, prop_v_q)
   begin
     -- slope: H8..1 (harmonic) or F7..0 (voice, P2X); held in P3
     slp_next  <= slp_reg;
     sign_next <= sign_reg;
     ss_next   <= ss_reg;
+    prop_next <= prop_reg;
     if p(3) = '0' then
       if p2x = '1' then
         slp_next <= f_val(4 downto 0); ss_next <= f_val(6 downto 5); sign_next <= f_val(7);
+        prop_next <= prop_v_q;
       else
         slp_next <= h_val(5 downto 1); ss_next <= h_val(7 downto 6); sign_next <= h_val(8);
+        prop_next <= prop_h_q;
       end if;
     end if;
 
@@ -384,7 +483,13 @@ begin
     -- noise path (one clock late)
     nzd_next <= std_logic_vector(e6nz) or (12 downto 0 => bover);
     neg_next <= bneg;
-    nzv_next <= not (vt_reg(1) or vt_reg(0));
+    -- Rev C: a type-3 (white) voice is a harmonic voice here; its noise is
+    -- made by randomising the phase (amy1_ext_phase), not the log level
+    if ext_enable = '1' and vt_reg = "11" then
+      nzv_next <= '1';
+    else
+      nzv_next <= not (vt_reg(1) or vt_reg(0));
+    end if;
     lz_next  <= logz;
 
     -- last harmonic pair flag
@@ -409,6 +514,7 @@ begin
       if ce = '1' then
         slp_reg  <= slp_next;
         sign_reg <= sign_next;
+        prop_reg <= prop_next;
         ss_reg   <= ss_next;
         dlo_reg  <= dlo_next;
         dhi_reg  <= dhi_next;

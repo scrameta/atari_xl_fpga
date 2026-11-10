@@ -58,7 +58,16 @@ entity amy1 is
     aux_we    : in  std_logic := '0';
     aux_waddr : in  std_logic_vector(7 downto 0) := (others => '0');
     aux_wdata : in  std_logic_vector(35 downto 0) := (others => '0');
-    aux_wack  : out std_logic
+    aux_wack  : out std_logic;
+    -- auxiliary port 2 on the harmonic block RAM (words 128..255; the packed layout only)
+    aux2_re    : in  std_logic := '0';
+    aux2_raddr : in  std_logic_vector(6 downto 0) := (others => '0');
+    aux2_rack  : out std_logic;
+    aux2_rdata : out std_logic_vector(35 downto 0);
+    aux2_we    : in  std_logic := '0';
+    aux2_waddr : in  std_logic_vector(6 downto 0) := (others => '0');
+    aux2_wdata : in  std_logic_vector(35 downto 0) := (others => '0');
+    aux2_wack  : out std_logic
   );
 end entity;
 
@@ -184,6 +193,8 @@ begin
     load_we => load_we, load_addr => load_addr, load_data => load_data,
     aux_re => aux_re, aux_raddr => aux_raddr, aux_rack => aux_rack, aux_rdata => aux_rdata,
     aux_we => aux_we, aux_waddr => aux_waddr, aux_wdata => aux_wdata, aux_wack => aux_wack,
+    aux2_re => aux2_re, aux2_raddr => aux2_raddr, aux2_rack => aux2_rack, aux2_rdata => aux2_rdata,
+    aux2_we => aux2_we, aux2_waddr => aux2_waddr, aux2_wdata => aux2_wdata, aux2_wack => aux2_wack,
     phaseram_addr => phaseram_addr, phaseram_we => phaseram_we,
     phaseram_wdata => phaseram_wdata, phaseram_q => phaseram_q,
     noise_addr => noise_addr, noise_we => noise_we, noise_wdata => noise_wdata, noise_q => noise_q,
@@ -215,6 +226,8 @@ begin
     load_we => load_we, load_addr => load_addr, load_data => load_data,
     aux_re => aux_re, aux_raddr => aux_raddr, aux_rack => aux_rack, aux_rdata => aux_rdata,
     aux_we => aux_we, aux_waddr => aux_waddr, aux_wdata => aux_wdata, aux_wack => aux_wack,
+    aux2_re => aux2_re, aux2_raddr => aux2_raddr, aux2_rack => aux2_rack, aux2_rdata => aux2_rdata,
+    aux2_we => aux2_we, aux2_waddr => aux2_waddr, aux2_wdata => aux2_wdata, aux2_wack => aux2_wack,
     phaseram_addr => phaseram_addr, phaseram_we => phaseram_we,
     phaseram_wdata => phaseram_wdata, phaseram_q => phaseram_q,
     noise_addr => noise_addr, noise_we => noise_we, noise_wdata => noise_wdata, noise_q => noise_q,
