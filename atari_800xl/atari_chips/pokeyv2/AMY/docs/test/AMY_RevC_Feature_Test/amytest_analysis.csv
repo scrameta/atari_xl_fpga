@@ -1,0 +1,38 @@
+segment,group,name,onset_s,rms_dbfs,dominant_hz,spectral_flatness,gap_dbfs,left_dbfs,right_dbfs
+1,CORE,Pure sine / reference A440,4.268,-13.7,440.0,1e-05,-13.7,-13.7,-13.7
+2,CORE,Two harmonics,4.868,-13.7,440.0,5e-05,-13.7,-13.7,-13.7
+3,CORE,Eight harmonics,5.468,-13.7,437.1,0.00084,-13.7,-13.7,-13.7
+4,CORE,Harmonic amplitude attack,6.068,-13.7,440.0,0.00038,-13.7,-13.7,-13.7
+5,CORE,Harmonic amplitude decay,6.668,-13.7,440.0,1e-05,-13.7,-13.7,-13.7
+6,CORE,Frequency glide up,7.268,-13.7,437.1,0.03466,-13.7,-13.7,-13.7
+7,CORE,Frequency glide down,7.868,-13.7,262.9,2e-05,-13.7,-13.7,-13.7
+8,CORE,Original noise generator 0,8.468,-13.7,437.1,8e-05,-13.7,-13.7,-13.7
+9,CORE,Original noise generator 1,9.068,-13.7,1242.9,0.14456,-13.7,-13.7,-13.7
+10,CORE,40-harmonic mode,9.668,-13.7,1242.9,0.11728,-13.7,-13.7,-13.7
+11,CORE,64-harmonic mode control,10.268,-13.7,1242.9,0.14456,-13.7,-13.7,-13.7
+12,CORE,Global output volume half,10.868,-13.7,702.9,1e-05,-13.7,-13.7,-13.7
+13,CORE,Stereo independent voices,11.468,-13.7,440.0,1e-05,-13.7,-13.7,-13.7
+14,CORE,Tonal plus original noise,12.068,-13.7,440.0,5e-05,-13.7,-13.7,-13.7
+15,CORE,6502 note engine note-on,12.668,-13.7,437.1,0.00095,-13.7,-13.7,-13.7
+16,EXT,"Unlocked, all coefficients zero",13.268,-13.7,440.0,0.00017,-13.7,-13.7,-13.7
+17,EXT,Type 3 locked (legacy control),13.868,-13.7,440.0,0.0069,-13.7,-13.7,-13.7
+18,EXT,White excitation (type 3),14.468,-13.7,262.9,1e-05,-13.7,-13.7,-13.7
+19,EXT,Voice attenuation 6 dB,15.068,-13.7,440.0,1e-05,-13.7,-13.7,-13.7
+20,EXT,Voice attenuation 12 dB,15.668,-13.7,440.0,0.09245,-13.7,-13.7,-13.7
+21,EXT,Harmonic detune +24/64,16.268,-13.7,1242.9,0.38544,-13.7,-13.7,-13.7
+22,EXT,Harmonic detune -24/64,16.868,-13.7,1242.9,0.3715,-13.7,-13.7,-13.7
+23,EXT,Phase diffusion 24/63,17.468,-13.7,440.0,2e-05,-13.7,-13.7,-13.7
+24,EXT,Phase diffusion 63/63,18.068,-13.7,440.0,0.0001,-13.7,-13.7,-13.7
+25,COMBO,Attenuation + detune,18.668,-13.7,440.0,1e-05,-13.7,-13.7,-13.7
+26,COMBO,Attenuation + diffusion,19.268,-13.7,440.0,0.00015,-13.7,-13.7,-13.7
+27,COMBO,Detune + diffusion,19.868,-13.7,437.1,0.0007,-13.7,-13.7,-13.7
+28,COMBO,White + attenuation,20.468,-13.7,440.0,0.00014,-13.7,-13.7,-13.7
+29,COMBO,White + detune,21.068,-13.7,440.0,1e-05,-13.7,-13.7,-13.7
+30,COMBO,White + diffusion,21.668,-13.7,440.0,6e-05,-13.7,-13.7,-13.7
+31,COMBO,Original noise + attenuation,22.268,-13.7,440.0,5e-05,-13.7,-13.7,-13.7
+32,COMBO,Stereo + detune,22.868,-13.7,440.0,0.00021,-13.7,-13.7,-13.7
+33,COMBO,40-mode + diffusion,23.468,-13.7,440.0,0.20515,-13.7,-13.7,-13.7
+34,COMBO,40-mode + detune,24.068,-13.7,2488.6,0.31396,-13.7,-13.7,-13.7
+35,COMBO,Attenuation + detune + diffusion,24.668,-13.7,1242.9,0.36125,-13.7,-13.7,-13.7
+36,COMBO,White + attenuation + diffusion,25.268,-13.7,1242.9,0.36163,-13.7,-13.7,-13.7
+37,COMBO,All four extensions,25.868,-13.7,2488.6,0.08377,-13.7,-13.7,-13.7
