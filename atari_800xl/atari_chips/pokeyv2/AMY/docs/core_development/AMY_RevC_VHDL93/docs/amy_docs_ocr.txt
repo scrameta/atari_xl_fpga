@@ -1,0 +1,3994 @@
+=== AMY_1_spec_confidential_binder_ver_2-01.pgm.o.txt
+AMY 1 Spec.
+
+CONFIDERTIAL
+
+=== AMY_1_spec_confidential_binder_ver_2-02.pgm.o.txt
+A wee ey
+
+COMPANY CONFIDENTIAL
+
+NOTICE TO ALL PERSONS RECEIVING THIS DOCUMENT CONFIDENTIAL:
+Reproduction forbidden without the specific written permission of Atari, Inc.
+Sunnyvale, California. This document is only conditionally Issued and neltner
+receipt nor possession thereof confers or transfers any right In, oF license to use the
+Subject matter of the dacument or any design or technical information shown
+thereon, nor any right to reproduct this document or any part tharaot, except
+
+for manufacture under the corporation’s written !icen:
+
+ORAFTED BY
+
+ARI
+
+Semiconductor Group
+
+ATARI, INCORPORATED
+275 GIBRALTAR DRIVE
+SUNNYVALE, CA 94086
+
+TFTEN (RIRAY
+=== AMY_1_spec_confidential_binder_ver_2-03.pgm.o.txt
+REVISIONS
+
+Description
+AMY 1 was revised from original to REV A to make some minor changes and relax a
+couple of timing requirements. The AMY 1 chip can run 10 MHz clock instead of
+5 MHz and the RESET input pulse width is required to be 10 clocks period
+instead of 2 clocks.
+Due to the addition of on chip test enhancement (see Appendix III), noise
+generator enhancement (see Noise RAM initialization format) and pin-out
+assignment change, the AMY 1 Rev. A was revised to AMY 1 Rev. B.
+
+—
+
+DEVICE NUMBER DEVICE NAME
+COMPANY c021859 AMY
+CONFIDENTIAL
+
+A, OOCUMENT NUMBER
+ia
+Semiconductor Group
+
+Dr commen conven
+
+16151 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-04.pgm.o.txt
+TABLE OF CONTENTS
+
+~— Page
+1. GENERAL DESCRIPTION 4
+2. FEATURES 4
+3. BLOCK DIAGRAM 4
+4, PIN ASSIGNMENT 4
+5. PIN DESCRIPTION 5
+6. FUNCTIONAL DESCRIPTION 7
+6.1 Internal Architecture 7
+
+6.2 Complete AMY System 10
+
+6.3 Envelope Generation il
+6.3.1 Slope Format 12
+
+6.3.2 Destination Format 14
+
+7. REGISTER ORGANIZATION 16
+7.1 AMY Command Set 16
+
+7.2 RAM and Register Areas 17
+
+7.3 AMY Data Registers 18
+
+_ 7.4 Other User Accessible Registers and RAM Areas 19
+7.5 Command Descriptions 20
+7.5.1 Write Fundamental Frequency Breakpoint Command 20
+
+7.5.2 Write Harmonic Amplitude Breakpoint Command 22
+
+7.5.3 Read Fundamental Frequency Current Value Command 24
+
+7.5.4 Read Harmonic Amplitude Current Value Command 25
+
+7.5.5 Write System Options Register Command 26
+
+7.5.6 Write System Control Register Command 27
+
+7.5.7 Write Noise RAM Command 28
+
+7.5.8 Write Last Harmonic Pair Flag Command 30
+
+7.5.9 Write Voice Type Command 31
+
+8. OPERATING PROCEDURE 32
+8.1 Initialization 32
+8.1.1 RESET Pin and Power Up Sequence 32
+
+8.2 Initialization Flow Chart 33
+
+8.3 Summary 34
+
+9. MAXIMUM RATINGS 38
+10. CAPACITANCES 38
+11, D.C. CHARACTERISTICS 39
+
+COMPANY
+CONFIDENTIAL
+
+DEVICE NUMBER DEVICE NAME
+021859 amy 1
+OOCUMENT NUMBER
+D021859 pace? or 99
+
+(Oe concern conse 1€251 (6/83)
+
+A,
+
+ATARI"
+
+Semiconductor Group
+
+=== AMY_1_spec_confidential_binder_ver_2-05.pgm.o.txt
+Table of Contents (Cont'd) Page
+
+12, A.C. CHARACTERISTICS 40
+12.1 Clock & Reset 40
+12.2 Output Section 41
+12.3 System Bus Interface 43
+Appendix I Slope Tables 47
+Appendix II Musical Specification . 57
+Appendix III Testing Mode 59
+
+TABLE OF ILLUSTRATIONS
+
+1. Simplified Block Diagram 7
+2. HRAM and VRAM Data Word Format 8
+3. Complete AMY System 10
+4. Piecewise Linear Envelope 11
+5. Harmonic Amplitude vs Destination 14
+6. Fundamental Frequency vs. Destination 15
+7. AMY RAM and Register Areas 17
+8. Reset with Standard uP System Reset Circuit 32
+9. Reset with RC . 32
+10. INT/RDY Pin Timing 37
+
+COMPANY
+CONFIDENTIAL
+
+IOEVICE NUMBER DEVICE NAME .
+
+yi mons
+J
+ATARI
+
+DOCUMENT NUMBER.
+Semiconductor Group DO21859 paae 4 or 59
+
+rere comers coneny 1E151 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-06.pgm.o.txt
+1. GENERAL DESCRIPTION
+
+AMY 1 is a digital, pipeline architectured, additive music synthesizer chip.
+There are 8 voices maximum assignable with a total of 64 harmonic oscillators,
+available in groups of two, for voice assignment. AMY 1 has 72 independent,
+piecewise linear envelope generators: 8 fundamental frequency envelopes and 64
+harmonic amplitude envelopes. A complete sound system requires addition of a
+D/A converter IC (up to 16 bit). To provide higher level commands, the system
+will generally include a controlling processor such as the Intel 8051 single
+chip microcomputer.
+
+2. FEATURES
+
+o Single 40 pin DIP o Interrupt/Ready pin
+
+o 3u HMOS technology o Bus compatible with multiplexed and
+
+o Pipeline architecture non-multiplexed bus microprocessors
+
+o 10 MHz external clock o Full 16 bit digital output width
+frequency (maximum) o Independent voice mode
+
+o Integrated exponential ROM o Adjustable sample rate
+
+o 1/128 dB harmonic amplitude co Programmable noise statistics
+resolution & 1/64 semitone o 72 on chip envelope generators
+fundamental frequency resolution o Approximately 37,000 transistors
+
+3. BLOCK DIAGRAM 4. PIN ASSIGNMENT
+
+RESERVED ep ycc
+RESERVED Ce 90 VevTO
+
+=—
+;NOISE {FREQUENCY ©
+
+;& AMPLITUDI
+| a,
+
+GENERATION +
+
+cLock cB en OUTSTB’T1
+
+DB? oE
+
+DBE
+
+DBS
+
+' DB4
+— 2B3
+DB2
+
+DBL
+DBe
+
+—_——t——
+
+= __, OUTSTE
+AMPLE t oe
+
+b= ForvatTion s*
+
+\CCUMULATOR |
+
+SAMP (0-15)
+
+COMPANY
+CONFIDENTIAL
+
+DEVICE NUMBER DEVICE NAME
+\CO21859 AMY 1
+
+DOCUMENT NUMBER, 5
+1DO021859 pace 9 or 59
+
+1€151 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-07.pgm.o.txt
+5. PIN DESCRIPTION
+
+Pin Name Type Pin ¢ Function
+
+Voc I 40 +5 volt supply (+52).
+
+GND rT 20 Ground.
+
+RESET i. 18 Reset. When low, performs a master
+
+reset on the AMY 1 chip. This signal
+asynchronously terminates device
+activity and clears the System Options
+register, System Control register,
+Sequencer, Control Counter, Subsample
+Counter, Phase RAM and Digital Output
+Word (SAMP bus).
+
+Al-AO I 13-14 Address lines. Used to select internal
+AMY 1 registers when not in ALE mode.
+Al is the most significant bit. Al and
+AO should be tied to Ground when ALE
+mode is used. :
+
+17 Read strobe, Used to transfer contents
+of selected register onto the data
+bus lines (DBO-DB7). CS pin must be
+low to enable the AMY bus drivers.
+
+Bl
+
+16 Write strobe. Used to load the
+selected AMY register from the data
+bus lines (DBO-DB7). CS must be low
+for the transfer to take place.
+
+Al
+
+ts I 15 Chip select. When low, the RD and
+WR pins are enabled, When high, DB7-
+DBO are tri-stated. The only time that
+AMY drives the data bus (DB7-DBO) is
+when CS = RD = 0.
+
+CLK I 3 10 MHz external clock (divided by 2
+internally).
+
+DB7-DBO I/o 4-11 8 bit, tri-state data bus used to
+transfer data and commands between
+AMY 1 and the controlling CPU. DB7
+is the most significant bit.
+
+COMPANY
+CONFIDENTIAL *
+
+DEVice NUMBER DEVICE NAME
+CO21859 A 1
+ATARI DOCUMENT NUMBER
+
+DO21859 6 59
+Semiconductor Group PAGE oF
+
+Qe conn commy 1E151 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-08.pgm.o.txt
+Pin Name Type Pin # Function
+
+SAMP15-SAMPO 0 36-21 16 bit data bus used to transfer
+
+data from AMY 1 to an external D/A
+converter. SAMP15 is the most
+significant bit. This bus is tri-
+stated unless the OE pin is low. This
+allows more than one device to share a
+single D/A converter. These outputs
+are presented in offset binary code
+form, i.e. 2's complement.
+
+OUTSTB/TL ce) 38 Qutput strobe. When low, indicates .
+that valid data is on the SAMP bus.
+(see Section’ 12.2).
+
+INT/RDY 10) 19 Interrupt/Ready. When operating in
+the READY mode, this pin is high only
+when AMY 1 is not executing a command.
+In the INTERRUPT mode, the pin
+generates a 2 clock period wide pulse
+when completing a command.
+
+ALE I 12 Address latch enable. When enabled,
+latches address information from the
+DBO and DB1 bits of the data bus. The
+AO and Al pins are grounded when this
+pin is used. When not in use, ALE
+should be grounded.
+
+vo/TO ce) 39 Voice zero. When operating in the
+INDIVIDUAL mode, the VO pin will be
+high during one OUTSTB pulse per_sample
+period, During this particular OUTSTB
+the data on the SAMP bus is the current
+sample for Voice 0.
+
+OE 1 37 Output enable. When low, the output
+SAMP data bus is enabled. When high,
+the output SAMP data bus is tri-stated.
+
+RESERVED 1, 2 Test Pins. Ground when is use. These
+two pins are designated for Sentry tes—-
+ting only.
+
+COMPANY
+CONFIDENTIAL
+
+DEVICE NUMBER DEVICE NAME
+I ra
+|
+ATARI
+
+DOCUMENT NUMBER
+DO021859 . 7 59
+Semiconductor Group PAGE oF
+
+ore eee comme 16151 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-09.pgm.o.txt
+~~ 6. FUNCTIONAL DESCRIPTION
+6.1 Internal Architecture
+
+AMY 1 consists of 8 major blocks as shown in Figure 1 below.
+
+Generator Exponential
+
+ROM
+
+Envelope
+
+uP System Bu |
+Interface < Interface ¢—» Generators
+
+Phase
+Generation
+
+, Sequencer & Argument
+Pormation
+Control
+Bus
+
+Digital
+
+foutput
+Output
+
+iAccumulator
+
+16
+
+Figure 1, Simplified Block Diagram
+
+The System Bus Interface block provides the user with a standard microprocessor
+interface. The user sends all commands and passes frequency and amplitude
+breakpoint data and current values over the "uP Interface" lines (RESET, RD,
+wR, CS, DB(0-7), ALE, INT/RDY, Al, AO).
+
+The Noise Generator block contains a small RAM, a serial adder, and some
+
+associated logic, It generates two different channels of bandlimited white
+noise simultaneously. Bandwidths are programmable by initialization of the
+
+Noise RAM.
+DEVICE NUMBER DEVICE NAME
+COMPANY 021859 AMY 1
+
+A. CONFIDENTIAL SRSeIMENT NUMBER ; 7
+Semiconductor Group PAGE oF
+
+1£1$2 (6/83)
+
+D2 ere commen Conon
+=== AMY_1_spec_confidential_binder_ver_2-10.pgm.o.txt
+Internal Architecture (continued)
+
+The Envelope Generator block contains the Voice RAM (VRAM), the Harmonic RAM
+(HRAM) and logic necessary to generate the 72 piecewise linear envelopes (8
+fundamental frequency envelopes and 64 harmonic amplitude envelopes). The RAMs
+maintain a slope value, destination value and current value for each of the 72
+envelopes (see Figure 2). The Voice RAM, in addition to slope, destination and
+current value, contains a 2 bit field for voice type selection, The total
+Envelope Generator RAM size is (64 x 30) + (21 x 16) bits = 282 bytes.
+
+HRAM Data Word Format
+
+13 8 8
+Harmonic Harmonic Harmonic
+Amplitude Amplitude Amplitude
+Current Value Destination Slope
+
+VRAM Data Word Format
+
+13 8
+Fundamental Fundamental
+. Frequency Frequency
+Destination Slope
+and
+18 2 i
+Fundamental Frequency Voice Spare
+Current Value Type
+
+Select
+
+Figure 2. HRAM and VRAM Data Word Format
+
+COMPANY
+CONFIDENTIAL
+
+DEVICE NUMBER DEVICE NAME
+C021859 AMY 1
+ATARI bones NUMBER
+
+Semiconductor Group page 9 or 59
+
+rma comennes Coreen 16151 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-11.pgm.o.txt
+Internal Architecture (continued)
+
+The Envelope Generator block also contains the Last Harmonic Pair Flags (32)
+and an assortment of adders and other logic to generate all AMY envelopes from
+breakpoint information placed in the HRAM and VRAM by the sequencer under
+direction of the System Bus-Interface command decoder. The Envelope Generator
+block also contains a Noise Adder. This is.used in generating noise based
+voices,
+
+The Exponential ROM converts the outputs of the 72 envelope generators to a
+piecewise exponential form for use internally. The ROM permits the AMY user to
+use decibel units for harmonic amplitude specification and semitone units for
+fundamental frequency specification. Not only are data widths reduced between
+the user and AMY, but master amplitude scaling and transposition operations are
+reduced to simple addition operations in the controlling processor.
+
+The Sequencer block controls all the other blocks. It contains a 7 bit clock
+period counter and 7 bit subsample counter.
+
+COMPANY
+CONFIDENTIAL
+
+DEVICe NUMBER DEVICE NAME
+021859 AMY 1
+OOCUMENT NUMBE: R
+DO21859 pace 10 ge 59
+
+16151 (6/83)
+
+ATARY
+
+Semiconductor Group
+
+(D1 vr comers omen
+=== AMY_1_spec_confidential_binder_ver_2-12.pgm.o.txt
+6.2 Complete AMY System
+
+A complete sound system requires the addition of a D/A converter chip (up to 16
+bit). To provide higher level commands the system will generally include a
+controlling processor such as the Intel 8051 Single Chip Microcomputer (see
+Figure 3 below).
+
+Audio
+Out
+(unfiltered)
+
+16 bit
+D/A
+Converter
+
+Keyboard or
+other
+Controller
+
+[r+ Lara]
+
+Figure 3, Complete AMY System Block
+
+COMPANY
+CONFIDENTIAL
+
+OEVICE NUMBER DEVICE NAME
+\C021859 A 1
+
+DOCUMENT NUMBER
+bo21859 pacell or 59
+
+18251 (6/83)
+
+=== AMY_1_spec_confidential_binder_ver_2-13.pgm.o.txt
+6.3 Envelope Generation
+
+Envelopes are generated by the on chip AMY 1 envelope generator block. The
+user may command the generators to make any piecewise linear envelope desired
+by using a slope and destination scheme. Assume that a particular envelope
+generator has been previously loaded immediate to zero. By loading two
+breakpoints (slope-destination pairs) we can generate the following envelope:
+
+Envelope Value
+
+time
+
+ey
+
+BP1 foaded B loaded
+
+Figure 4. Piecewise linear envelope.
+
+At Point A, BPl is loaded and the envelope starts rising at a constant slope
+determined by the "slope" value of BP1. The envelope generator will continue
+to increase in value until the DEST value is reached. Point B is called a
+"Free point" since a change in slope has occurred without the user having to
+load another BP. At Point C, a BP with negative slope and DEST of zero has
+been loaded into AMY 1. The absolute value of the slope in BP2 is larger than
+that of BPl, and thus it takes less time for the envelope to "fall" than it did
+to "rise." Point D is another free point since when the DEST of zero is
+reached the envelope remains a zero (slope is effectively cleared when the
+
+destination is reached).
+DEVICE NUMBER DEVICE NAME
+MM 021859 A 1
+DOCUMENT NUMBER,
+021859 pace 12 oe 59
+
+ATARI
+ore com canine company 1E152 (6/83)
+
+COMPANY
+CONFIDENTIAL
+
+Semiconductor Group
+=== AMY_1_spec_confidential_binder_ver_2-14.pgm.o.txt
+6.3.1 Slope Format
+
+It is desirable to have a very wide range of slopes from nearly instantaneous
+changes in amplitude or pitch to nearly imperceptible changes in amplitude or
+pitch. To provide the AMY 1 user with an adequate range of slopes, an
+exponential format is used for all AMY 1 slopes. With this format, and also
+because all envelopes are exponentiated by the exponential ROM before use in
+the “oscillator” section of AMY 1, a tremendous dynamic range is accomplished
+(see Appendix II, Musical Specification). The AMY 1 slope format is:
+
+[sign bit [exponent [2's complement signed mantissa
+
+7 6 5 4 3 2 1 0
+
+Each AMY | Harmonic Envelope Generator and Fundamental Frequency (pitch)
+Envelope Generator has its own slope byte. The sign bit determines whether the
+slope shall be positive or negative. The mantissa absolute value may range
+from 1 to 31 (or be 0). The exponent determines how often the mantissa is
+added (2's complement) to the current value of a particular envelope. If the
+exponent bits are both one (li), the envelope will be stepwise increased or
+decreased every other sample period. Amn exponent of "10" reduces the rate by a
+factor of 4 to every 8th sample period. An exponent of "01" reduces the rate
+by another factor of 4 to every 32nd sample. Finally an exponent of "00"
+implies a rate of every 128 samples. Table 1 shows relative slopes for some
+sample slope bytes.
+
+Slope| Byte Relative Slope (steps/sample
++/-___El EO M4 M3 M2 MI MO
+
+0 0 0 0 0 0 0 1 41 step/128 sample periods = 7.8 X 107°
+1 0 0 i 11 1 1 <1 step/128 sample periods = 7.8 X 1077
+0 o1000121 +3 steps/32 sample periods = 0.094
+
+0 22212122121 +31 steps/2 sample periods = 15.5
+
+1 100010 90 -28 steps/8 sample periods = -3.5
+
+1 1100001 -31 steps/2 sample periods = -15.5
+
+Table 1, Slope Examples
+
+Notice that the ratio of the maximum to minimum slope is
+
+R = 15.5/7.8 X 10 ~ = 1984
+DEVICE NUMBER DEVICE NAME
+M co21859 AMY 1
+BOCUMENT NUMBER
+D021859 pace 13 or 59
+
+3
+ATARI
+Or commmcmere conan 1E1S2 (6/83)
+
+COMPANY
+CONFIDENTIAL
+
+Semiconductor Group
+=== AMY_1_spec_confidential_binder_ver_2-15.pgm.o.txt
+Slope Format (continued)
+
+To achieve "smooth" pitch and amplitude modulation the "step" must be small.
+AMY 1 supports an effective pitch step of 1/2048 of a semitone (approximately a
+0.0028% change in frequency) or, in music terms, 0.0488 cents. The amplitude
+step is 1/128 of a decibel. Both the pitch and amplitude steps were chosen so
+that pitch and amplitude envelopes will be sensed as "continuous" to the human
+ear for all AMY | slope values:
+
+Maximum Effective Amplitude Increment = + 31/128 dB,
+Maximum Effective Fundamental Frequency Increment = + 31/2048 semitones
+(Actual Fundamental Frequency Increment = +1/64 semitones)
+
+The harmonic envelope generators have a dynamic range of 64 dB, therefore, the
+‘total amplitude slope dynamic range is:
+
+(4B range/20) 64 dB/20 6
+
+R* 10 = 1984 * 10 = 3.2 * 10° to 1 (in volts/sec)
+
+The pitch (fundamental frequency) has a range of 10 2/3 octaves or
+128 semitones. This implies a frequency slope dynamic range of:
+
+Rp * g0ectave range) . 19g, % 210-667 1 3.5% 10% to 1 © (in Hz/sec)
+
+* 1 cent = 1/100 semitone.
+
+DEVICE NUMBER DEVICE NAME
+K
+|
+ATARI
+
+a eee
+021859 14 59
+Semiconductor Group PAGE oF
+
+G2 ere corrcmes company 1E151 (6/83)
+
+COMPANY
+CONFIDENTIAL
+=== AMY_1_spec_confidential_binder_ver_2-16.pgm.o.txt
+6.3.2 Destination Format
+
+Since all harmonic amplitudes have a 64 dB dynamic range, a single 8 bit byte
+is used as a destination value for each harmonic amplitude. This leads to an
+amplitude destination resolution of:
+
+64 dB = 1/4 dB
+256
+
+Harmonic Amplitude Destination Format and Examples
+
+D7 Dé D5 D4 D3 D2 DI DO
+00000 0 Zero Amplitude
+
+1 Full Scale (63.75 dB)
+
+1 Minimum Harmonic Amplitude (0.25 dB)
+
+ore
+ore
+
+l1iili.li
+00000
+
+The Harmonic Amplitude (dB) is a linear function of the Destination value.
+
+1 :monic Amplitude (dB)
+63.75 dB
+
+32
+
+3 ———-—-» Destination Value
+1 128 255
+
+Figure 5. Harmonic Amplitude Destination.
+
+COMPANY
+CONFIDENTIAL
+
+OEVICE NUMBER DEVICE NAME
+AR
+3
+ATARI
+
+ae ere
+DO21859 15 59
+Semiconductor Group PAGE oF
+
+Bere concen Commer 1E152 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-17.pgm.o.txt
+Destination Format (continued)
+
+Since all Fundamental Frequency envelope generators have a 128 semitone range
+and a frequency resolution of 1/64 semitones for the Destination is desirable,
+13 bits are used in the Frequency destination word.
+
+Frequency Destination Format
+
+7 6
+*
+Semitone ATARI Tone
+Field Field
+
+Again, the Fundamental Frequency (semitones) is a linear function of the
+Destination value.
+
+Fundamental Frequency (ST)
+127 63/64
+(7798.18 HayT TT TT TTT TT TT TT
+
+127 62/6aT ~~ 7 TTT TTT TTT
+(7791.15 Hz}
+
+1/64
+(4.60405 Hz)
+o— Destination Value
+
+(4,aoiea 4z)? 8190 8191
+
+Figure 6, Fundamental Frequency vs. Destination.
+
+Notice that a Destination value of 0000 Hex yields a non-zero frequency and
+that the frequency resolution around 0 is approximately 0.002 Hz per ATARI
+tone; at 8191 (or IFFF Hex), the frequency resolution drops to approximately
+
+7 Hz per ATARI tone. This is desirable and is made possible by the Exponential
+ROM.
+
+Complete slope tables, computed for a 4 MHz internal clock rate using 64
+harmonics, are included in Appendix I.
+
+*
+1 ATARI tone = 1/64 semitone
+
+COMPANY
+CONFIDENTIAL
+
+OEVICE NUMBER DEVICE NAME
+DOCUMENT NUMBER
+p022859 pace 16 gp 59
+
+Dore commcanens comsary 1E151 (6/83)
+
+ATARI.
+
+Semiconductor Group
+
+=== AMY_1_spec_confidential_binder_ver_2-18.pgm.o.txt
+7. REGISTER ORGANIZATION
+
+7.1 AMY 1 Command Set
+
+A command may be sent to AMY 1 by setting CS = Al = AG = 0, RD = 1 and WR = 0.
+The command will be latched internally off the data bus on the trailing edge of
+
+the WR pulse. Each 8 bit command contains an opcode from 2 to 5 bits in
+length, and one or more operands (see Table 2 below).
+
+DB7 DB6 DB5 DB4 DB3 DB2 DB1 DBO Command
+o 60 0 #0 V2 Vi VO Write Fundamental Frequency Breakpoint
+
+o.l(UO# 0 1 0 V2 Vil VO Write Voice Type
+
+0 i} 0 1 1 V2 Vl VO Read Current Fundamental Frequency
+o 0a 1 0 S03 S02 SOi SOO Write System Options Register
+
+0 0 1 1 xX X S8Ci SCO Write System Control Register
+
+0 1 HS H&4 H3 H2 Hl HO Write Harmonic Amplitude Breakpoint
+
+1 0 4HP4 HP3 HP2 HP1 HPO DO Write Last Harmonic Pair Flag
+re (Load SC1 bit = 0)
+1 0 NS N& N3 N2 Nl NO Write Noise RAM
+(Load SC1 bit = 1)
+1 1 HS H4 H3 H2 HI HO Read Current Harmonic Amplitude
+
+Table 2. AMY 1 Commands
+
+V2-V0: Voice Number
+
+S$03-S00: System Options register bits
+SC1-SCO: System Control register bits
+H5-HO: Harmonic Number
+
+HP4-HPO: Harmonic Pair Number
+
+NS5S-NO: Noise RAM location
+
+Kr Don't care
+
+DEVICE NUMBER DEVICE NAME
+CONFIDENTIAL
+
+al a ee
+D 1
+Semiconductor Group 021859 pace 17 or §=59
+
+Oo ere Cocca comme 1E151 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-19.pgm.o.txt
+7.2 RAM and Register Areas
+
+User access to internal RAM and register areas is through 4 registers: 3 data
+(Reg A (8 bits}, Reg B (5 bits), Reg C (8 bits)) and one command register.
+Figure 7 shows all AMY 1 registers and RAM areas which are manipulated by the
+AMY 1 command set. To write to AMY 1 (e.g. "Write Fundamental Frequency
+Breakpoint" command), the user first sets up the proper values in the data
+registers A, 8B, and C, then issues the command to AMY 1's Command register.
+
+When reading data from AMY 1 (e.g, “Read Current Fundamental Frequency" com-
+mand), the user first writes the command to the Command register, then reads
+the value from the data registers.
+
+Each of the 4 registers is read (RD = 0) or written (WR = 0)from/to through the
+data bus lines DBO-DB? using a unique address on AQ-Al (see Table 3). In the
+case of a read from the Command register, AMY 1's internal bus will appear on
+DBO-DB7. This has no operational use and is provided for diagnostic purposes.
+
+1B (0-7)
+
+DB(O-7)
+
+Figure 7. AMY RAM and Register Areas
+
+ICEVICE NUMBER DEVICE NAME
+fash ia 3
+Semiconductor Group DO21859 pace 18 or = 59
+
+16151 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-20.pgm.o.txt
+7.3 AMY 1 Data Registers
+
+There are 3 data registers for passing data between the user and AMY 1 internal
+RAM and Register storage areas. In general, the user loads the registers
+before sending a ‘Write’ command to AMY 1 (e.g. "Write Fundamental Frequency
+Breakpoint" command). Likewise, the user will read data from the registers
+after sending a ’Read' command to AMY 1 (e.g. "Read Current Fundamental Fre-
+quency" command). The registers are named Reg A, Reg B, and Reg C and are
+always directly accessible to the user since they have unique addresses (see
+Table 3).
+
+CS_Al_ AO Register Selected
+
+0 ie} it} Command (Write only)
+
+o o 1 Reg A
+
+o 24 0 Reg 3} (Read or Write)
+0 1 1 Reg C
+
+1 xX X None
+
+Table 3. Register ‘Selection.
+
+Data bus lines DBO through DB7 are used to pass all data between the user and
+the AMY 1 registers. DBO through DB? act as inputs (tri-state) unless
+
+RD = CS = 0, in which case the bus is driven by AMY 1 with the contents of the
+selected register. If the Command register is selected, the AMY 1 internal bus
+will be read.
+
+COMPANY
+CONFIDENTIAL
+
+DEVICE NUMBER DEVICE NAME
+coz1859 AMY 1
+DOCUMENT NUMBER
+021859 pace 2 oe 59
+
+(Os rere commncanens Comeany 1B151 (6/83)
+
+AL
+
+ATARY
+
+Semiconductor Group
+
+=== AMY_1_spec_confidential_binder_ver_2-21.pgm.o.txt
+7.4 Other User Accessible Registers and RAM Areas
+
+AMY 1 also contains other internal registers which are loaded by sending
+various commands to the AMY 1 Command register. These registers are the System
+Options register, the System Control register, and the Last Harmonic Pair
+register (see Sections 7.5.5, 7.5.6, and 7.5.8, respectively).
+
+Other AMY 1 commands pass data to or from AMY 1 RAM areas. These RAM areas
+include the Voice RAM, the Harmonic RAM, and the Noise RAM. The VRAM contains
+the current fundamental frequency, fundamental frequency breakpoint, and the
+voice type. The HRAM contains the current harmonic amplitude and the harmonic
+amplitude breakpoint. Initial conditions of the NRAM may be loaded to obtain
+specific bandlimited white noise statistics.
+
+In general, all registers are loaded directly with a single one byte write
+operation (even the SOR, SCR, and LHPR are loaded from operand data in the
+command byte). Alternately, RAM areas are read/written indirectly by using Reg
+A, B, and C as data buffers.
+
+DEVICE NUMBER DEVICE NAME
+CONFIDENTIAL
+
+OOCUMENT NUMBER
+021859 pace 20 oe 359
+
+16151 (6/83)
+
+=== AMY_1_spec_confidential_binder_ver_2-22.pgm.o.txt
+7.5 Command Descriptions
+
+7.5.1 Write Fundamental Frequency Breakpoint Command (WR FFBP)
+
+Command: oO. 0 0 0 1 hv UV VO
+
+This command loads a new fundamental frequency slope and destination (FFBP) for
+the desired voice into the voice RAM, This is done indirectly by loading Reg
+A, B, and C before the command is issued. V2, V1 and VO are the voice pointer
+bits; that is, if V2 = V1 = VO = 0, then Voice 0's FFBP (slope and destination)
+will be loaded. If V2 = V1 = 0 and VO = 1, then Voice 1's FFBP will be
+modified, etc. The register data format for this command is:
+
+B.4
+- —----> 5 MSB's of FF destination
+B.O0
+C.7
+- |---------> 8 LSB's of FF destination
+7 c.0
+
+--------—> 8 bit slope
+
+If the slope (Reg A) is zero when the Write FFBP command is issued, the destination
+will be loaded immediate into the FF current value field of the VRAM. It will
+remain there until another Write FFBP command is issued.
+
+DEVICE NUMBER DEVICE NAME
+K ome,
+CONFIDENTIAL
+
+OOCUMENT NUMBER
+D021859 eace 21 oe 59
+
+16151 (6/83)
+
+ATARI
+
+Semiconductor Group
+Oo rere commncenets coneany
+
+=== AMY_1_spec_confidential_binder_ver_2-23.pgm.o.txt
+Write Fundamental Frequency Breakpoint (continued)
+
+The slope and destination data are to be loaded into the A, B, and C registers
+before the WR FFBP command is executed.
+
+Slope:
+
+Register A: A.4
+
+Sign Exponent
+
+Bits 7,4-0: Increment Value
+(from -31/2048 to 31/2048 of a semitone)
+
+A.7  A4 AJ AZ
+
+0 1 1 1
+
+HrOOS
+rHrRoOOO
+rPROOO
+rPROOO
+
+BR
+oo
+oo
+eo
+
+A.3  A2 Al AO
+
+5 bit Mantissa
+
+A.lA.O | Semitone Increment
+
+1
+
+rRHOOR
+
+oo
+
+1 31/2048
+
+2/2048
+1/2048
+Zero slope
+1/2048
+-2/2048
+
+OrFOrFS
+
+31/2048
+
+or
+
+Bits 6-5: Subsample Rate Control
+
+A.6 A.5 INCREMENT
+0 0 Add once
+te) 1 Add once
+1 (0) Add once
+1 1 Add once
+
+Destination:
+
+RATE
+
+every
+every
+every
+every
+
+128 sample periods
+32 sample periods
+8 sample periods
+2 sample periods
+
+Not allowed
+
+There are 8196 possible destination values which cover a range of 128 semitones
+(1/64 of a semitone resolution).
+
+ATARI
+
+Semiconductor Group
+
+{9 sw comers conser
+
+COMPANY
+CONFIDENTIAL
+
+DEVICE NUMBER DEVICE NAME
+ICO21859 A 1
+
+DOCUMENT NUMBER
+1D021859 pace 22 or 359
+
+16251 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-24.pgm.o.txt
+7.5.2 Write Harmonic Amplitude Breakpoint Command (WR HABP)
+
+Command: [QO 1 HS 44 H3  H2 Hil HO
+
+This command loads a new Harmonic Amplitude slope and destination value (HABP)
+for the specified harmonic into the Harmonic RAM. The harmonic number is
+specified by the least significant 6 bits of the command byte (H5-HO). The
+operation is performed indirectly by loading Reg A and C before the command is
+issued. Reg B is not used in this command. The register format for this
+command is:
+
+C.7
+
+-=> 8 bit destination
+
+c.0
+
+son-----—=> 8 bit slope
+
+If the slope byte (Reg A) is zero when the command is issued, the destination
+will be loaded immediate into the HA current value field of the Harmonic RAM.
+It will remain at that value until another Write HABP command is issued. This
+mode is most useful in the "cold Start" software routine immediately after
+power up of AMY 1, since all harmonic amplitudes may be loaded immediate to
+zero before the SEQRUN bit is set (see Section 7.5.6).
+
+DEVICE NUMBER DEVICE NAME
+yn coma, fess
+ATARI CONFIDENTIAL DOCUMENT NUMBER
+D021859 : 23 59
+
+Q var comenene concen 1151 (6/83)
+
+=== AMY_1_spec_confidential_binder_ver_2-25.pgm.o.txt
+Write Harmonic Amplitude Breakpoint Command (continued)
+
+Slope:
+Register A:
+
+[A.6  A5 7 A4 AZ A.2 Al  A.0
+Sign Exponent 5 bit Mantissa
+
+Bits 7,4-0: Increment Value
+(from -31/128 to 31/128 of a decibel)
+
+A.2_A.1 _A.0 | Increment (decibels)
+
+0 1 1 1 1 1 31/128
+
+0 Q tt) (4) 1 0 2/128
+
+0 0 0 (0) 0 1 1/128
+
+0 le) 0 0 0 0 Zero Slope
+1 1 1 1 1 1 1/128
+
+1 1 1 1 1 0 -2/128
+
+1 0 it) 0 0 1 -31/128
+
+1 0 0 0 0) 0 Not allowed
+
+Bits 6-5: Subsample Rate Control
+
+A.6 _A.5 | Increment Rate
+
+0 0 Add once every 128 sample periods
+0) 1 Add once every 32 sample periods
+1 0 Add once every 8 sample periods
+1 1 Add once every 2 sample periods
+Destination:
+
+There ‘are 256 possible destination values covering a 64 dB dynamic range (1/4
+of a decibel resolution).
+
+COMPANY
+CONFIDENTIAL
+
+DEVICE NUMBER OEVICE NAME
+c021859 AMY 1
+DOCUMENT NUMBER
+1021859 pace 24 og 59
+
+2 ee corners Coreen 12152 (6/83)
+
+A
+
+ATARI
+
+Semiconductor Group
+
+=== AMY_1_spec_confidential_binder_ver_2-26.pgm.o.txt
+7.5.3 Read Fundamental Frequency Current Value (RD FFCV)
+Command: 0 0 0 1 2 v2 Vi _ VO
+
+This command instructs the AMY 1 sequencer to read, from the Voice RAM, the
+current value field for the voice specified by the 3 LSB's of the command (V2,
+V1, VO) and load its contents into the B and C registers where it can be
+examined by the user. When reading Reg B, bits 7-5 are don't care. Reg A is
+not used in this command. The register format is as follows:
+
+B.4
+
+- | -+-------> 5 MSB's of Current FF value
+B.O
+
+C.7
+
+ooo -> 8 LSB's of current FF value
+c.0
+
+OEVICE NUMBER DEVICE NAME
+021859 laMy 1
+DOCUMENT NUMBER
+021859 pace 25 oe (359
+
+16151 (8/83)
+
+COMPANY
+CONFIDENTIAL
+
+AL
+
+ATARY
+
+Semiconductor Group
+Qe con conser
+
+=== AMY_1_spec_confidential_binder_ver_2-27.pgm.o.txt
+‘7.5.4 Read Harmonic Amplitude Current Value (RD HACV)
+Command: 11 sHS B43 2H
+
+This command instructs the AMY sequencer to read the current value of the
+harmonic (specified by the 6 LSB of the command byte) into Reg C. The user may
+then read Reg C for the current amplitude of the specified harmonic. The A and
+B registers are not used even though Reg B is modified by this command.
+
+C.7
+
+- | -eee-----> 8 bit Current Harmonic Amplitude Value
+
+c.0
+
+COMPANY
+CONFIDENTIAL
+
+OEVICE NUMBER DEVICE NAME
+K
+>
+ATARI
+
+DOCUMENT NUMBER
+0218 26
+Semiconductor Group 59 PAGE or 99
+
+ver comemcrnes comeny 16151 (6/83)
+
+=== AMY_1_spec_confidential_binder_ver_2-28.pgm.o.txt
+7.5.5 Write System Options Register (WR SOR)
+
+Command: Cae so3. S02) S01 S00
+
+This command allows the user to select 4 options in AMY 1 operation. The 4
+options bits, described below, are loaded directly from the least significant 4
+bits of the command byte. Reg A, B, and C are not used in this command. When
+RESET, bits SO3-SO0 default to zero. .
+
+$03 ----> | 40/64 Harmonic: Selects 40 or 64 HARMONICS
+
+rare | Selects INDIVIDUAL voice output or SUM of all
+
+voices output format
+
+$01 ----> | INT MODE Select INTERRUPT or READY mode
+so0 ---—> Select ALE mode or ADDRESS pin mode
+
+$02
+
+$03 S02. SOl_~— SOO |_AMY Mode
+
+ADDRESS PIN Mode -
+
+ALE Mode
+
+READY Mode
+
+INTERRUPT Mode
+
+SUM Mode
+
+INDIVIDUAL Mode
+
+64 HARMONICS Mode
+
+40 HARMONICS Mode
+
+RESET State ~ Initialize Default
+
+(ADR pin, READY, SUM and 64 HARMONICS)
+
+OHO dd Dd bd bd Dd Od
+O Mt © Pd bd od
+OM MM RH Ob
+ON MMM HM MRO
+
+Table 4. System Options Register Selection.
+
+Notes:
+
+1. In ADDRESS PIN mode, Table 4 shows how register selection is accomplished
+by using the Al and AO pins.
+
+2. In ALE mode, the user must put the address information on the data bus (DB1
+and DBO) during the ALE strobe time. In multiplexed bus processors, like
+the 8051, this occurs shortly before the RD or WR strobe times.)
+
+ATARI
+
+DEVice NUMBER DEVICE NAME
+
+ICO21859 A 1
+
+DO21859 27 59
+Semiconductor Group PAGE oF
+
+1 v0 commmcerens comnany 1151 (6/83)
+
+COMPANY
+CONFIDENTIAL
+
+=== AMY_1_spec_confidential_binder_ver_2-29.pgm.o.txt
+7.5.6 Write System Control Register (WR SCR)
+Command: LO 0 1 2 X xX SCil_ SCO
+
+This command allows the user to stop the AMY 1 output accumulation process thus
+holding the output bus to zero, avoiding power up glitches. It also allows the
+user to place AMY 1 in a special "noise initialize mode." When the WR SCR
+command is sent, the least significant 2 bits of the command byte are loaded
+into the SCR. Reg A, B, and C are not used in this command. When RESET, bits
+SC1-SCO default to zero.
+
+scl ---—>> NZINIT Select Noise RAM mode or Last Harmonic Pair mode
+
+s$cO ----> | SEQRUN | Software Reset
+
+SCl___SCO__— AMY Mode
+
+HALT Mode
+
+SEQUENCER RUN Mode
+Initialize Noise RAM
+NOISE RUN Mode
+
+Or MM
+Mer Oo
+
+Table 5. System Control Register Selection.
+Notes:
+
+1. The Sequencer must_be running to generate digital sound on the SAMP bus.
+(in HALT mode, if OE = "0", SAMP (14-0) = "0", SAMP15 = "1")
+
+2. In HALT mode, AMY 1 resets the phase of all harmonic oscillators to zero
+(for selected voices only).
+
+3. Initialization of the Noise RAM may be done in the HALT or the SEQUENCER
+RUN mode.
+
+4. When in NOISE RUN mode, both Noise Generators are running and may be
+selected for use in a particular "Noise Voice" (see Write Voice Type
+command, Section 7.5.9).
+
+DEVICE NUMBER DEVICE NAME
+COMPANY 021859 A 1
+CONFIDENTIAL
+
+DOCUMENT NUMBER
+DO21859 PAGE 28 op (39
+
+TE1S1 (6/83)
+
+=== AMY_1_spec_confidential_binder_ver_2-30.pgm.o.txt
+7.5.7 Write Noise RAM Command
+
+Command: 1.0 NS N4 NB N22 ONL ONO)
+
+Note: To use this command, the NZINIT bit in the SCR must be set.
+
+This command loads data from Reg A into the Noise RAM. The address of the
+Noise RAM is specified in the least significant 6 bits of the command byte.
+Valid Noise RAM addresses range from 00 to 1D Hex and from 28 to 3F Hex.
+"Even" addresses in this range correspond to Noise Generator @, and the "odd"
+addresses correspond to Noise Generator 1. See Table on next page for the
+initialization data format (Noise RAM Initialization Format). The Noise RAM
+takes up a total of 54 address locations. Loading Noise RAM data to addresses
+between LE and 27 Hex is not recommended. Each of the 54 valid Noise RAM
+locations may be loaded with a 3 bit value. The value is specified by the
+least significant 3 bits of Reg A. Reg A must be loaded with the proper data
+before the WR Noise RAM command is issued. See Section 8.2 for the
+Initialization Flow Chart.
+
+--------= “> 5 MSB's of Reg A are ignored
+
+--------=>> 3 bits of Noise RAM data
+
+COMPANY
+CONFIDENTIAL
+
+BEVICE NUMBER DEVICE NAME
+1C021859 AMY 1
+DOCUMENT NUMBER
+1D021859 . 29 59
+PAGE oF
+
+1G stare commen Commer 16151 (6/83)
+
+ATARY
+
+Semiconductor Group
+=== AMY_1_spec_confidential_binder_ver_2-31.pgm.o.txt
+Write Noise RAM Command (continued)
+
+Noise RAM Initialization Format
+
+RAM Address LSB
+
+00000 PRBAL4 PRBB14 PRBC14 | PRBA'14 PRBB'14 PRBC'14
+oo00 028 PRBA13 PRBB13 PRBC13 | PRBA'13 PRBB'13 PRBC'13
+00010 PRBA12 PRBB12 PRBC12 | PRBA'12 PRBB'12 PRBC'12
+ooo011 PRBA11 PRBB11 PRBC11 { PRBA'11 PRBB'11 PRBC'11
+00100 PRBA1O PRBB1O PRBC1O | PRBA'LO PRBB'10 PRBC'10
+oo101 PRBA9 PRBB9 PRBC9 PRBA'9 PRBB'9 PRBC'9
+600110 PRBAS PRBBS PRBC8 PRBA'S PRBB'S PRBC’S
+oo111 PRBA7 PRBB7 PRBC7 PRBA'7 PRBB'7 PRBC'7
+01000 PRBA6 PRBB6 PRBC6 PRBA'6 PRBB'6 PRBC'6
+01001 PRBAS PRBB5 PRECS PRBA'S PRBB'S PRBC'S
+01010 PRBA4 PRBB4 PRBC4 PRBA'4 PRBB'4 PRBC'4
+01011 PRBA3 PRBB3 PRBC3 PRBA'3 PRBB'3 PRBC'3
+o.1i00 PRBA2 PRBB2 PRBC2 PRBA'2 PRBB'2 PRBC'2
+01101 PRBAl PRBB1 PRBC1 PRBA'1 PRBB’1 PRBC'l
+o 12110 PRBA® PRBBG PRBCH PRBA'§ PRBB'# PRBC'D
+10100 uD0 = BOs SOA up'O = B'0.——s« SOB
+10101 UD1 BL SIA uD'L B'l S1B
+104110 UD2—sB2 S2A up'2 = B'2-—s« S2B
+toli2i.1 uD3)B3-s« SBA u'3)—-B'3)s S3B
+11000 UD4 = B44 uD'4 B'S S4B
+11001 uD5 = BS SSA u's B'S S5B
+11010 UD6 = BGC up'6 = &B'6 S6B
+1i021t1 uD? —s:&B7_~—sSS7A up'7 B'7 S7B
+1110 0 ups = &BS S8A up's = Bs S8B
+11101 w9 = B9s SDA upD'9 =B'9~—s SOB
+1 1110 upDl10 =6B10.—s S10A uD'10. «-BTIO.—- S10B
+ilaidi Upll BlL S11A UD'l1 = «B'll = S11B
+
+UDO-UD11: Up/Down Counter Bits
+PRBO-PRB14: Pseudo Random Bits
+BO-B1l: Noise Value Bits
+SQA-S11A: Shift Control Bits
+
+If the RAM address is even, Noise Generator 0 is being accessed. If the RAM
+address is odd, Noise Generator 1 is being accessed. See the Operating Manual
+for actual noise values.
+
+VICE NUMBER DEVICE NAME
+CONFIDENTIAL
+
+OOCUMENT NUMBER
+D021859 pace 30 ge (59
+
+3251 (6/83)
+
+=== AMY_1_spec_confidential_binder_ver_2-32.pgm.o.txt
+7.5.8 Write Last Harmonic Pair Flag Command
+
+Command: 0  HP4 HP3  HP2 HP1 HPO Dd
+Note: To use this command, the NZINIT bit in the SCR must first be cleared.
+
+This command allows the user to specify the number of harmonics allocated to
+each voice, There are a maximum of 8 voices and a maximum of either 40 or 64
+harmonics (depending on the state of the 40/64 bit in the SOR). Harmonics must
+be allocated in groups of 2 or as harmonic pairs. Harmonics 0 and 1 are always
+assigned to Voice 0. Each pair of harmonics has a Last Harmonic Pair flag
+which determines whether or not these two harmonics are the last two harmonic
+of same voice. Therefore, there are 32 such flags. A maximum of 8 of these 32
+flags should be set at any one time (since we are limited to 8 voices).
+
+For a single voice of 64 harmonics, all last harmonic pair flags would be set
+to zero except the last one which is Last Harmonic Pair Flag 31. The HP4-HPO
+field in the command byte specifies which flag is to be loaded. The LSB of the
+command byte (D0) specifies whether the flag is to be cleared or set. The 32
+flags power up in a random state and thus all 32 must be set/cleared after
+power up to define the number of harmonics per voice. Reg A, B, and C are not
+used by this command.
+
+Harmonic Pair Flags Harmonics
+
+Command:
+3
+[1 | HP4 HP3 HP2 HP1l HPO | po | —> gq
+ee re 1 —-—> %
+Write Last Data to be 3
+Harmonic loaded 2 ---> %
+Pair Flag into 5
+Op-Code selected 3 > §
+flag 7
+Pointer to 4 ---> g
+Flag of 9
+Interest 5 > 10
+il
+— ;
+6 12
+— > 1a
+30 60
+— > 61
+31 62
+—> 63
+
+Example: If all flags are reset except for Flag 3 = Flag 31 = 1, AMY 1 will be
+set up for 2 voices. Voice 0 will have 8 harmonics (0 through 7) and
+
+" o Xo Se seide RUMBER DEVICE NAME
+ATARI DOCUMENT NUMBER
+Semiconductor Group DO21859 pace 31) or §=559
+
+Om concen cone 16151 (6/83)
+
+COMPANY
+CONFIDENTIAL
+
+=== AMY_1_spec_confidential_binder_ver_2-33.pgm.o.txt
+7.5.9 Write Voice Type Command
+Command: 0 0 0 1 0 W2 Wi vo
+
+Each voice may be assigned as a Harmonic Voice or as one of two different Noise
+Source Based Voices. The desired voice is selected by the least significant
+
+3 bits of the command byte. The least significant 2 bits of Reg A determine
+the "type" of voice desired. Reg A must be loaded before the command is issued
+according to the following convention (Reg B and C are not used):
+
+---------> 6 MSB's unused
+
+woeen n= > 2 LSB's determine voice type
+
+0 (e) Harmonic
+
+QO 1 Noise Type 0
+~ 1 te) Noise Type 1
+
+i 1 Illegal
+
+DEVICE NUMBER DEVICE NAME
+C021859 AMY 1 .
+DOCUMENT NUMBER
+DO21859 ° 32 59
+PAGE oF
+
+16151 (6/83)
+
+COMPANY
+CONFIDENTIAL
+
+A
+
+ATARI
+
+Semiconductor Group
+
+rr come Coney
+=== AMY_1_spec_confidential_binder_ver_2-34.pgm.o.txt
+8. OPERATING PROCEDURE
+8.1 Initialization
+8.1.1 RESET pin and Power up Sequence
+
+Two milliseconds after power up, when spec power supply and clock
+requirements are met by the AMY 1 interface circuit, the RESET pin
+may be released (see Figure 8). Alternatively, 2 ms after power up
+(and before), the RESET pin must be held equal to or less than the
+Van spec for the RESET pin (see Figure 9).
+
+(as
+
+ou
+(vpped-aer
+
+Figure 8. RESET with Standard Up System Reset Circuit
+
+CLK
+Veo :
+Ss
+40 vec er
+1 1
+R i) ' t Feex vatua * Hey
+' ee
+c : :
+A rESET gg
+Vv v? 7 7 1
+——_____,,
+, 2 meee
+
+Note: RC requirements depend an Veg rise tine,
+
+Figure 9, RESET with RC
+
++ DEVICR NUMBER DEVICE NAME
+M COMPANY co21859 AMY 1
+
+CONFIDENTIAL DOCUMENT NUMBER
+D021859 ; pace?>? or (99
+
+18151 (6/83)
+
+=== AMY_1_spec_confidential_binder_ver_2-35.pgm.o.txt
+8.2 Initialization Flow Chart
+
+When RESET = 1, assuming the conditions of the previous page have been met, AMY
+1 is in state 0 of the following chart:
+
+rary
+
+RESET held < Vz,
+
+During the time RESET is below
+Vin * 0.3V, the Syscem Options
+register and Systam Control
+
+register bits are all cleared.
+
+In State 0, the System
+Options register may be
+loaded by multiplexed
+bus processors even
+though the ALE bit in
+the System Options
+
+register is reset. 1. ALE mode must be selected
+
+if using multiglexed bus uP
+like the 8051.
+
+2. The 40/64 bit should be
+loaded for desired sample
+rate.
+
+3, The INT bit selects desired
+operation of the INT/ROY pin.
+
+4. The SUN HODE bit should
+be cleared unless Individual
+
+voice outguts are desired.
+
+commands to
+disable Noise
+Generators
+for all
+
+& voices.
+
+BEVICE NUMBER DEVICE NAME
+CONFIDENTIAL
+
+A COCUMENT NUMBER
+SR cs mae
+
++ ere comets Company
+
+1E151 (6/63)
+=== AMY_1_spec_confidential_binder_ver_2-36.pgm.o.txt
+ATARI
+
+Semiconductor Group
+QO ome creme commer
+
+Lead System Control
+Register (Set NZINIT bit,
+
+Reload SEQRUN = 0}
+
+Load Noise RAM Initial
+Conditions using “Write
+Noise RAM” commands
+
+Load System Control
+Register (CLR NZINIT bit,
+Reload SEQRUN = 0)
+
+Enable Noise Voices (for
+desired voices only).
+
+Disable Noise Generators
+for harmonic voices. (use
+“Write Voice Type” commands)
+
+lear all harmonic
+amplitudes using the "Writs
+Harmonic Amplitude
+Breakpoint" command
+(Immediate:
+Slope=Sestination=00 flex!
+
+Harmonic Selection:
+Use “Write Last Harmonic
+Pair Flag" commands to
+
+assign harmonics to the
+desired voices.
+
+COMPANY
+CONFIDENTIAL
+
+Setting NZINIT stoos
+
+the 2 Noise Generators.
+
+They can be initialized
+
+when NZINIT = L.
+
+Noise Generators
+start running.
+
+DEVICE NUMBER DEVICE NAME
+021859 AMY 1
+QOCUMENT NUMBER
+1021859 eace35 or (59
+
+16181 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-37.pgm.o.txt
+aa Although all oscillators are
+Write System 7 now running and the digital
+
+Control output bus (SAMP0=-15
+Register, set longer disabled, the sane bus
+SEQRUN = 1, will remain at the "Zero"
+
+_Keep level since all harmonic
+NZINIT = 9 amplitudes have been loaded
+
+immediate to zero.
+
+Ney Run state
+
+Once the user is in the RUN STATE (State 1}, voices may be constructed by first
+‘loading the fundamental frequency immediate to some start value and then
+
+ramping up/down the Harmonic amplitudes (even the fundamental frequency, if
+desired). In State 1, an unlimited number of harmonic and fundamental frequency
+breakpoints may be loaded. Maximum bandwidth of breakpoints is approximately
+200,000 BP/sec (essential for peaks in activity). Also, in State 1, the noise
+generators may be stopped and the Noise RAM reloaded (when the Noise Generator
+starts running again, the statistics of the noise may change). The number of
+harmonics per voice may also be modified. The user may change a voice's type,
+or may read current values of fundamental frequency for any voice or harmonic
+amplitude for any harmonic. When drastic changes are to be made it is recommend—
+ed that the user return to State 0 by loading SEQRUN = 0 with the "Write System
+Control Register Command, In some cases, it may be desirable to "Ramp" all
+harmonic amplitudes to "zero" before loading SEQRUN = 0 (to avoid a "click").
+
+COMPANY
+CONFIDENTIAL
+
+DEVICE NUMBER DEVICE NAME
+yn
+|
+ATARI
+
+DOCUMENT NUMBER
+1DO21859 . 36 59
+Semiconductor Group PAGE oF
+
+re cmc comsony 16152 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-38.pgm.o.txt
+8.3 Summary
+Initialization of AMY 1 requires the following steps:
+1. Loading System Options Register.
+
+a. Select 40 or 64 harmonics where the
+sample rate = 1 » t. = clock period
+2 * # harmonics * tD P
+
+Example: 64 harmonics with a 4 MHz internal clock rate results in a
+31.25 KHz sample rate.
+
+b. Select ALE or Address Pin mode. If ALE mode is desired, the AO and Al
+pins should be tied to ground.
+
+ce. Select INT/RDY pin function. If INT bit = 1, the INT/RDY pin will
+issue a single clock pulse wide interrupt pulse at the completion of
+all commands. If INT bit = 0, the INT/RDY pin will function as a
+Ready pin. In the READY mode, the INT/RDY pin will go low (logic 0)
+immediately upon receipt of a command and return high (logic 1) when
+the command has been completely executed (see Figure 10).
+
+d. Select between SUM mode (all voices added together and output once each
+sample period) or INDIVIDUAL mode (all voices output separately).
+There will be N output samples per sample period in the INDIVIDUAL mode~
+— N is the number of voices enabled).
+2. Defining voices using the "Write Last Harmonic Pair Flag" command.
+3. Clearing all harmonic amplitudes to zero before setting SEQRUN = 1.
+
+4, Loading initial conditions into Noise RAM using Write System Control
+register command and Write Noise RAM command,
+
+5. Assigning each voice an initial voice type.
+
+COMPANY
+CONFIDENTIAL
+
+OEVICE NUMBER DEVICE NAME
+BOCUMENT NUMBER
+021859 pace 37 59
+
+Ove concen coms 1E151 (6/83)
+
+A
+
+ATART
+
+Samiconductor Group
+
+=== AMY_1_spec_confidential_binder_ver_2-39.pgm.o.txt
+all
+
+Address data
+on DBO & DBL J
+
+Command starts Command, complete
+INT/RDY . here
+(INT=1) OE __/ \
+
+(INT=0)
+
+“gts
+
+Figure 10. INT/RDY Pin Timing
+
+A
+
+ATARI
+
+Semiconductor Group
+
+DEVICE NUMBER OEVICE NAME
+021859 AMY 1
+
+COCUMENT NUMBER
+021859 pace 38 or (59
+
+cae commer Coreen 16151 (6/83)
+
+COMPANY
+CONFIDENTIAL
+=== AMY_1_spec_confidential_binder_ver_2-40.pgm.o.txt
+9. MAXIMUM RATINGS beyond which useful life may be impaired
+
+Storage Temperature -65 to +150°C
+Ambient Temperature Under Bias 0 to +70°C
+Voltage at any Pin Relative to Ground -0.5 to +7 V
+Power Dissipation 1.0W
+
+10. CAPACITANCES
+
+Ambient Temperature Parameters: T, = 25°C; Vo = GND =O0V
+
+Symbol Parameter Min Max Units Test Conditions
+Cry Input Capacitance 10 pF
+
+—_— Sse
+Cour Output Capacitance 10 pF
+
+IOEVICE NUMBER DEVICE NAME
+
+“CONFIDENTIAL DOCUMENT NUMBER
+021859 pace 39 or 59
+
+16151 (6/83)
+
+=== AMY_1_spec_confidential_binder_ver_2-41.pgm.o.txt
+11. D.C. CHARACTERISTICS
+
+Ambient Temperature Parameters: T, = 0 to 70°C, Yoo = 45 Vt 52
+
+Symbol Parameter Min Max Units Test Conditions
+Von Input Low Voltage 70.5 0.8 v
+
+Vig Input High Voltage 2.0 VecetO.5 V
+
+Yo. Output Low Voltage 0.45 Vv Tor = 2 mA
+
+Vou Output High Voltage 2.4 Vv Ton = -100uA
+T, Input Leakage Current 10 uA O_ Vin = 7.0V
+Ig Output Leakage Current 10 uA 0.45_Vout Vee
+
+COMPANY
+CONFIDENTIAL
+
+: IOEVICE NUMBER DEVICE NAME
+
+A
+'
+
+ATARI
+
+a
+1021859 , 5
+Semiconductor Group PAGE oF
+
+Orem comes commer, 1£151 (6/83)
+
+=== AMY_1_spec_confidential_binder_ver_2-42.pgm.o.txt
+12. A.C. CHARACTERISTICS
+
+12. CLOCK & RESET T, = 0 to 70°C
+vio =5 Vv 45%
+cc
+- Number Symbol Parameter Min Max Unit Comments
+I t, Clock Period 100 500 ns
+2 t Clock High Time 0.4¢ 0,6¢
+0 ® P P
+3 toy Clock Rise Time 10 ns 10% to 90%
+4 toe Clock Fall Time 10 ns 10% to 90%
+5 t. RESET Pulse Width 10t
+rpw P
+
+Note: RESET should be held low (less than V_, = 0.8 Volts) during power up
+of the AMY 1 chip. It should remain low for greater than or equal to 2 msec
+after power meets spec (5 V + 5%).
+
+a
+wy
+tl
+al
+
+IOEVICE NUMBER DEVICE NAME
+COMPANY c021859 AMY 1
+
+A. CONFIDENTIAL SSCS MOWER
+D021859 41 59
+
+sr concen commer 1E151 (6/03)
+=== AMY_1_spec_confidential_binder_ver_2-43.pgm.o.txt
+12.2 OUTPUT SECTION -
+we T,=0 to 70°C, c,=150 pF unless noted
+V_4=5 V 25%, 2 MHz f 5 MHz
+ec — clk
+
+Number Symbol Parameter Min Max Unit Comments
+1 Cool CLK to OUTSTB g 150 nS
+Low
+2 loot CLK to OUTSTB 0 150 ns
+: High
+3 t CLK to VO Falling 0 150 ns
+evt
+Edge
+4 t CLK to VO Rising @ 150 ns
+evl
+Edge
+5 te Sample Period
+1) 40 Harmonic 80t,, 80, toto
+2) 64 Harmonic 128e,, 128t
+6 t h SAMP(O-15) Data 20 pots)
+8 Hold Time From
+CLK
+7 t CLK to SAMP(0-15) 150 nS  OE_V.
+eshl Data Valid TL
+8 tose OE Rising Edge fy) 150 ns
+es to SAMP(0-15)
+Qutput Float
+9 t OE Falling to ) 150 ns
+
+ese SAMP (0-15)
+
+Outputs Valid
+
+COMPANY
+CONFIDENTIAL
+
+DEVICE NUMBER DEVICE NAME
+ye
+>
+ATARI
+
+OOCUMENT NUMSER
+Semiconductor Group 021859 pace 42 or 59
+
+Qi rence 1£152 (6/83)
+
+=== AMY_1_spec_confidential_binder_ver_2-44.pgm.o.txt
+rand
+
+=== AMY_1_spec_confidential_binder_ver_2-45.pgm.o.txt
+12.3 SYSTEM BUS INTERFACE - Read Amy and Write Amy (Address Pin and ALE mode)
+
+Number Symbol Parameter Min Max Unit Comments
+1 tor Address valid @ nS
+to RD
+2 tee RD Pulse Width 200 ns
+3 tae ALE Float Time 10 100 ns
+4 t CS Hold Time 6 ns
+chr after RD
+5 to CS Active to RD § nS
+6 tig Read Access Time 150 nS
+7 t Address to Data 150 ns
+‘ao Valid
+8 tog GS Active to 150 ns
+© Data Valid
+9 t Data Bus Hold 10 ns
+. rdh Time after RD
+10 ton Address Hold_ g nS
+r Time after RD
+uu trdead, BD Dead Time 100 nS
+ea (address pin
+mode)
+12 overt Read Cycle Time 300 nS
+yer (address pin
+mode)
+13 thar Read Float Time 10 100 nS
+® (RD to DB(0-7)
+Float)
+14 t RD Dead Time 250 nS
+rdead2 (ALE Mode)
+15 t ALE Pulse width 50 nS
+apw
+16 t ALE Mode Read 450 nS
+cycr2 Cycle Time
+DEVICE NUMBER DEVICE NAME
+M COMPANY c021859 A 1
+CONFIDENTIAL
+
+ATARY
+
+621859 44 9
+Di . 5
+Semiconductor Group PAGE OF
+
+Ore orem comer 1€152 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-46.pgm.o.txt
+SYSTEM BUS INTERFACE (Cont. )
+
+Number Symbol Parameter Min Max Units Comments
+7 tone CS Hold Time 6 nS
+after WR
+18 t hw Address Hold_ g nS
+Time after WR
+19 tow Address setup 50 nS
+Time to WR
+20 tow ts Setup Time g nS
+to WR’
+21 Caw Data_Setup Time 50 nS
+to WR
+22 t WR Pulse Width 200 ns
+ww
+23 t a Data Hold Time @ nS
+w to WR
+24 C deadl Write Dead Time 100. nS
+2 (Address)
+—
+25 to. cw Write Cycle Time 300 ns
+y (Address)
+26 talewr ALE to WR 50 nS
+27 t, cwale Write Cycle Time 400 nS
+7 (ALE)
+28 t dead? Write Dead Time 200 ns
+ae’ (ALE)
+29 tay: Data Valid to ALE 50 nS
+a falling edge
+30 Co Data hold after @ nS
+wea ALE falling edge
+31 t ALE Falling edge. 20 nS
+alerd = to BD Falling
+edge
+
+COMPANY
+CONFIDENTIAL
+
+DEVICE NUMBER DEVICE NAME
+A
+|
+ATARI
+
+DOCUMENT NUMBER
+1DO21859 . paai 45 . O89
+Semiconductor Group iE ol
+
+Gs rere comers Concer 1E151 (6/83)
+
+=== AMY_1_spec_confidential_binder_ver_2-47.pgm.o.txt
+08 (0-7)
+
+AMY Addre
+
+Latch
+{interna
+
+al
+
+DB (0-7)
+
+15
+
+Bic 0 6 Mata Valid 7 {vaiia ¥ 3 (vaiia  )
+
+9 EF, 7
+
+Address Valid (2 bits) Next Address Valid
+
+ALE Mode (Ag and Al grounded ALE bit in SOR = "L")
+Read AMY Cycle
+
+Data Valid
+
+ALE Mode (Ag and Al grounded, ALE bit in SOR = “1")
+Write AMY Cycle +
+
+DEVICE NUMBER DEVICE NAME
+COMPANY C021859 AMY 1 .
+CONFIDENTIAL
+
+DOCUMENT NUMBER,
+DO21859
+
+1£251 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-48.pgm.o.txt
+aAQd,AL
+
+DB(O~7)
+
+Address Pin Mode {ALE pin grounded, ALE bit in SOR = "g"}
+Read AMY Cycle
+
+AO,AL
+
+0B (0-7)
+
+Address Pin Mode (ALE pin grounded, ALE bit in SOR = "g")
+Write AMY Cycle
+
+COMPANY
+CONFIDENTIAL
+
+DEVice NUMBER DEVICE NAME
+021859 AMY 1
+DOCUMENT NUMBER
+DO21859 . 47 59
+PAGE oF
+
+ere commer comeeny 16151 (6/83)
+
+A
+
+ATARI.
+
+Semiconductor Group
+
+=== AMY_1_spec_confidential_binder_ver_2-49.pgm.o.txt
+APPENDIX I.
+
+Table A shows the 13 bit tone values which correspond to full semitone steps on
+a piano keyboard. For example, Note A (440 Hz) will be reached if a fundamental
+frequency envelope reaches a destination value of 5004 Decimal (138C Hex). At
+
+a 4 MHz internal clock rate the actual frequency will be 440.04 Hz. The
+MSB and LSB fields show the Decimal values of the Destination MSB and LSB
+
+fields corresponding to the Atari Tone value.
+
+Table B is in the same format as Table A, but the "Note" field was dropped as
+the values listed are "in between" 2 semitones (or notes on a piano). Table B
+shows that the actual frequency resolution at 440 Hz is approximately 0.4 Hz
+(1.5 cents).
+
+Table C shows actual semitone/sec and decibel/sec slopes achieved by various 8
+bit slope values. The M (mantissa) and E (exponent) fields are separated to
+give a feeling for the exponential coding scheme of slope byte. (Data valid
+for 4 MHz internal clock frequency and 64 harmonic mode).
+
+COMPANY
+CONFIDENTIAL
+
+DEVICE NUMBER DEVICE NAME
+DOCUMENT NUMBER
+D021859 pace t8 gg 99
+
+°o ‘A veamas Commurneaiana Company 1E151 (6/83)
+
+A
+
+ATARI
+
+Semiconductor Group
+
+=== AMY_1_spec_confidential_binder_ver_2-50.pgm.o.txt
+TABLE A
+
+Atari Tone MSB LSB FREQ NOTE
+(EC) (HEX) (HEX) (HZ)
+140 0 8c 5.4 F
+204 te) cc 5.7 F#/Gb
+268 1 c 6.1 G
+332 1 4c 6.4 G#/Ab
+396 1 8c 6.8 A
+460 1 cc 7.2 A#/Bb
+524 2 c 7.7 B
+588 2 4c 8.1 c
+652 2 8c 8.6 c#/Db
+716 2 cc 9.1 D
+780 3 c 9.7 D#/Eb
+844 3 4c 10.3 E
+908 3 8c 10.9 F
+972 3 cc 11.5 F#/Gb
+1036 4 c 12.2 G
+1100 4 4c 12.9 G#/Ab
+1164 4 8c 13.7 A
+1228 4 cc 14.5 A#/Bb
+1292 5 c 15.4 B
+1356 5 4c 16.3 c
+1420 5 8c 17.3 C#/Db
+1484 5 cc 18.3 D
+1548 6 c 19.4 D#/Eb
+1612 6 4c 20.6 E
+1676 6 8c 21.8 F
+1740 6 cc 23.1 F#/Gb
+1804 7 Cc 24.5 G
+1868 7 4c 25.9 G#/Ab
+1932 7 8c 27.5 A
+1996 7 cc 29.1 At /Bb
+2060 8 c 30.8 B
+2124 8 4c 32.7 c
+2188 8 8c 34.6 C#/Db
+2252 8 cc 36.7 D
+2316 9 c 38.8 D#/Eb
+2380 9 4c 41.2 E
+2444 9 8c 43.6 F
+2508 9 cc 46.2 F#/Gb
+2572 A c 49 G
+2636 A 4c 51.9 G#/Ab
+2700 A 8c 55 A
+2764 A cc 58.2 Ad /Bb
+2828 B c 61.7 B
+2892 B 4c 65.4 c
+2956 B 8c 69.3 C#/Db
+3020 B cc 73.4 D
+3084 c c 77.7 D#/Eb
+
+DEVICE NUMBER DEVICE NAME
+CONFIDENTIAL
+
+> DOCUMENT NUMBER
+DO21859 . 49 59
+
+16151 (6/83)
+
+=== AMY_1_spec_confidential_binder_ver_2-51.pgm.o.txt
+TABLE A (continued)
+
+Atari Tone MSB LSB FREQ NOTE
+(DEC) (HEX) (HEX) (HZ)
+
+3148 c 4c 82.4 E
+3212 c 8c 87.3 F
+3276 c ce 92.5 F#/Gb
+3340 D Cc 98 G
+3404 D 4c 103.8 G#/Ab
+3468 D 8c 110 A
+3532 D cc 116.5 A#/Bb
+3596 E Cc 123.4 B
+3660 E 4C 130.8 Cc
+3724 E 8c 138.6 c#/Db
+3788 E cc 146.8 D
+3852 F Cc 155.5 D#/Eb
+3916 F 4C 164.8. E
+3980 F 8C 174.6 F
+4044 F cc 185 . F#/Gb
+4108 10 C 196: G
+4172 10 4c 207.6 G#/Ab
+4236 10 8c 220 ~ A
+4300 10 cc 233.1 A#/Bb
+4364 11 c 246.9 B
+4428 1l 4C 261.6 : c
+4492 11 8c 277.2 C#/Db
+4556 11 cc 293.6 D
+4620 12 Cc 311.1 D#/Eb
+4684 12 4c 329.6 E
+4748 12 8c 349.2 F
+4812 12 cc 370 F#/Gb
+4876 13 c 392 G
+4940 13 4c 415.3 G#/Ab
+5004 13 8c 440 A
+5068 13 cc 466.2 A#/Bb
+5132 14 c 493.9 B
+5196 14 4c 523.3 c
+5260 14 8c 554.4 C#/Db
+5324 14 cc 587.3 D
+5388 i5 c 622.3 D#/Eb
+5452 15 4c 659.3 E
+5516 15 8c 698.5 F
+5580 15 cc 740 F#/Gb
+5644 16 c 784 G
+5708 16 4c 830.7 Gi#/Ab
+5772 16 8c 880 A
+5836 16 cc 932.4 Ad#/Bb
+5900 i7 c 987.8 B
+5964 17 4G 1046.6 Cc
+6028 17 8c 1108.8 c#/Db
+
+COMPANY
+CONFIDENTIAL
+
+CEVICE NUMBER DEVICE NAME
+A
+J
+ATARI
+
+DOCUMENT NUMBER
+DO21859 . 50 59
+Semiconductor Group PAGE oF
+
+Bove comms Consens 1E151 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-52.pgm.o.txt
+TABLE A (continued)
+
+Atari Tone MSB LSB FREQ NOTE
+(DEC) (HEX) (HEX) (BZ)
+6092 17 cc 1174.7 D
+6156 18 c 1244.6 D#/Eb .
+6220 18 4c 1318.6 E
+6284 18 8c 1397 F
+6348 18 cc 1480.1 F#/Gb
+6412 -19 c 1568.1 G
+6476 19 4c 1661.4 G#/Ab
+6540 19 8¢ 1760.1 A
+6604 19 cc 1864.8 A#/Bb
+6668 1A Cc 1975.7 B
+6732 1A 4c 2093.2 c
+6796 1A 8C 2217.7 c#/Db
+6860 1A cc 2349.5 D
+6924 1B c 2489.2 D#/Eb
+6988 1B 4C 2637.3 E
+7052 18 8c 2794.1 F
+7116 1B cc 2960.2 F#/Gb
+7180 1¢ Cc 3136.3 G
+7244 1c 4c 3322.7 Gi#/Ab
+7308 1c 8c 3520.3 A
+7372 1c cc 3729.7 A#/Bb
+7436 ip Cc 3951.4 B
+7500 1D 4c 4186.4 c
+7564 1D 8c 4435.4 C#/Db
+7628 ip cc 4699.1 D
+7692 1E c 4978.5 D#/Eb
+7756 1E 4c 5274.6 E
+7820 1E 8C 5588.2 F
+7884 1E cc 5920.5 F#/Gb
+7948 iF Cc 6272.6 G
+8012 iF 4c 6645.5 G#/Ab
+8076 iF 8c 7040.7 A
+8140 1F cc 7459.4 A#/Bb
+
+OEVICE NUMBER DEVICE NAME
+COMPANY 021859 AMY 1.
+ATARI CONFIDENTIAL DOCUMENT NUMBER
+Semiconductor Group D021859 pace 51) or =659
+
+re concen concer 16151 (6/83)
+
+=== AMY_1_spec_confidential_binder_ver_2-53.pgm.o.txt
+TABLE B
+
+Atari Tone MSB LSB FREQ
+(DEC) (HEX) (HEX) (HZ)
+4941 13 4D 415.7 Range: 2 semitones
+4942 13 4E 416 Resolution: 1 Atari Tone
+4943 13 4F 416.4 (1/64 st)
+4944 13 50 416.8 Centered around A (440 Hz)
+4945 13 51 417.2
+4946 13 52 417.5
+4947 13 53 417.9
+4948 13 54 418.3
+4949 13 55 418.7
+4950 13 56 419.1
+4951 13 57 419.4
+4952 13 58 419.8
+4953 13 59 420.2
+4954 13 5A 420.6
+4955 13 5B 421
+4956 13 5c 421.3
+4957 13 5D 421.7
+4958 13 5E 422.1
+4959 13 5F 422.5
+4960 13 60 422.9
+4961 13 61 423.2
+4962 13 62 423.6
+4963 13 63 424
+4964 13 64 424.4
+4965 13 65 424.8
+4966 13 66 425.2
+4967 13 67 425.5
+4968 13 68 425.9
+4969 13 69 426.3
+4970 13 6A 426.7
+4971 13 6B 427.1
+4972 13 6C 427.5
+4973 13 6D 427.8
+4974 13 6E 428.2
+4975 13 6F 428.6
+4976 13 70 429
+4977 13 71 429.4
+4978 13 72 429.8
+4979 13 73 430.2
+4980 13 74 430.6
+4981 13 75 431
+4982 13 76 431.3
+4983 13 77 431.7
+4984 13 78 432.1
+4985 13 79 432.5
+4986 13 7A 432.9
+4987 13 7B 433.3
+
+DEVICE NUMBER DEVICE NAME
+COMPANY c021859 AMY 1
+
+CONFIDENTIAL OOCUMENT NUMBER.
+D021859 ence 52 oe 59
+
+rere commer comer 16151 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-54.pgm.o.txt
+TABLE B (continued)
+
+Atari Tone MSB LSB
+(DEC) (HEX) (HEX) (HZ)
+4988 13 7c 433.7
+4989 13 7D 434.1
+4990 13 7E 434.5
+4991 13 7F 434.9
+4992 13 80 435.3
+4993 13 81 435.6
+4994 13 82 436
+4995 13 83 : 436.4
+4996 13 84 436.8
+4997 13 85 437.2
+4998 13 86 437.6
+4999 13 87 438
+5000 13 88 438.4
+5001 13 89 438.8
+5002 13 8A 439.2
+5003 13 8B 439.6
+5004 13 8c 440
+$005 13 8D 440.4
+5006 13 8E 440.8
+5007 13 8F 441.2
+5008 13 90 441.6
+7 5009 13 91 442
+5010 13 92 442.4
+5011 13 93 442.8
+5012 13 94 443.2
+5013 13 95 443.6
+5014 13 96 444
+5015 13 97 444.4
+5016 13 98 444.8
+5017 13 99 445.2
+5018 13 9A 445.6
+5019 13 9B 446
+5020 13 9¢ 446.4
+5021 13 9D 446.8
+5022 13 9E 447.2
+5023 13 oF 447.6
+5024 13 AQ 448
+5025 13 Al 448.4
+5026 13 A2 448.8
+5027 13 A3 449.2
+5028 13 A4 449.6
+5029 13 AS 450
+5030 13 AG 450.4
+5031 13 A7 450.8
+5032 13 Ag 451.3
+5033 13 Ag 451.7
+5034 13 AA 452.1
+
+OEVice NUMBER DEVICE NAME
+py COMPANY 021859 AMY 1
+ATARI CONFIDENTIAL , BoSaRENT OEE
+2185 pace? or (79
+
+Semiconductor Group
+ee comes commen, 1152 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-55.pgm.o.txt
+TABLE B (continued)
+
+Atari Tone MSB LSB FREQ
+(DEC) (HEX) (HEX) (HZ)
+5035 . 13 AB 452.5
+5036 13 AC 452.9
+5037 13 AD 453.3
+5038 13 AE 453.7 >
+5039 13 AF 454.1
+5040 13 BO 454.5
+5041 13 Bl 454.9
+5042 13 B2 455.3
+5043 13 B3 455.8
+5044 13 B4 456.2
+5045 13 BS 456.6
+5046 13 B6 457
+5047 13 B7 457.4
+5048 13 B8 457.8
+5049 13 Bg 458.2
+5050 13 BA 458.6
+5051 13 BB 459.1
+5052 13 BC 459.5
+5053 13 BD 459.9
+5054 13 BE 460.3
+5055 13 BF 460.7
+5056 13 co 461.1
+5057 13 cl 461.6
+5058 13 c2 462
+5059 13 c3 462.4
+5060 13 c4 462.8
+5061 13 cS 463.2
+5062 13 c6 463.6
+5063 13 c7 464.1
+5064 13 cs 464.5
+5065 13 cg 464.9
+5066 13 CA 465.3
+5067 13 cB 465.7
+
+DEVICE NAME
+
+Y1
+
+[DEVICE NUMBER
+
+ys COMPANY C021859 A
+y CONFIDENTIAL DOCUMENT NUMBER
+
+Za
+
+Semiconductor Group
+
+1B151 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-56.pgm.o.txt
+TABLE C
+
++ SLOPE = SLOPE SEMI/SEC DB/SEC M E
+(HEX) (HEX) (HEX) (HEX)
+0 80 0 te) 0 0
+1 oF 0.11 1.9 1 0
+2 9E 0.23 3.81 2 0
+3 9D 0.35 5.72 3 0
+4 9c 0.47 7.62 4 0
+5 9B 0.59 9.53 5 0
+6 9A 0.71 11.44 6 0
+7 99 0.83 13.35 7 ie)
+8 98 0.95 15.25 8 (0)
+9 97 1.07 17.16 9 te)
+A 96 1,19 19.07 A 0
+B 95 1.31 20.98 B 0
+c 94 1.43 22.88 Cc 0
+D 93 1.54 24.79 D 0
+E 92 1.66 26.7 E ie)
+F 91 1.78 28.61 F 0
+10 90 1.9 30.51 10 i)
+11 8F 2.02 32,42 li 0
+12 8E 2.14 34.33 12 i)
+13 8D 2.26 - 36.23 13 i)
+14 8c 2.38 38,14 14 0
+. 15 8B 2.5 40.05 15 0
+16 8A 2.62 41.96 16 0
+17 89 2.74 43.86 17 it)
+18 88 2.86 45.77 18 0
+19 87 2.98 47.68 19 0
+1A 86 3.09 49.59 1A it)
+1B 85 3.21 51.49 1B 0
+1c 84 3.33 53.4 1c 0
+iD 83 3.45 55.31 1D 0
+1E 82 3.57 57.22 1E 0
+1F 81 3.69 59.12 1F 0
+20 AO 0 0 0 1
+21 BF 0.47 7.62 1 1
+22 BE 0.95 15,25 2 1
+23 BD 1.43 22.88 3 1
+24 BC 1.9 30.51 4 1
+25 BB 2.38 38.14 5 1
+26 BA 2.86 45.77 6 1
+27 B9 3.33 53.4 7 1
+28 BS 3.81 61.03 8 1
+29 B7 4.29 68.66 9 1
+2A B6 4.76 76.29 A 1
+2B B5 5.24 83.92 B 1
+2c B4 5.72 91.55 c 1
+2D B3 6.19 99.18 D 1
+2E B2 6.67 106.81 E 1
+
+COMPANY
+CONFIDENTIAL
+
+DEVICE NUMBER DEVICE NAME
+021859 AMY 1
+DOCUMENT NUMBER
+no21859 pace or (59
+
+Or concen commen 1E152 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-57.pgm.o.txt
+TABLE C (continued)
+
++ SLOPE =_SLOPE SEMI/SEC DB/SEC M E
+(HEX) (HEX) (HEX) (HEX)
+2F BL 7.15 114.44 F 1
+30 BO 7.62 122.07 10 1
+31 AF 8.1 129.69 il 1
+32 AE 8.58 137,32 12 1
+33 AD 9.05 144.95 13 1
+34 AC 9.53 152.58 14 1
+35 AB 10.01 160.21 15 1
+36 AA 10.49 167.84 16 1
+37 Ag 10.96 175.47 7 1
+38 a8 11.44 183.1 18 1
+39 a7 11.92 190,73 19 1
+3A A6 12.39 198.36 1a 1
+3B A5 12.87 205.99 1B 1
+3c Aa 13,35 213.62 1c 1
+3D A3 13.82 221,25 1D 1
+3E Az 14.3 228.88 1E 1
+3F AL 14.78 236.51 iF 1
+40 co 0 0 0 2
+41 DF 1.9 30.51 1 2
+42 DE 3.81 61.03 2 2
+43 1) 5.72 91.55 3 2
+~~ 44 DC 7.62 122.07 4 2
+45 DB 9.53 152.58 5 2
+46 DA 11.44 183.1 6 2
+47 D9 13.35 213.62 7 2
+48 D8 15.25 244.14 8 2
+49 D7 17.16 274.65 9 2
+4a D6 19.07 305.17 A 2
+4B DS 20.98 335.69 B 2
+4c D4 22.88 366.21 c 2
+4D D3 24.79 396.72 D 2
+4E D2 26.7 427.24 E 2
+4F DL 28.61 457.76 F 2
+50 DO 30.51 488.28 10 2
+51 cF 32.42 518.79 ul 2
+52 cE 34,33 549.31 12 2
+53 cp 36.23 579.83 13 2
+54 cc 38.14 610.35 14 2
+55 cB 40.05 640.86 15 2
+56 cA 41.96 671.38 16 2
+57 co 43.86 701.9 17 2
+58 ca 45.77 732.42 18 2
+59 c? 47.68 762.93 19 2
+5A cé 49.59 793.45 1A 2
+5B c5 51.49 823.97 1B 2
+5c C4 53.4 854.49 1c 2
+5D c3 55.31 885 1D 2
+
+COMPANY
+CONFIDENTIAL
+
+DEVICE NUMBER DEVICE NAME
+ATARI pozi8s8 36 59
+Semiconductor Group PAGE or
+
+Q bine cance comme E151 (6/83)
+
+=== AMY_1_spec_confidential_binder_ver_2-58.pgm.o.txt
+TABLE C (continued)
+
++ SLOPE -_SLOPE SEMI/SEC DB/SEC M E
+(HEX) (HEX) (HEX) (HEX)
+SE c2 57.22 915.52 1E 2
+5F cl 59.12 946.04 iF 2
+60 EO 0 0 0 3
+61 FF 7.62 122.07 1 3
+62 FE 15.25 244.14 2 3
+63 FD 22.88 366.21 3 3
+64 Fc 30.51 488.28 4 3
+65 FB 38.14 610.35 5 3
+66 FA 45.77 732.42 6 3
+67 F9 53.4 854.49 7 3
+68 . F8 61.03 976.56 8 3
+69 F7 68.66 1098.63 9 3
+6A F6 76.29 1220.7 A 3
+6B F5 83.92 1342.77 B 3
+6c F4 91.55 1464.84 c 3
+6D F3 99.18 1586.91 D 3
+6E F2 106.81 1708.98 E 3
+6F Fl 114,44 1831.05 F 3
+70 FO 122.07 1953.12 10 3
+_ 71 EF 129.69 2075.19 ll 3
+72 EE 137.32 2197.26 12 3
+73 ED 144.95 2319.33 13 3
+74 EC 152.58 2441.4 14 3
+75 EB 160.21 2563.47 15 3
+76 EA 167.84 2685.54 16 3
+77 E9 175.47 2807.61 17 3
+78 E8 183.1 2929.68 18 3
+79 E7 190.73 3051.75 19 3
+7A E6 198.36 3173.82 1A 3
+7B ES 205.99 3295.89 1B 3
+7¢ E4 213.62 3417.96 ic 3
+7D E3 221.25 3540.03 ip 3
+7E E2 228.88 3662.1 1E 3
+1F El 236.51 3784.17 1F 3
+
+COMPANY
+“CONFIDENTIAL
+
+DEVICE NUMBER DEVICE NAME,
+IC021859 AMY 1
+ATARI DOCUMENT NUMBER
+
+Semiconductor Group po21859 pace 57 or 59
+
+Ome coer core 1£251 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-59.pgm.o.txt
+APPENDIX IT
+
+Musical Specifications
+
+Given an internal CLK frequency of
+Amplitude Dynamic Range
+Minimum Amplitude Slope
+Maximum Amplitude Slope
+
+Fundamental Frequency Range
+
+Minimum Fundamental Frequency Slope
+
+Maximum Fundamental Frequency Slope
+
+Maximum Amplitude Increment
+
+Fundamental Frequency Increment
+
+Fundamental Frequency Destination R
+
+Harmonic Amplitude Destination Reso.
+Number of Harmonics
+
+Number of Voices
+
+Number of Harmonics/Voice
+
+Harmonic Distortion
+
+* 1 cent = 1/100 of a semitone
+
+ATAR!
+
+Semiconductor Group
+Qe comers comer
+
+COMPAN
+CONFIDENTIAL
+
+8 MHz with 64 Harmonics enabled:
+63.75 dB
+1.91 dB/sec
+3784 dB/sec
+
+_ 4-8 Hz to 7,8 KHz
+{10 2/3 octave range)
+
+5.97 cents*/sec
+
+118 semitones/sec =
+9.85 octave range)
+
+31/128 = 0.242 dB
+
+1/64 semitones =
+
+1.56 cents
+esolution 1/64 semitones =
+
+1.56 cents
+lution 1/4 dB
+
+64 (maximum)
+8 (maximum)
+Any multiple of 2
+
+1%
+
+IY
+
+DEVICE NUMBER DEVICE NAME
+BOCUMENT NUMBER
+021859 pace 58 oo 959
+
+1151 (6/83)
+=== AMY_1_spec_confidential_binder_ver_2-60.pgm.o.txt
+APPENDIX III - Test Mode
+
+The following is a description of test mode for Sentry
+designer should not use this mode for any purpose.
+
+PIN NAME TYPE PIN # FUNCTION
+
+testing. The system
+
+OUTSTEN/T1
+
+vo/TO
+
+BOUT/CSYNC
+(Reserved)
+
+TEST
+(Reserved)
+
+TEST PIN
+
+0
+
+1
+
+1
+
+1
+
+1/0
+
+I/o
+
+1/0
+
+3
+rod
+bt
+es
+
+bal
+
+38
+
+39
+
+When the test pin is low, this pin is an output
+strobe. If output strobe is low this indicates
+that valid data is on the sample bus. (See Sec-
+tion 12.2) When the test pin is high, this pin is
+an input Tl for Sentry testing. (See Test Mode
+Table)
+
+If the test pin is low, voice zero is an output.
+
+When operating in the individual mode, the VO pin
+will be high during one OUTSTBN pulse per sample
+
+period, During this particular OUTSTBN the data
+
+on the sample bus is the current sample for Voice
+O. If the test pin is high, this pin is an input
+Tl for Sentry testing. (See Test Mode Table)
+
+If the test pin is low, this pin will output the
+noise term serially. If the test pin is high this
+is an input pin to synchronize the internal clock
+for Sentry testing only.
+
+When test is high, it enables the test mode (See
+Table **). Ground this pin for normal operation.
+
+Test Mode Table
+
+Normal Mode
+
+TSTO - Enable 2 Harmonic Counter
+
+TST1 - Enable 8 LSB's of the XROM to the Internal Bus.
+
+TST2 - Enable Slope Reg. to the Internal Bus.
+
+NOTE: When the test pin is enabled, the accumulator is disabled and the data
+through the pipeline is output directly to the sample bus. In this mode
+the noise generator is also disabled.
+
+PS
+
+Semiconductor Group
+ote Comers Comey,
+
+COMPANY
+CONFIDENTIAL
+
+DEVICE NUMBER DEVICE NAME
+c021859 AMY 1
+OOCUMENT NUMBER
+1021859 pace 29 oor (9
+
+1E152 (6/83)
+
+=== AMY_chip2_notes-1.pgm.o.txt
+Symptoms exhibited by version 2 AMY chips
+
+1. At vec=5.0 volts the audio output picked up spiky noise as the
+clock rate was increased above 4 or 5 MHz. The chip is designed to
+operate at SMHz. Increasing vcc increased the operating speed for each
+individual chip. Moving the clock rate up and down did not seem to change
+the logical aperation of the chip
+
+2. Decasionally, about 10% of the time. a single command sent to
+the chip resulted in two operations taking place. Usualiy this was seen
+as a second harmonic being turned on when another was intentionally
+turned on or off.
+
+3. When any last harmonic pair flag was set the audio output almost
+dissappeared and was at most a tiny sawtooth waveform that seemed to
+have no relationship to the requested parameters.
+=== AMY_chip2_notes-2.pgm.o.txt
+Physical experiments
+
+1. Sam Nicolino probed unpassivated chips extensively and verified
+proper operations of most of the control logic. He expressed some concern
+that the non-overlap of clk and clkn was not as clean as he would like but
+was probably adequate.
+
+2. Setting some lhp flags (to get multiple voices) and then sending
+one of the voices on a long frequency ramp allowed us to read out the
+current value of the frequency and verify that it was ramping ok. This
+seemed to indicate that the voice RAM was functioning ok
+
+3. When probing the phase RAM, Ben and I discovered that loading
+
+th output of the second inverter for the lsb of the address caused the
+chip to “work” in the multivoice mode. In this mode, however, the
+harmonics of voice 1 were in fact harmonics of the fundamental of voice 0.
+Similarly. every odd numbered voice tracked with the frequency selected
+for the next lower numbered voice. The fundamental frequencies of the
+odd numbered voices had mo effect. We hypothesized that the phases of
+odd numbered voices were being overwritten by those of the even numbered
+voices. To test this we observed the memory data emerging from the phase
+RAM. After each address change the phase update (frequency) is added to
+the running value and the sum is written back. What we saw was that
+
+no change in the memory data occurred at the address change when the lsb
+went high but an update was written back. The conclusion we drew was that
+selecting RAM cells onto bit lines that were not adequately charged
+
+was causing the cells to flip to agree with the previous data on the
+
+hit Lines. By loading the address decoder assymetrically we were
+introducing significant contention during the even-to-odd change but
+
+also introducing a nice non-overlap region during the odd-to-even
+transition. There is, of course, never a transition in the one voice
+operation, hence no contention and the phase advances correctly.
+=== AMY_chip2_notes-3.pgm.o.txt
+Sections of the chip which are involved in the signal formation have
+not been reViewed at the same level of detail. The effort has been
+concentrated on the control section of the chip because the envelope
+and sine wave generation of the devices appear to work perfectly and
+a small error should not have significant impact if not discovered
+until later.
+
+RHRAKHHRREHAAHHERALHKKRRHHHAHY RHR KKEE HEN KREG HRREEEHEREREER
+
+1) Abbreviated History
+FEE SESE SEITE REE AE ESE EAE IEEE EET EEE IEEE
+
+The SILOS input net list used for the simulation was
+extracted from Daisy drawings in about August 1984 with a program
+written by Bob Hemming in “Daisy Modeling Language". (The
+extraction program has since dissappeared). Some modifications were
+made in the Daisy drawings after the net list was extracted. The
+Daisy drawings represented a manual redesign of the TTL breadboard
+(uhich runs well) into gates suitable for use in an NMOS integrated
+circuit. The drawings were then used as the basis for manual layout
+of the chip using a CALMA design system and a library of cell
+designs.
+
+The CALMA layout was processed by several error checking
+programs purchased from NCA Corporation and the warning messages
+were each checked by an engineer to verify that it was a false alarm
+due to inadequacies in the checking programs. Programs were not
+available until recently to compare the circuit laid out in silicon
+against the netlist extracted from the Daisy drawings. (Such a
+check is in progress now.) A computer tape with the layout was
+transmitted to NCR in September and version 1 parts were received in
+October. Failure of these parts was diagnosed as a timing problem
+in the command register section and a mistake in the polarity of a
+ROM address line in the sine and exponential ROMs (both base and
+slope sections of each).
+
+Fixes were made in the layout and no further design rule
+check was made before the second layout tape was sent to NCR in
+November. (False confidence and an attempt to be ready for the
+January CES lead us to opt for a quick turn-around. } Version 2 parts
+were received in Late December after the principal engineer, Sam
+Nicolino, had left the company. Version 2 parts generated excellent
+audio quality but failed to respond reliably to commands from the
+host processor. They also failed to synthesize multiple voices
+(even unreliably) and the audio waveform became noisy at full clock
+rates. Most of the microprobing and testing discussed below was
+done on this run of chips.
+
+The chips are about 281 by 203 mils (57,043 square mils)
+using 3 micron HMOS design rules. At NCR’s suggestion version 2
+was shrunk by 10% which would yield 252.9 x 182.7 = 446,205. They
+are packaged in 40 pin carriers, dissipate about one watt and
+require a single 5 volt supply.
+
+HRA EER TEE ER HE
+2) Patches to SILOS input data to make the simulation run
+
+but which have no implications for the physical device.
+FEET EI ETE IES ITE ETE SEITE SERIE IEEE IEEE EEE
+=== AMY_chip2_notes-4.pgm.o.txt
+20. The divide-by-two clock generator on the chip consists of 3 inverters
+in a ting. SILOS assigns an unknown state to the output of an inverter whose
+input is unknown thus yielding a stable ring of unknowns. To break this and
+
+let the clock run in the simulation I initialized one of the nodes in the ring
+
+21. Network description lines like "xyz .nmos .vce .vec abe" were
+generated by the transistor pullups used in the chip. These were replaced
+
+by “abe .res .vec" since the current version of SILOS interprets the original
+line as a short circuit to vec.
+
+22. The SILOS model of a RAM has resistive strength outputs in both the
+high and low level states. (Whereas nmos gates are modelled with resistive
+highs and driving strength lows.) This lead to conflicts when/where RAMs
+were connected to busses with pullups. I have sidestepped this difficulty
+in the simulator by removing the pullups from the HRAM: VRAM and PHASERAM
+data busses and installing pullups internally to all tristate drivers
+connected to those busses. The macro cell definition “TRIHpu" was created
+and substituted for "TRIH" where needed. Ben Calpo’s SPICE simulations
+indicate that the RAM interface cell used in the chip does have the ability
+to drive a bus with transistor pullups
+
+RARER ERE EEE RRRREEAAREEERREERE AHERN E EER RELA AA RRR EE
+
+3) Patches to the SILOS input data which reflect potential
+problems in the chip even though the chips we have now do not
+exhibit these problems.
+
+HAAR AREER HEE IEEE IE EH TEE IEE HSE ETE SE AE HE He deat HE Ea HE aE EE
+
+30. A special version of the counter cell was inserted into the
+SILOS net list for the least significant bit of the voice counter
+With the cell really present in the silicon the SILOS simulation
+enters into an oscillation with the feedback used to stop the voice
+counter at its maximum value. One chip was microprobed and the
+oscillation was not present (at least while the probe was loading
+the circuit). Furthermore no change was heard in the audio output
+when the probe contacted the chip and we have no observed problems
+that seem related to such hypothetical oscillations
+
+HARARE EEE EERE R KAHAN REE
+
+4) Logic changes to make the chip testable.
+HRTF TE TE SEACH SEE HE SESE HE HSE IEEE ESE IE SEE EAE SE SE EE
+
+40. A mistake was discovered in the Daisy drawings and the
+layout which connected a preset in the clock generator to ground
+instead of vec.
+
+41. On version 2 the clock decoder holds the system in phase Pi
+during reset and the first clock cycle after reset becomes inactive
+is also Pi. Gne ramification is that garbage is written into phase
+RAM location O (instead of clearing it). This probably would not
+degrade the music but it will make the output unpredictable and
+hence testing will be more difficult.
+
+42. A reset was added to the ZEROB flipfilop.
+HSE REESE EE TEE TE SEE HE HEHE ETE FE IE TEE TEETH SEE IEE ERIE AEE AE EE
+
+5) Logic changes necessary to make the chip usable.
+FETE IE SEINE TEESE EERIE EEE REE EH TEE IEEE EAI AE HERE EEE
+=== AMY_chip2_notes-5.pgm.o.txt
+so. Commands from the host processor must be synchronized with
+the internal uses of the chip’s bus to avoid the malfunction observed
+in version 2. This is accomplished by adding some gates and a delay
+latch.
+
+HERE ELELA HEHEHE REE HEEE EEA EAEE ERAGE EEE EERE EEE A EERE EEE
+
+6) Electrical (as opposed to logical) changes needed to operate
+at full speed and within the design rules required for good yield
+SEAS HSIEH IEEE SEE SEE SEE AE ESE HE EEE SEE AE ESE ESE EEE EE IEEE SE
+
+40. The distribution of certain signals, notably precharge. was
+thru very long polysilicon runs. This lead to poor rise times at
+the load locations and potentially insufficient levels at full clock
+speed. Several edits have been made in the layout to alleviate this
+situation. Ben has checked and found no remaining runs long enough
+to cause problems.
+
+é1. Some enhancement implants of pulildowns were deleted from the
+ROMs of the chip in versions 1 and 2 due to an error in a program
+that automatically generated the layer ? mask. @& checking program
+eventually pointed out the problem and it has been corrected. This
+is probably the reason that the audio waveforms “break up" at full
+clock frequency. No missing implants of pulldowns were found in
+locations other than the lookup ROMs
+
+é2. The signal T1OMHZ was buffered. This was required for the
+synchronization of the “load command" signal and the external reset
+signal across process parameters, temperature: voltage and input
+clock duty cycle.
+
+63. The output of the cross-coupled nors generating the
+non-overlapping clocks to the CLK, CLKN and PRECH buffers was
+buffered. This was done to make the divide-by-twa and PRECH clock
+generator circuits less sensitive to the effects of input clock duty
+cycle at high clock frequencies.
+=== AMY_chip2_notes-6.pgm.o.txt
+nr
+
+‘AAS IG i
+
+PZ rd NT NN
+
+=== AMY_chip2_notes-7.pgm.o.txt
+OR Gin AL F
+
+Preobleu ¢ IL 4
+
+SILos
+
+awd veselt+
+
+«Ss unknown
+model,
+
+is unknown,
+
+thew
+
+both *eausictere ac ON
+
+=== AMY_chip2_notes-8.pgm.o.txt
+=== AMY_development_notes-1.pgm.o.txt
+AR ARE et
+
+Amy Sms e/a Sor whawld 4
+Espaush
+— WEEKLY mertinCS SERRA | 3 Dove
+
+Wh Chie brouP CALE) ~ $2 arraaig soins Rexel
+
+7 OEIC Qad Amy BeéacieRd PREP. J DONE
+FOR TEST mons (Foe UsE IN SeAKRy TEST CEvELEMENT)
+
+Comeecz Mas Consy) Ado 6Red (ret) Sommancs, _} NE
+Tater Qranies TO ASE
+
+“= Finish REV. © Amy SPEC. JOON Etepr
+FOR Same Sig
+Tm Wle dectar!
+7 — Finn malawe® To do FereR 3 Dove
+: 4 ros DmaeaTios OF THE FOUMING ;
+| 1) Rams
+2) Romo
+
+3) Coay ciraurey
+
+4) precweese Acase
+5) aimer erete $ Hlaleedtee
+
+GET Amy TEST PROGRIn JTAPELD 5 Pee
+AND BReeey , UPORTE ER EOHA Fee Thermilc oF Test” serve Liter.
+
+se ass ck EE ate nae = 7 DRED RC. net EMEA ET
+
+— Hep oEenle Sc@e f Tomumph BEE an Pacer
+bar earl! (oleueic. neerun! )
+
+Fils Paver (6s) Frou! Hyper SPP PRES
+= HEP pera rye perme CAI A Hh | a eRe
+
+=== AMY_development_notes-2.pgm.o.txt
+yit diagrams:
+and then run so:
+
+Zan Calpa s cn Work updating RAM and ROM logic.
+@ RAE fA . check the logic and timing of ¢&
+
+Eater’ Nae Pm circuit simulation to verify avide layout
+Sie device sizes for new modificatiens
+feuck Hung por one Work on clock buffer-precharge circuit simulations
+
+sind will be using results ta gimulare RAM circuitr
+
+Jann Mahoney 2 OWE Work on Daisy to update logic diagram on the ROM
+- et portions so that the ROM coding can be implementes
+cee for NCC at later stage.
+Darryl Eng Work on ROM core programming for layout, check on
+clock/RAM/ROM logic/circuit. Aid layout with edit:
+from first continuity check. Preparing plots for
+
+second continuity check and laseling text on pads
+for ERC and running “CC at later stage.
+
+Calma - 2 ms Piegrammed.
+3 bxs 21 tirted a
+=== AMY_development_notes-3.pgm.o.txt
+Inter Office Memo
+
+ATARI
+
+Test Tesvec
+ae! Corporate Division
+To: Sam Nicolino
+From: Bob Hemming BE
+Subject: AMY Progress Report Date: 7/30/84
+Goals for week ending on August 7, 1984. ; apf es
+Lapa
+NCC conversion for AMY: 2
+
+Ne Plage oner Done,
+ROM coding will be completed on August 3, 1984 by John Mahoney, 03 cbse bern ta btaden,
+
+2 OFE 4)
+
+QWE 2) RAM decoder and RAM core cell conversion will be completed on August 5,
+° 1984 by Delwin Persson.
+
+3) Update logic on Daisy from finalized logic in 2 days after receiving
+Fires. signed-off logic from Sam Nicolino. Logic update will be done by Bob
+Hemming.
+Silos test vector generation:
+1) Sin and exp. ROM test vector done by August 3, 1984 by Bob Hemming.
+
+Finial pattern will be generated from net list exacted from final Daisy
+logic diagrams.
+
+ec: Roland Ernst
+Carl Nielsen
+
+BH/bjk
+
+Oo
+=== AMY_development_notes-4.pgm.o.txt
+THE LAYOUT ¢
+
+IN TRE Layo
+
+cPLe
+wat
+
+8/1/84 Dave
+
+g/ase4
+
+or min 8/2/84 womke ue ee
+
+START SECOND CONTINUITY CHECK (2a) 8/3/34 KIMURA
+FINISH COLORING SECOND CONTINUITY 6/3/84 aVE EASTMAN
+PLOTS , scaty
+
+g7aRT B/Teg4
+ZElIvI LONTIMU ITY Geel 3 g.5
+
+t) Ares
+=== AMY_development_notes-5.pgm.o.txt
+To! Saa Mieolina
+
+le Supe
+
+et: AMY Dats Sheet
+ia
+
+eat wes
+
+The AMY date elivered to you about 2 weeks aga fer
+your correetion, I neve yet to recieve your updates, The
+Rev. A version (currentd, has been in the updete mode for
+aver 3 months. George Wang finished one set of revisions
+6/1/84, I plan no ian on updating this spec until you
+heve sent to me the merzed up version which T gave you,
+After T receive your ravis copys Iwill then give you an
+estimate on when the spec will be completed,
+
+or
+
+CC! Carl Nie
+
+=== AMY_general_description-01.pgm.o.txt
+\
+1. GENERAL DESCRIPTION - \ ve
+
+Eee
+
+AMY 1 is a digital, pipeline architectured, additive music synthesizer chip.
+There are-8 voices maximum assignable with @ total of 64 harmonic oscillators,
+available in groups of two, for voice assignment. AMY 1 has 72 independent,
+piecewise linear envelope generators: 8 fundamental frequency envelopes and 64
+harmonic amplitude envelopes. A complete sound system requires addition of a
+D/A converter IC (up to 16 bit}. To provide higher level commands, the system
+will generally include a controlling processor such as the Intel 8051 single
+chip microcomputer,
+
+2. FEATURES . .
+
+ce Single 40 pin DIP o Interrupt/Ready pin
+
+o 3u HMOS technology o bus compatible with multiplexed and
+
+o Pipeline architecture non-multiplexed bus microprocessors
+
+o 1€ MHz external clock o Full 16 bit digital output width
+frequency (maximum) o Independent voice mode
+
+o Integrated exponential ROM o Adjustable sample rate
+
+o 1/128 dB harmonic amplitude o Programmable noise statistics
+
+_ resolution & 1/64 semitone o 72 on chip envelope generators
+fundamental frequency resolution o Approximately 37,000 transistors
+
+te Neches
+
+X45
+V/s )94
+=== AMY_general_description-02.pgm.o.txt
+STN.
+7/5/94
+
+ANY PrvouT |
+
+Vee
+VO/t4/Suow
+OST STB /t4
+OE
+Same 1s
+Shime 14°
+Same ia
+Same ia
+Seen yt
+Same ip
+Semne 9
+Shone 8
+Shee 4
+SH 6
+Sten 5
+She g
+Sine 2
+Stirae 2
+
+Shere
+
+Sime d /\6
+=== AMY_general_description-03.pgm.o.txt
+Am? BLOCK DIA CRapd
+
+(Simevirie)
+
+Noise
+Cenerator
+
+Systemy
+
+ve - Gus
+
+EAP FRTERPRE
+
+Puase CEN.
+¥
+
+ARCument Ce.
+
+Exvtiore
+
+5 fis 29 Bite wide
+Ges ceetoes
+
+Commerp
+
+DECerER
+
+OF Tone
+Wan bt
+output OuTPLT
+Bus Accum ua “hus
+0k. Bus
+Sin.
+
+sf 64
+=== AMY_general_description-04.pgm.o.txt
+AMY ft - A dditive Music 5 Ynthestzor
+
+Debnrtion s 3
+
+LAST HARmowic. oF voice C (I THRE 64). [etig=¢ |
+Vora puMmGEE a THRU m)
+NUMBER OF Voices SYNTHESIZED ( tefeu 8),
+
+J Ha@manic Numece (1 TARO 64).
+
+BiG) = BiG) se 8G):
+oe +) 5 ourteuts oF NOE beNeRaaes - .
+od 1-(mise disabled ; 29% 4 2 9 j wmenames 2 -fio 4s theconplomort number ry
+As = AWMPLTucE
+
+° a eipedng \
+FUNCiodS OF Time, ONE Fie EACH HigemoullC. 1 bol dail cbt mire (sax?)
+Vo = Futoamensrac, FReQuen) =
+
+‘ CY Findctied’s OF TiN | OnE Fa EACH Voice
+Od. = PHESE
+
+J
+
++ = time
+
+c
+Bea:
+
+-:
+m7 " at
+
+ua
+
+SCRemGE CoAstades Cove FoR Exc Ham)
+
+m | LHE
+
+SAP = S. ye 1) Ag so [Cam-C-tH cian) Fe T) + & | : S38)
+tre LW
+
+j Ws Ja
+(ity *
+
+=== AMY_general_description-05.pgm.o.txt
+Let Mm=4, LH,= 64
+t Bi(4)2 1. Cé=t ont)
+
+then:
+
+End As Has 11's ows Arm EduBore CkNeeA 70%
+
+64 J ; -
+>a A sinfam--fet + 95]
+
+je
+
+SAMP
+
+it
+
+(1
+
+S AQ infty ot +9;
+Jet | \
+
+Each £. (G4) Has it's oun Amy enclope Gener:
+
+Thus : my A Hes
+
+\
+7/s/e4 W) 8 Frequency Emvelapes
+
+72, 0% Cle CENERATORS GotPOLLED By
+
+(swee, DESTWATON.
+Commeans Dunes . ~
+=== AMY_general_description-06.pgm.o.txt
+PHASE Rama ei.
+
+(pth 63)
+
+tut 190"
+
+Pscramee fovsTatt bits
+" bt 4
+" Lt 3
+a bee
+n bits
+o btg
+
+Crary! a G Fest 8 Hremponic Wace oseuss ves)
+
+000100 Qa. 5°
+Hi 190100 Qoa,.5°
+Wo elotos 119.5°
+H3 Lieiso 299.6°
+W4 0D11 900 dust
+HS lO\los 241.58
+| HE Ollloo 157.59
+HT Pitios 337, 5° f PAIRS OF Howmancs ARE | o° Our
+5.3.0 . OF PHASE Wity one
+1/s/p4 ANOTHER.
+
+- |
+|
+=== AMY_general_description-07.pgm.o.txt
+— the PHase of ead findem ents oscillator 4 saved
+
+In & 20 b% Ram heetigs . (Pat RM IS Bxes bits)
+
+~The Puan ot All And Be.
+
+“hy duabag, Trpliy, garduphia,, et. he Hdaman'y| oxillthr
+PHASE
+
+» E44 Hecmsnics ae Smuted
+
+~ PHESE Ram) lo cabens ave Bctully Accumulators. Each Sp
+
+ta Cifent fontents Ae te Feeouenicy RAM Are added 4 the
+Pass foe all Voice s (al) {,
+
+edimentily ) The FREQUENG/ CURRENT Value
+
+IS An \8 bit Unsipned number,
+
+~ FREQUENCY » And HeRmoic. Rares Cheer UALuE s
+— SS
+
+S50.
+7) s/o4
+
+/e period (ays)
+=== AMY_general_description-08.pgm.o.txt
+S30)
+
+I< /oq
+
++o Pverd. the tuo leguved multe ly "5 (Per Heemenie (28 gx ooh pied)
+
+A nunbe. x tacks Wee
+
+Smbined | Th
+On Chie expsnanhe|
+
+) Cap'ta larg on He
+fom |
+
+piers A a;
+
+-
+
+iO) Ps ag
+
+i)
+
+As
+
+- 2 (gh@ 1)
+
+fey, AS
+but- Since A; = 8 a 7. fz:
+
+We RASS On Successie, tock uy
+
+es Ly efunehal Rom’ test
+la As (Pete is db)
+BG) (ow Bi arti) + log, A 3
+They Ale dilewncal Albee Hho, 86e rpsnenhetad
+Ses +8007 oyaht A (QB, )= pup
+—_ 4 ; :
+
+“er! aitig qn.
+=== AMY_general_description-09.pgm.o.txt
+the fetond mrultiels i elrmneteel by 'mrelemenrig
+A Well Known TRIE Wont te ,
+
+SMA- 9n8 = Q-Cos fof (38)]- sin Lh (d-e9]
+
+Lettie Q> P+ DISP
+@= PH D> PH Phase ( Mast Seah eT
+|4 bits obit
+
+PHASE. Reem Cutest
+VALE” )
+
+Uc ae
+
+Sur Pusnise) - sin(en) 2 Q-cos | py4 Oise/ { . sin [seh]
+
+bat Sin [Dis°/,] a DIse/, t.. Dise ce Nr
+
+nde t ie Disp 2 W/ es |
+
+IS A B.65% Spin Rot,
+Substtatite Us get
+
+Sin (e018) « Sin (ou = DIP. Cos [ena Oise), |
+
+ST.
+7/5 /p4
+=== AMY_general_description-10.pgm.o.txt
+; - fn 8iA) .
+So by gascinn PHF PH OS? = pat AS (2° | )
+4 dhe ing at hw Sits Kore end di4tsicing thete outputs
+J
+$e se Sik Rem We get
+
+sm (ors ose j- sin (OH
+bhi, We Know
+= disp. cos [en + our]
+
+- 8.(4)
+. Rs (2 - ') Cos Leu + PHocor |
+
+whidk asside fo He Prasg. ERRLA (on exer ) is what un vent
+a
+
+the Mak imum Pw
+Lo
+
+. We 1% & ay » Ad is ingaudidle (A ws !)
+
+Venera VW RAE Bae We get
+
+BH.
+fw = As (Q- 1). cos [en]
+S§ Iw.
+7Isleq BiG) is held at A then Moise 15 disabled se:
+
++(4) z As Sin Lev ame]
+=== AMY_general_description-11.pgm.o.txt
+Ampidude CoB)
+
+64i3
+Godk
+
+Sod
+40s
+Bods
+aus
+Brericy
+
+Os
+
+Frequency (He)
+
+e
+ime
+
+AMY - Hagman yee
+=== AMY_general_description-12.pgm.o.txt
+F (te)
+
+. 50
+
+qcdS
+of
+
+4o
+
+? tim
+
+AMY - Nowe ere vore (Rowe Conetor é )
+=== AMY_general_description-13.pgm.o.txt
+Musical Specifications
+
+Given an internal CLK frequency of 8 MHz with 64 Harmonics enabled:
+
+Amplitude Dynamic Range
+Minimum Amplitude Slope
+Maximum Amplitude Slope
+
+Fundamental Frequency Range
+
+Minimum Fundamental Frequency Slope
+
+Maximum Fundamental Frequency Slope
+
+Maximum Amplitude Increment
+
+Fundamental Frequency Increment
+
+Fundamental Frequency Destination Resolution
+
+Harmonic Amplitude Destination Resolution
+
+Number of Harmonics
+-Number of Voices
+Number of Harmonics/Voice
+
+Harmonic Distortion
+
+* 1 cent = 1/100 of a semitone
+
+ns
+
+®
+'
+
+reo
+
+63.75 dB
+
+1.91 dB/sec 4 ,
+taki
+met Ws
+
+3784 dB/sec (1
+Ci3.saeer
+
+4.8 Hz to 7.8 KHz
+{10 2/3 octave range)
+
+5.97 cents*/sec
+118 semitones/sec =
+9.85 octaveg
+SEConp
+31/128 = 0.242 dB
+
+1/64 semitones = L5é¢
+(cents 5¢) :
+
+1/64 semitones = | 5 ¢
+
+1/4 dB
+64 (maximum)
+8 (maximum)
+
+Any multiple of 2
+
+q1z
+
+=== AMY_general_description-14.pgm.o.txt
+AMY pP INTERFACE
+
+STANDARD 8-BIT BUS (ASYNCHRONOUS)
+
+ALE OR ADDRESS PIN MODE SELECTABLE IN S/W
+ACCEPTS WIDE VARIETY OF CONTROLLING PROCESSORS
+AVERAGE COMMAND EXECUTION TIME = 3.2 PSEC
+
+MAXIMUM REGISTER READ/WRITE DATA RATE = 3.3 Mbytes/SEC
+
+=== AMY_general_description-15.pgm.o.txt
+7. REGISTER ORGANIZATION
+
+7.1 AMY 1 Command Set
+
+A command may be sent to AMY 1 by setting CS = Al « A? = 0, RD = 1 and WR~= 0.
+The command will be latched internally off the data bus on the trailing edge of
+
+the WR pulse,
+
+Each 8 bit command contains an opcode from 2 to 5 bits in
+
+length, and one or more operands (see Table 2 below).
+
+IDB7 DB6 DBS DB4 DB3 DB2 DB1 DBO Command
+
+Table 2.
+
+V2-V0:
+S03-S00:
+SC1-SCO:
+BS-HO:
+HP4-HPO:
+N5-NOs
+Xr:
+
+A
+
+ATARI
+
+emiconductor Group
+
+HP4 HP3 HP2 HP] HPO DO
+NS N4 N3 N2 NI NO
+
+BS H4 H3 H2 HI HO
+
+1 v2 vi
+0 v2 Vi
+1 v2 Vi
+0 $03 SO2 SOL SOO Write
+1 X X SCL SCO Write
+H4 H3 H2 HI HO Write
+Write
+(Load
+
+Write
+(Load
+
+AMY 1 Coumands
+
+Voice Number
+
+System Options register bits
+System Control register bits
+Harmonic Number
+
+Harmonic Pair Number
+
+Noise RAM location
+
+Don't care
+
+VO Write Fundamental Frequency Breakpoint
+
+VO Write Voice Type
+
+VO Read Current Fundamental Frequency
+
+System Options Register
+System Control Register
+Harmonic Amplitude Breakpoint
+
+Last Harmonic Pair Flag
+SCl bit = 0)
+
+Noise RAM
+
+SCl bit = 1)
+
+Read Current Harmonic Amplitude
+
+COMPANY
+CONFIDENTIAL
+
+DEVICE NUMBER
+€921859
+CBATUMENT NUMEER
+
+DO2i859
+
+OF VICE NAME
+AMY 1
+
+1 re ences Compa
+
+eCity ebay
+=== AMY_general_description-16.pgm.o.txt
+Veuee > 2
+
+roigé |
+Ram
+
+(S43
+za
+
+pstLos
+
+v
+{yeten,
+
+| Kee
+
+Grnp? 93 |
+
+pean:
+
+lune. — RRs |
+
+ee
+
+ve 2 ANGE
+moe _ aoe
+kK Sago FACE LAD
+ae
+a
+To ewer |
+Ted > 18,9
+*
+zee ay raat ree
+~— Z\
+&
+[tes lebih Ree wae
+ce Aux ve > Ghee) 1
+max Fort barca i
+c ead
+~ hie | _
+Vewe D> VADRA but im
+ea y Man
+| Veck Fertee '
+1 F308 lap aa4
+Aa
+s ¥ 3
+: 78) 2) 8
+2 . io +9
+Tene | | [ Powe Ig
+CyB LO 1 max 1 tian | Max |
+: Reornne | an ae Ce 3 Mer
+~ vee 34 — — a “Ta eBsion
+! Stere Cukttnt BCea ean -
+_— Catg peste =~ Senter | con Hert j
+Hise ane. 1 ADDER |
+Geert, ites? . ADDER
+US bry
+A 1 NEGA
+
+(2b)
+
+c - a
+a} _ funan F350
+c |
+:
+
+LATCH
+
+—_ 1 §
+
+Spr ten J
+a Ba)
+
+Tt tae
+janssw at mux
+a
+H Ler Da
+vax &> te2 PM
+i “04 Lee ID
+nen Al wee A
+
+| oF
+
+tors me
+
+=== AMY_general_description-17.pgm.o.txt
+CH) Lee GO bem ta
+[POD pane ee
+ot : er ! 4
+el i ORTSER a}
+nce, pt —> a Boh ors
+a
+
+a]
+=
+Cine ——»_ Eom eas
+be
+
+fren So ” AC KIS
+
+Loaie j
+OT By PTS re fe cares | GA? GH .
+(karen 7) (bare Laton
+
+PrépsPrap 4 [xss> .Lg verge 2 OTS
+
+¥be> nig
+Extom Int
+
+3 | eaxs
+
+|
+U4 VOR? OM
+
+ey
+tarce ) LATCH
+
+reTD > ROD
+
+ASME 2 DST
+
+¥IGD 9xTGD i,
+sul Gy _
+gta Cetin 2
+RROM ota sHto
+
+vee Bis ected
+
+MARS > MRS IB ean > DSM
+
+$16 > SKIE
+LATCH )
+XO > mele
+
+Fa @rr Puig 4
+KLZAKO
+
+RECSTER
+
+DVishE > VSPA
+
+"Petia
+
+BDTER
+(ao Br)
+
+PRE? PHS
+
+BR Ge PREIS
+
+a EUGSPERGAS
+
+PAGE 3 of 3
+=== AMY_general_description-18.pgm.o.txt
+Sham @5S
+O56 Vy
+
+Gaerd
+ALDER
+
+a) . iene
+SbF Alder
+
+/ LATEM  )
+[eo
+ca
+
+AMER |
+. OF Ged |
+
+toe oat
+Ls a
+
+~~]
+
+Cnt L> CAT
+
+t+] ©
+4
+2.
+oly? 57°
+ge
+8 Lo SAG
+eas
+gq. (38)-2-1 By
+ar
+2 -C3Bp2 obey |
+2? 7 mw .
+tes (3ZirQ oa!
+3 36
+20.4) + sad

@@ -1,0 +1,82 @@
+CANTINA.MUS ens 0: events 852 (notes 424), writes 61810 expected 61810, IDENTICAL
+CANTINA.MUS ens 1: events 852 (notes 424), writes 45760 expected 45760, IDENTICAL
+CANTINA.MUS ens 2: events 852 (notes 424), writes 52576 expected 52576, IDENTICAL
+CANTINA.MUS ens 3: events 852 (notes 424), writes 42400 expected 42400, IDENTICAL
+CANTINA.MUS ens 4: events 852 (notes 424), writes 45760 expected 45760, IDENTICAL
+ENTERTA.MUS ens 4: events 1534 (notes 765), writes 76500 expected 76500, IDENTICAL
+ENTERTA.MUS ens 5: events 1534 (notes 765), writes 92391 expected 92391, IDENTICAL
+MINWALTZ.MUS ens 0: events 2746 (notes 1371), writes 192906 expected 192906, IDENTICAL
+MINWALTZ.MUS ens 1: events 2746 (notes 1371), writes 147747 expected 147747, IDENTICAL
+MINWALTZ.MUS ens 2: events 2746 (notes 1371), writes 169506 expected 169506, IDENTICAL
+BENIHILL.MUS ens 2: events 1446 (notes 721), writes 89398 expected 89398, IDENTICAL
+BENIHILL.MUS ens 3: events 1446 (notes 721), writes 72100 expected 72100, IDENTICAL
+BENIHILL.MUS ens 4: events 1446 (notes 721), writes 72100 expected 72100, IDENTICAL
+BENIHILL.MUS ens 5: events 1446 (notes 721), writes 92491 expected 92491, IDENTICAL
+BACHCOR.MUS ens 0: events 244 (notes 120), writes 17469 expected 17469, IDENTICAL
+TULL.MUS ens 0  : events 1024 (notes 510), writes 73851 expected 73851, IDENTICAL
+TULL.MUS ens 1  : events 1024 (notes 510), writes 56184 expected 56184, IDENTICAL
+TULL.MUS ens 2  : events 1024 (notes 510), writes 63240 expected 63240, IDENTICAL
+TULL.MUS ens 3  : events 1024 (notes 510), writes 51000 expected 51000, IDENTICAL
+TULL.MUS ens 4  : events 1024 (notes 510), writes 56184 expected 56184, IDENTICAL
+CANTINA.MUS ens 5: events 852 (notes 424), writes 56296 expected 56296, IDENTICAL
+ENTERTA.MUS ens 0: events 1534 (notes 765), writes 108450 expected 108450, IDENTICAL
+ENTERTA.MUS ens 1: events 1534 (notes 765), writes 76500 expected 76500, IDENTICAL
+ENTERTA.MUS ens 2: events 1534 (notes 765), writes 94794 expected 94794, IDENTICAL
+ENTERTA.MUS ens 3: events 1534 (notes 765), writes 76500 expected 76500, IDENTICAL
+MINWALTZ.MUS ens 3: events 2746 (notes 1371), writes 137100 expected 137100, IDENTICAL
+MINWALTZ.MUS ens 4: events 2746 (notes 1371), writes 147747 expected 147747, IDENTICAL
+MINWALTZ.MUS ens 5: events 2746 (notes 1371), writes 182304 expected 182304, IDENTICAL
+BENIHILL.MUS ens 0: events 1446 (notes 721), writes 104239 expected 104239, IDENTICAL
+BENIHILL.MUS ens 1: events 1446 (notes 721), writes 72100 expected 72100, IDENTICAL
+BACHCOR.MUS ens 1: events 244 (notes 120), writes 13632 expected 13632, IDENTICAL
+BACHCOR.MUS ens 2: events 244 (notes 120), writes 14880 expected 14880, IDENTICAL
+BACHCOR.MUS ens 3: events 244 (notes 120), writes 12000 expected 12000, IDENTICAL
+BACHCOR.MUS ens 4: events 244 (notes 120), writes 13632 expected 13632, IDENTICAL
+BACHCOR.MUS ens 5: events 244 (notes 120), writes 16026 expected 16026, IDENTICAL
+TULL.MUS ens 5  : events 1024 (notes 510), writes 68427 expected 68427, IDENTICAL
+runs 36, differing 0, writes 2766000; attack breakpoints: 247668 jumps, 26271 rising
+
+real	17m57.840s
+user	15m19.443s
+sys	4m11.471s
+CANTINA.MUS ens 5: events 852 (notes 424), writes 29392 expected 29392, IDENTICAL
+ENTERTA.MUS ens 0: events 1534 (notes 765), writes 58074 expected 58074, IDENTICAL
+ENTERTA.MUS ens 1: events 1534 (notes 765), writes 39780 expected 39780, IDENTICAL
+ENTERTA.MUS ens 2: events 1534 (notes 765), writes 58074 expected 58074, IDENTICAL
+ENTERTA.MUS ens 3: events 1534 (notes 765), writes 39780 expected 39780, IDENTICAL
+MINWALTZ.MUS ens 3: events 2746 (notes 1371), writes 71292 expected 71292, IDENTICAL
+MINWALTZ.MUS ens 4: events 2746 (notes 1371), writes 76620 expected 76620, IDENTICAL
+MINWALTZ.MUS ens 5: events 2746 (notes 1371), writes 98370 expected 98370, IDENTICAL
+BENIHILL.MUS ens 0: events 1446 (notes 721), writes 54790 expected 54790, IDENTICAL
+BENIHILL.MUS ens 1: events 1446 (notes 721), writes 37492 expected 37492, IDENTICAL
+BACHCOR.MUS ens 1: events 244 (notes 120), writes 7056 expected 7056, IDENTICAL
+BACHCOR.MUS ens 2: events 244 (notes 120), writes 9120 expected 9120, IDENTICAL
+BACHCOR.MUS ens 3: events 244 (notes 120), writes 6240 expected 6240, IDENTICAL
+BACHCOR.MUS ens 4: events 244 (notes 120), writes 7056 expected 7056, IDENTICAL
+BACHCOR.MUS ens 5: events 244 (notes 120), writes 8376 expected 8376, IDENTICAL
+TULL.MUS ens 5  : events 1024 (notes 510), writes 35880 expected 35880, IDENTICAL
+CANTINA.MUS ens 0: events 852 (notes 424), writes 32224 expected 32224, IDENTICAL
+CANTINA.MUS ens 1: events 852 (notes 424), writes 23728 expected 23728, IDENTICAL
+CANTINA.MUS ens 2: events 852 (notes 424), writes 32224 expected 32224, IDENTICAL
+CANTINA.MUS ens 3: events 852 (notes 424), writes 22048 expected 22048, IDENTICAL
+CANTINA.MUS ens 4: events 852 (notes 424), writes 23728 expected 23728, IDENTICAL
+ENTERTA.MUS ens 4: events 1534 (notes 765), writes 39780 expected 39780, IDENTICAL
+ENTERTA.MUS ens 5: events 1534 (notes 765), writes 50010 expected 50010, IDENTICAL
+MINWALTZ.MUS ens 0: events 2746 (notes 1371), writes 103698 expected 103698, IDENTICAL
+MINWALTZ.MUS ens 1: events 2746 (notes 1371), writes 76620 expected 76620, IDENTICAL
+MINWALTZ.MUS ens 2: events 2746 (notes 1371), writes 103698 expected 103698, IDENTICAL
+BENIHILL.MUS ens 2: events 1446 (notes 721), writes 54790 expected 54790, IDENTICAL
+BENIHILL.MUS ens 3: events 1446 (notes 721), writes 37492 expected 37492, IDENTICAL
+BENIHILL.MUS ens 4: events 1446 (notes 721), writes 37492 expected 37492, IDENTICAL
+BENIHILL.MUS ens 5: events 1446 (notes 721), writes 48910 expected 48910, IDENTICAL
+BACHCOR.MUS ens 0: events 244 (notes 120), writes 9120 expected 9120, IDENTICAL
+TULL.MUS ens 0  : events 1024 (notes 510), writes 38760 expected 38760, IDENTICAL
+TULL.MUS ens 1  : events 1024 (notes 510), writes 29112 expected 29112, IDENTICAL
+TULL.MUS ens 2  : events 1024 (notes 510), writes 38760 expected 38760, IDENTICAL
+TULL.MUS ens 3  : events 1024 (notes 510), writes 26520 expected 26520, IDENTICAL
+TULL.MUS ens 4  : events 1024 (notes 510), writes 29112 expected 29112, IDENTICAL
+runs 36, differing 0, writes 1495218; attack breakpoints: 158787 jumps, 18535 rising
+
+real	11m3.186s
+user	15m49.518s
+sys	4m15.322s

@@ -1,0 +1,72 @@
+1. aligned replay (since the Q1 fixes, samples/reads/RAM writes differ from phase A by design:
+   the Q1 check line is the test: only the added jump writes may differ)
+  rb (rtl, ce every 2 clks): samples DIFF, host reads DIFF, RAM writes DIFF
+      Q1 check: 66 harmonic + 2 frequency jump writes added, 1 envelope writes displaced; other RAM writes identical except PHASERAM (a frequency jump applied earlier: phase offset)
+  rb (packed, ce every 3 clks): samples DIFF, host reads DIFF, RAM writes DIFF
+      Q1 check: 66 harmonic + 2 frequency jump writes added, 1 envelope writes displaced; other RAM writes identical except PHASERAM (a frequency jump applied earlier: phase offset)
+  q (rtl, ce every 2 clks): samples DIFF, host reads same, RAM writes DIFF
+      Q1 check: 66 harmonic + 2 frequency jump writes added, 1 envelope writes displaced; other RAM writes identical except PHASERAM (a frequency jump applied earlier: phase offset)
+  q (packed, ce every 3 clks): samples DIFF, host reads same, RAM writes DIFF
+      Q1 check: 66 harmonic + 2 frequency jump writes added, 1 envelope writes displaced; other RAM writes identical except PHASERAM (a frequency jump applied earlier: phase offset)
+  r (rtl, ce every 2 clks): samples DIFF, host reads same, RAM writes DIFF
+      Q1 check: 68 harmonic + 2 frequency jump writes added, 0 envelope writes displaced; other RAM writes identical (41782 writes)
+  r (packed, ce every 3 clks): samples DIFF, host reads same, RAM writes DIFF
+      Q1 check: 68 harmonic + 2 frequency jump writes added, 0 envelope writes displaced; other RAM writes identical (41782 writes)
+  nzf (rtl, ce every 2 clks): samples DIFF, host reads same, RAM writes DIFF
+      Q1 check: 78 harmonic + 2 frequency jump writes added, 1 envelope writes displaced; other RAM writes identical except PHASERAM (a frequency jump applied earlier: phase offset)
+  nzf (packed, ce every 3 clks): samples DIFF, host reads same, RAM writes DIFF
+      Q1 check: 78 harmonic + 2 frequency jump writes added, 1 envelope writes displaced; other RAM writes identical except PHASERAM (a frequency jump applied earlier: phase offset)
+  nzn (rtl, ce every 2 clks): samples DIFF, host reads same, RAM writes DIFF
+      Q1 check: 78 harmonic + 2 frequency jump writes added, 1 envelope writes displaced; other RAM writes identical except PHASERAM (a frequency jump applied earlier: phase offset)
+  nzn (packed, ce every 3 clks): samples DIFF, host reads same, RAM writes DIFF
+      Q1 check: 78 harmonic + 2 frequency jump writes added, 1 envelope writes displaced; other RAM writes identical except PHASERAM (a frequency jump applied earlier: phase offset)
+2. unaligned (amy1_top, phase B - phase A)
+  tq: 110 commands
+    busy start, phase B - phase A: median -4 chip clocks, range -75 .. -3; 67 of 110 within 4
+    samples: 212 compared, 22 identical (10.4%)
+    spectra (10 frames of 64): relative error median 0.001, 90% 0.116, max 0.116
+    frame RMS, phase B - phase A: median +0.00 dB, 90% |.| 0.73 dB, max |.| 0.73 dB
+  tq40: 110 commands
+    busy start, phase B - phase A: median -4 chip clocks, range -75 .. -3; 67 of 110 within 4
+    samples: 339 compared, 19 identical (5.6%)
+    spectra (18 frames of 64): relative error median 0.029, 90% 0.075, max 0.159
+    frame RMS, phase B - phase A: median +0.05 dB, 90% |.| 0.26 dB, max |.| 0.39 dB
+  tr: 117 commands
+    busy start, phase B - phase A: median -4 chip clocks, range -75 .. -3; 72 of 117 within 4
+    samples: 651 compared, 14 identical (2.2%)
+    spectra (38 frames of 64): relative error median 0.131, 90% 0.292, max 0.299
+    frame RMS, phase B - phase A: median +0.00 dB, 90% |.| 0.13 dB, max |.| 1.09 dB
+  tri: 117 commands
+    busy start, phase B - phase A: median -4 chip clocks, range -75 .. -3; 72 of 117 within 4
+    samples: 651 compared, 14 identical (2.2%)
+    spectra (38 frames of 64): relative error median 0.131, 90% 0.292, max 0.299
+    frame RMS, phase B - phase A: median +0.00 dB, 90% |.| 0.13 dB, max |.| 1.09 dB
+  tlr: 117 commands
+    busy start, phase B - phase A: median -4 chip clocks, range -75 .. -3; 72 of 117 within 4
+    samples: 651 compared, 13 identical (2.0%)
+    spectra (38 frames of 64): relative error median 0.001, 90% 0.004, max 0.096
+    frame RMS, phase B - phase A: median -0.00 dB, 90% |.| 0.18 dB, max |.| 0.51 dB
+  trb: 134 commands
+    busy start, phase B - phase A: median -4 chip clocks, range -139 .. -3; 67 of 134 within 4
+    samples: 82 compared, 15 identical (18.3%)
+    spectra (2 frames of 64): relative error median 0.116, 90% 0.116, max 0.116
+    frame RMS, phase B - phase A: median +0.73 dB, 90% |.| 0.73 dB, max |.| 0.73 dB
+  tnz: 177 commands
+    busy start, phase B - phase A: median -32 chip clocks, range -108 .. -3; 66 of 177 within 4
+    samples: 424 compared, 28 identical (6.6%)
+    spectra (24 frames of 64): relative error median 4.505, 90% 18.294, max 30.257
+    frame RMS, phase B - phase A: median +12.71 dB, 90% |.| 25.48 dB, max |.| 29.17 dB
+  tnzd: 177 commands
+    busy start, phase B - phase A: median -8 chip clocks, range -108 .. +30; 69 of 177 within 4
+    samples: 424 compared, 59 identical (13.9%)
+    spectra (24 frames of 64): relative error median 0.242, 90% 0.516, max 7.273
+    frame RMS, phase B - phase A: median -0.11 dB, 90% |.| 1.37 dB, max |.| 7.67 dB
+  read-back through amy1_top: 43 of 48 identical
+3. note engine
+  16x4: SYSTEM PASS
+  hpv8: SYSTEM PASS
+  x4: SYSTEM PASS
+  clk8: SYSTEM PASS
+4. noise generators (bit-exact model)
+  64 harmonics: 405 passes, generators alternate: True; row writes: 399 passes match the model, 0 differ; words: 386 match, 0 differ
+  40 harmonics: 405 passes, generators alternate: True; row writes: 399 passes match the model, 0 differ; words: 386 match, 0 differ

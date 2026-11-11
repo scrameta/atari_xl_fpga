@@ -1,0 +1,355 @@
+--- a/vhdl/amy1_top.vhd
++++ b/vhdl/amy1_top.vhd
+@@ -55,16 +55,17 @@
+ 
+ entity amy1_top is
+   generic (
+-    STEP_NUM     : natural := 375;
+-    STEP_DEN     : natural := 896;
++    STEP_NUM     : natural := 3;
++    STEP_DEN     : natural := 7;
+     USE_TICK     : boolean := false;
+     STEP_SPACING : natural := 4;                       -- CLKs between steps (USE_TICK)
+     FIFO_LOG2    : natural := 2;                       -- host write FIFO: 2**FIFO_LOG2 entries
+     STEREO       : boolean := true;                    -- false: mono (use SUM mode), saves ~120 LEs
+     ROM_BASE     : natural := 0;                       -- word address of amy1_mem.bin
+     ENGINE       : boolean := false;                   -- the note engine, registers 8..15
++    DETUNE_MEM_PROBE : boolean := false;            -- TEST ONLY: read current harmonic spare bits at $D2C7
+     ENGINE_GLIDE : boolean := true;                    -- ... with glide slopes (~25 LEs)
+-    ENGINE_UNIT_LOG2 : natural := 14                   -- ... time unit: 14 at 2 x PHI2, 15 at 4 x PHI2
++    ENGINE_UNIT_LOG2 : natural := 15                   -- ... time unit: 14 at 2 x PHI2, 15 at 4 x PHI2
+   );
+   port (
+     CLK          : in  std_logic;
+@@ -136,6 +137,8 @@
+   signal aux_re, aux_rack, aux_we, aux_wack : std_logic;
+   signal aux_raddr, aux_waddr        : std_logic_vector(7 downto 0);
+   signal aux_rdata, aux_wdata        : std_logic_vector(35 downto 0);
++  signal detune_probe_q : std_logic_vector(5 downto 0);
++  signal detune_probe_read : std_logic_vector(7 downto 0);
+ 
+   ---------------------------------------------------------------------------
+   -- write FIFO: 2**FIFO_LOG2 x {addr, data}
+@@ -148,6 +151,7 @@
+   signal full                    : std_logic;
+   signal individual_reg, individual_next : std_logic := '0';   -- system options bit 2
+   signal reset_req_reg, reset_req_next   : std_logic := '0';   -- host asked for a chip reset
++  signal ext_enable_reg          : std_logic := '0'; -- Rev C flag; software-visible write at $D2C7
+   signal reset_taken             : std_logic;                  -- ... and it starts now
+ 
+   -- wrapper registers
+@@ -205,6 +209,7 @@
+       wr_ptr_reg     <= (others => '0');
+       count_reg      <= (others => '0');
+       individual_reg <= '0';
++      ext_enable_reg <= '0';
+       reset_req_reg  <= '0';
+       voice_l_reg    <= (others => '1');
+       voice_r_reg    <= (others => '1');
+@@ -238,6 +243,15 @@
+       wr_ptr_reg     <= wr_ptr_next;
+       count_reg      <= count_next;
+       individual_reg <= individual_next;
++      if reset_taken = '1' then
++        ext_enable_reg <= '0';
++      elsif WRITE_ENABLE = '1' and ADDR = "0111" then
++        if DI = x"A5" then
++          ext_enable_reg <= '1';
++        elsif DI = x"5A" then
++          ext_enable_reg <= '0';
++        end if;
++      end if;
+       reset_req_reg  <= reset_req_next;
+       voice_l_reg    <= voice_l_next;
+       voice_r_reg    <= voice_r_next;
+@@ -505,12 +519,16 @@
+   -- status / read-back
+   busy <= '0' when count_reg = 0 and bus_reg = bus_idle and loaded_reg = '1'
+                    and up_reg = '1' and reset_req_reg = '0' else '1';
++  detune_probe_read <= "00" & detune_probe_q when DETUNE_MEM_PROBE else busy & full & "000000";
++  -- Probe is deliberately disabled in normal builds: $D2C7 stays status.
++  -- Select the existing status at address 7 unless enabled for the synthesis experiment.
+   with ADDR select DO <=
+     shadow_b_reg           when "0010",
+     shadow_c_reg           when "0011",
+     voice_l_reg            when "0100",
+     voice_r_reg            when "0101",
+     volume_reg             when "0110",
++    detune_probe_read        when "0111",
+     eng_do                 when "1000" | "1001" | "1010" | "1011" | "1100" | "1101" | "1110" | "1111",
+     busy & full & "000000" when others;
+ 
+@@ -558,6 +576,7 @@
+     clk          => CLK,
+     ce           => tick,
+     reset        => chip_reset,
++    ext_enable   => ext_enable_reg,
+     addr         => chip_addr,
+     we           => chip_we,
+     wdata        => chip_wdata,
+@@ -576,7 +595,8 @@
+     aux_we       => aux_we,
+     aux_waddr    => aux_waddr,
+     aux_wdata    => aux_wdata,
+-    aux_wack     => aux_wack
++    aux_wack     => aux_wack,
++    detune_probe_q => detune_probe_q
+   );
+ 
+   ---------------------------------------------------------------------------
+--- a/vhdl/amy1.vhd
++++ b/vhdl/amy1.vhd
+@@ -27,6 +27,7 @@
+     clk        : in  std_logic;
+     ce         : in  std_logic;
+     reset      : in  std_logic;                      -- synchronous, active high
++    ext_enable : in  std_logic := '0';               -- Rev C enable; default preserves legacy modes
+ 
+     addr       : in  std_logic_vector(1 downto 0);
+     we         : in  std_logic;
+@@ -51,7 +52,8 @@
+     aux_we    : in  std_logic := '0';
+     aux_waddr : in  std_logic_vector(7 downto 0) := (others => '0');
+     aux_wdata : in  std_logic_vector(35 downto 0) := (others => '0');
+-    aux_wack  : out std_logic
++    aux_wack  : out std_logic;
++    detune_probe_q : out std_logic_vector(5 downto 0)
+   );
+ end entity;
+ 
+@@ -122,7 +124,7 @@
+   end process;
+ 
+   core: entity work.amy1_core port map (
+-    clk => clk, ce => ce, reset => reset,
++    clk => clk, ce => ce, reset => reset, ext_enable => ext_enable,
+     addr => addr, we => we, wdata => wdata, rdata => rdata, rdy => rdy,
+     sample => sample, sample_stb => sample_stb, sample_v0 => sample_v0,
+     noise_init => noise_init,
+@@ -147,6 +149,7 @@
+     mem: entity work.amy1_mem(packed) port map (
+     clk => clk, ce => ce,
+     load_we => load_we, load_addr => load_addr, load_data => load_data,
++    detune_probe_q => detune_probe_q,
+     aux_re => aux_re, aux_raddr => aux_raddr, aux_rack => aux_rack, aux_rdata => aux_rdata,
+     aux_we => aux_we, aux_waddr => aux_waddr, aux_wdata => aux_wdata, aux_wack => aux_wack,
+     phaseram_addr => phaseram_addr, phaseram_we => phaseram_we,
+@@ -172,6 +175,7 @@
+     mem: entity work.amy1_mem(rtl) port map (
+     clk => clk, ce => ce,
+     load_we => load_we, load_addr => load_addr, load_data => load_data,
++    detune_probe_q => detune_probe_q,
+     aux_re => aux_re, aux_raddr => aux_raddr, aux_rack => aux_rack, aux_rdata => aux_rdata,
+     aux_we => aux_we, aux_waddr => aux_waddr, aux_wdata => aux_wdata, aux_wack => aux_wack,
+     phaseram_addr => phaseram_addr, phaseram_we => phaseram_we,
+--- a/vhdl/amy1_core.vhd
++++ b/vhdl/amy1_core.vhd
+@@ -25,6 +25,7 @@
+     clk        : in  std_logic;
+     ce         : in  std_logic;                      -- one AMY internal clock
+     reset      : in  std_logic;                      -- synchronous, active high
++    ext_enable : in  std_logic := '0';               -- Rev C extension enable
+ 
+     -- registers: 0 command, 1 A, 2 B, 3 C
+     addr       : in  std_logic_vector(1 downto 0);
+@@ -104,7 +105,7 @@
+   -- envelope generator
+   signal log : std_logic_vector(12 downto 0);
+   signal readback : std_logic_vector(12 downto 0);
+-  signal fan, noise_gen, last_pair, env_wr : std_logic;
++  signal fan, noise_gen, white_sel, last_pair, env_wr : std_logic;
+   signal slope_rate : std_logic_vector(1 downto 0);
+ 
+   -- noise generator
+@@ -164,14 +165,15 @@
+     lhp_q => lhpram_q, lhp_we => lhpram_we, lhp_wdata => lhpram_wdata,
+     v18_q => voice18_q, v18_we => voice18_we, v18_wdata => voice18_wdata,
+     v3_q => voice3_q, v3_we => voice3_we, v3_wdata => voice3_wdata,
+-    log => log, fan => fan, noise_gen => noise_gen, slope_rate => slope_rate,
++    log => log, fan => fan, noise_gen => noise_gen, white_sel => white_sel,
++    ext_enable => ext_enable, slope_rate => slope_rate,
+     last_pair => last_pair, host_wr => env_wr, readback => readback, fjump => fjump);
+ 
+   u_noise_generator: entity work.amy1_noise_generator port map (
+     clk => clk, ce => ce,
+     p => p, sync => sync, odd => odd, sel40 => config.sel40, hadr => harm_a,
+     host_mode => config.nzinit, cmd => cmd, host_data => reg_a(2 downto 0),
+-    host_wr => noise_wr, noise_gen => noise_gen, mute => zerob,
++    host_wr => noise_wr, noise_gen => noise_gen, white_sel => white_sel, mute => zerob,
+     noise => noise, serial => bout,
+     ram_addr => noise_addr, ram_we => noise_we, ram_wdata => noise_wdata, ram_q => noise_q);
+ 
+--- a/vhdl/amy1_envelope_generator.vhd
++++ b/vhdl/amy1_envelope_generator.vhd
+@@ -71,7 +71,9 @@
+     -- outputs
+     log        : out std_logic_vector(12 downto 0);  -- to exp_rom
+     fan        : out std_logic;                      -- silence (to exp_rom, clrdisp)
+-    noise_gen  : out std_logic;                      -- the voice's noise generator
++    noise_gen  : out std_logic;
++    ext_enable : in std_logic := '0';
++    white_sel  : out std_logic;                      -- the voice's noise generator
+     slope_rate : out std_logic_vector(1 downto 0);   -- to the timebase (ssen)
+     fjump      : out std_logic;                      -- P1 after a frequency jump: its current value
+     last_pair  : out std_logic;                      -- LHP flag seen: next voice
+@@ -441,6 +443,7 @@
+   end process;
+ 
+   noise_gen  <= vt_reg(1);
++  white_sel  <= ext_enable when vt_reg = "11" else '0';
+   slope_rate <= ss_reg;
+   upenff     <= not upenffn;
+   upenha     <= not upenffn when odd = '1' else not upd_reg;
+--- a/vhdl/amy1_noise_generator.vhd
++++ b/vhdl/amy1_noise_generator.vhd
+@@ -56,7 +56,8 @@
+     host_data : in  std_logic_vector(2 downto 0);  -- host write data (A2..0)
+     host_wr   : out std_logic;                     -- the host write is happening
+     -- envelope generator
+-    noise_gen : in  std_logic;                     -- the voice's generator (voice type 2)
++    noise_gen : in  std_logic;                     -- original noise generator selection
++    white_sel : in  std_logic := '0';              -- Rev C type-3 white excitation
+     mute      : in  std_logic;                     -- force the noise word to zero
+     noise     : out std_logic_vector(11 downto 0); -- noise word, two's complement
+     serial    : out std_logic;                     -- VAL adder sum (the BOUT pin)
+@@ -116,6 +117,7 @@
+   signal gen     : std_logic;             -- generator accessed (RAM address bit 0 = not gen)
+   signal word    : std_logic_vector(11 downto 0);
+   signal psync   : std_logic;             -- the pass ends (P3 of row 31): sync with 64 harmonics
++  signal white_lfsr : std_logic_vector(15 downto 0) := x"ACE1";
+   signal gsel    : std_logic;             -- the generator of the next pass
+ 
+ begin
+@@ -302,10 +304,28 @@
+   end process;
+ 
+   -----------------------------------------------------------------------------
++  -- Rev C white excitation: maximal-length 16-bit LFSR, advanced once per slot.
++  -- 12-bit two's complement perturbation into the original logarithmic noise path.
++  -- No RAM ports or legacy generator state are modified.
++  -----------------------------------------------------------------------------
++  process(clk)
++    variable feedback : std_logic;
++  begin
++    if rising_edge(clk) then
++      if ce = '1' and p(0) = '1' and host_mode = '0' then
++        feedback := white_lfsr(15) xor white_lfsr(13) xor
++                    white_lfsr(12) xor white_lfsr(10);
++        white_lfsr <= white_lfsr(14 downto 0) & feedback;
++      end if;
++    end if;
++  end process;
++
++  -----------------------------------------------------------------------------
+   -- Outputs
+   -----------------------------------------------------------------------------
+   word   <= word1_reg when noise_gen = '1' else word0_reg;
+-  noise  <= word when mute = '0' else (others => '0');
++  noise  <= (others => '0') when mute = '1' else
++            white_lfsr(11 downto 0) when white_sel = '1' else word;
+   serial <= val_sum;
+   hwr_next <= '1' when p(2) = '1' and cmd.op = OP_WR_NOISE and host_mode = '1' else '0';
+   host_wr  <= hwr_reg;
+--- a/vhdl/amy1_mem.vhd
++++ b/vhdl/amy1_mem.vhd
+@@ -28,6 +28,8 @@
+     aux_wdata : in  std_logic_vector(35 downto 0) := (others => '0');
+     aux_wack  : out std_logic;                             -- ... done at this edge
+ 
++    -- synthesis-only 6-bit storage probe (current harmonic read address)
++    detune_probe_q : out std_logic_vector(5 downto 0);
+     phaseram_addr : in  std_logic_vector(2 downto 0);
+     phaseram_we : in  std_logic;
+     phaseram_wdata : in  std_logic_vector(19 downto 0);
+@@ -84,6 +86,7 @@
+   signal sromint_mem : sromint_t;
+ begin
+ 
++  detune_probe_q <= (others => '0'); -- non-packed reference has no spare-bit probe
+   aux_rack  <= '0';
+   aux_wack  <= '0';
+   aux_rdata <= (others => '0');
+--- a/vhdl/amy1_mem_packed.vhd
++++ b/vhdl/amy1_mem_packed.vhd
+@@ -6,7 +6,7 @@
+ --   M9K 2, true dual port 1024 x 5:  SROMINT (512 x 5) on port A,
+ --                                    XROMINT (128 x 5) at word 512 on port B,
+ --                                    NOISE (64 x 3) at word 640
+---   M9K 3, simple dual port 128 x 30: HARMBRKPOINT | HARMCURNTVAL | LHPRAM in words
++--   M9K 3, simple dual port 128 x 36: HARMBRKPOINT | HARMCURNTVAL | LHPRAM in words
+ --                                    0..63, PHASERAM (8 x 20) in words 64..71
+ --   M9K 4, simple dual port 256 x 36: VOICE18 | VOICE3 in words 0..15; words
+ --                                    16..255 belong to the aux port (amy1_top's
+@@ -65,13 +65,13 @@
+   signal xromint_hold : std_logic_vector(4 downto 0) := (others => '0');
+ 
+   -- M9K 3 and 4
+-  type harm_t  is array (0 to 127) of std_logic_vector(29 downto 0);
++  type harm_t  is array (0 to 127) of std_logic_vector(35 downto 0);
+   type voice_t is array (0 to 255) of std_logic_vector(35 downto 0);
+   signal harm  : harm_t;
+   signal voice : voice_t;
+-  signal harm_rd   : std_logic_vector(29 downto 0);
+-  signal harm_hold : std_logic_vector(29 downto 0) := (others => '0');
+-  signal harm_q    : std_logic_vector(29 downto 0);
++  signal harm_rd   : std_logic_vector(35 downto 0);
++  signal harm_hold : std_logic_vector(35 downto 0) := (others => '0');
++  signal harm_q    : std_logic_vector(35 downto 0);
+   signal phase_we_d   : std_logic := '0';
+   signal phase_addr_d : std_logic_vector(2 downto 0) := (others => '0');
+   signal phase_data_d : std_logic_vector(19 downto 0) := (others => '0');
+@@ -81,7 +81,7 @@
+   signal aux_rack_i, aux_wack_i, voice_wr : std_logic;
+   signal harm_we, harm_re, voice_we, voice_re : std_logic;
+   signal harm_waddr, harm_raddr   : std_logic_vector(6 downto 0);
+-  signal harm_wdata               : std_logic_vector(29 downto 0);
++  signal harm_wdata               : std_logic_vector(35 downto 0);
+   signal voice_waddr, voice_raddr : std_logic_vector(7 downto 0);
+   signal voice_wdata              : std_logic_vector(35 downto 0);
+ 
+@@ -173,7 +173,7 @@
+ 
+   ---------------------------------------------------------------------------
+   -- M9K 3: the harmonic RAMs and PHASERAM, one read port and one write port:
+-  --   words 0..63   one per harmonic: 29 LHPRAM | 28..16 HARMCURNTVAL | 15..0 HARMBRKPOINT
++  --   words 0..63   one per harmonic: 35..30 DETUNE PROBE | 29 LHPRAM | 28..16 HARMCURNTVAL | 15..0 HARMBRKPOINT
+   --   words 64..71  PHASERAM, one per voice (19..0)
+   --   e1  read the harmonic word (held from e2 for the rest of the chip clock)
+   --   e2  read the phase word (its data stays until the next e1)
+@@ -186,19 +186,22 @@
+   harm_wr_p: process (load_we, load_addr, load_data, ce, lhpram_we, harmcurntval_we,
+                       harmbrkpoint_we, harmbrkpoint_addr, harmbrkpoint_wdata, harmcurntval_wdata,
+                       lhpram_wdata, harm_hold, phase_we_d, phase_addr_d, phase_data_d)
+-    variable w : std_logic_vector(29 downto 0);
++    variable w : std_logic_vector(35 downto 0);
+   begin
+     harm_we    <= '0';
+     harm_waddr <= '0' & harmbrkpoint_addr;
+-    harm_wdata <= (29 downto 20 => '0') & phase_data_d;
++    harm_wdata <= (35 downto 20 => '0') & phase_data_d;
+     if load_we = '1' and in_unit(load_addr, HARM_BASE, 6) then
+       harm_we    <= '1';
+       harm_waddr <= '0' & load_addr(5 downto 0);
+-      harm_wdata <= load_data(29 downto 0);
++      -- Synthesis probe: initialise six spare bits from existing image data/address.
++      -- Distinct per harmonic and data-dependent; ordinary audio fields unchanged.
++      -- NOT the final software detuning interface.
++      harm_wdata <= (load_data(5 downto 0) xor load_addr(5 downto 0)) & load_data(29 downto 0);
+     elsif load_we = '1' and in_unit(load_addr, PHASERAM_BASE, 3) then
+       harm_we    <= '1';
+       harm_waddr <= "1000" & load_addr(2 downto 0);
+-      harm_wdata <= (29 downto 20 => '0') & load_data(19 downto 0);
++      harm_wdata <= (35 downto 20 => '0') & load_data(19 downto 0);
+     elsif ce = '1' and (lhpram_we = '1' or harmcurntval_we = '1' or harmbrkpoint_we = '1') then
+       w := harm_hold;                      -- this clock's read of the same word
+       if harmbrkpoint_we = '1' then w(15 downto 0)  := harmbrkpoint_wdata; end if;
+@@ -242,6 +245,9 @@
+   end process;
+ 
+   harm_q <= harm_rd when ce_d2 = '1' else harm_hold;
++  -- Read back the live harmonic word's spare bits. Routed through the wrapper's
++  -- optional $D2C7 probe read so Quartus cannot discard the extra RAM width.
++  detune_probe_q <= harm_q(35 downto 30);
+   harmbrkpoint_q <= harm_q(15 downto 0);
+   harmcurntval_q <= harm_q(28 downto 16);
+   lhpram_q       <= harm_q(29 downto 29);

@@ -1,0 +1,915 @@
+--- a/vhdl/amy1_core.vhd
++++ b/vhdl/amy1_core.vhd
+@@ -131,7 +131,7 @@
+   signal hs : std_logic_vector(12 downto 0);
+   signal fjump : std_logic;
+   type att_t is array (0 to 7) of std_logic_vector(7 downto 0);
+-  signal voice_att : att_t := (others => (others => '0'));
++  signal voice_att_reg, voice_att_next : att_t := (others => (others => '0'));
+   signal effective_att : std_logic_vector(7 downto 0);
+   signal synth_freq_inc : std_logic_vector(17 downto 0);
+   signal synth_random : std_logic_vector(7 downto 0);
+@@ -142,14 +142,20 @@
+   process(clk)
+   begin
+     if rising_edge(clk) then
+-      if reset = '1' or ext_clear = '1' then
+-        voice_att <= (others => (others => '0'));
+-      elsif ext_we = '1' and ext_kind = "00" and ext_index(5 downto 3) = "000" then
+-        voice_att(to_integer(unsigned(ext_index(2 downto 0)))) <= ext_value;
+-      end if;
++      voice_att_reg <= voice_att_next;
+     end if;
+   end process;
+-  effective_att <= voice_att(to_integer(unsigned(voice))) when ext_enable = '1' else x"00";
++
++  process(voice_att_reg, reset, ext_clear, ext_we, ext_kind, ext_index, ext_value)
++  begin
++    voice_att_next <= voice_att_reg;
++    if reset = '1' or ext_clear = '1' then
++      voice_att_next <= (others => (others => '0'));
++    elsif ext_we = '1' and ext_kind = "00" and ext_index(5 downto 3) = "000" then
++      voice_att_next(to_integer(unsigned(ext_index(2 downto 0)))) <= ext_value;
++    end if;
++  end process;
++  effective_att <= voice_att_reg(to_integer(unsigned(voice))) when ext_enable = '1' else x"00";
+   freq_inc_q <= synth_freq_inc;
+   noise_random_q <= synth_random;
+   u_phase_offset: entity work.amy1_ext_phase port map (
+--- a/vhdl/amy1_ext_phase.vhd
++++ b/vhdl/amy1_ext_phase.vhd
+@@ -21,7 +21,7 @@
+ end entity;
+ architecture rtl of amy1_ext_phase is
+ begin
+-  process(all)
++  process(freq_inc, detune, stochasticity, random_byte, old_phase, ext_enable)
+     variable dt : signed(24 downto 0);
+     variable nz : signed(14 downto 0);
+     variable accum : signed(17 downto 0);
+--- a/vhdl/amy1_mem_packed.vhd
++++ b/vhdl/amy1_mem_packed.vhd
+@@ -76,18 +76,21 @@
+   signal harm_hold : std_logic_vector(35 downto 0) := (others => '0');
+   signal harm_q : std_logic_vector(35 downto 0);
+   signal phase_hold : std_logic_vector(19 downto 0) := (others => '0');
+-  signal d_hold, s_hold : std_logic_vector(5 downto 0) := (others => '0');
+-  signal off_new_hold : std_logic_vector(17 downto 0) := (others => '0');
++  signal detune_hold_reg, detune_hold_next : std_logic_vector(5 downto 0) := (others => '0');
++  signal stoch_hold_reg, stoch_hold_next : std_logic_vector(5 downto 0) := (others => '0');
++  signal off_new_reg, off_new_next : std_logic_vector(17 downto 0) := (others => '0');
+   signal phase_we_d : std_logic := '0';
+   signal phase_addr_d : std_logic_vector(2 downto 0) := (others => '0');
+   signal phase_data_d : std_logic_vector(19 downto 0) := (others => '0');
+-  signal det_valid, stoch_valid, off_valid : std_logic_vector(63 downto 0) := (others => '0');
+-  signal ext_req_reg : std_logic := '0';
+-  signal ext_pending_reg : std_logic := '0';
+-  signal ext_ack_reg : std_logic := '0';
+-  signal ext_kind_reg : std_logic_vector(1 downto 0) := "00";
+-  signal ext_index_reg : std_logic_vector(5 downto 0) := (others => '0');
+-  signal ext_value_reg : std_logic_vector(7 downto 0) := (others => '0');
++  signal det_valid_reg, det_valid_next : std_logic_vector(63 downto 0) := (others => '0');
++  signal stoch_valid_reg, stoch_valid_next : std_logic_vector(63 downto 0) := (others => '0');
++  signal off_valid_reg, off_valid_next : std_logic_vector(63 downto 0) := (others => '0');
++  signal ext_req_reg, ext_req_next : std_logic := '0';
++  signal ext_pending_reg, ext_pending_next : std_logic := '0';
++  signal ext_ack_reg, ext_ack_next : std_logic := '0';
++  signal ext_kind_reg, ext_kind_next : std_logic_vector(1 downto 0) := "00";
++  signal ext_index_reg, ext_index_next : std_logic_vector(5 downto 0) := (others => '0');
++  signal ext_value_reg, ext_value_next : std_logic_vector(7 downto 0) := (others => '0');
+   signal ext_rd_addr, offset_addr, stochastic_addr : std_logic_vector(6 downto 0);
+ 
+   signal voice_rd : std_logic_vector(35 downto 0);
+@@ -211,7 +214,14 @@
+   ext_rd_addr <= '0' & ext_index_reg when ext_kind_reg = "01" else
+     std_logic_vector(to_unsigned(72 + to_integer(unsigned(ext_index_reg(5 downto 2))), 7));
+ 
+-  harm_wr_p: process(all)
++  harm_wr_p: process(load_we, load_addr, load_data, ce,
++                     lhpram_we, harmcurntval_we, harmbrkpoint_we,
++                     harm_hold, harmbrkpoint_wdata, harmcurntval_wdata,
++                     lhpram_wdata, harmbrkpoint_addr, phase_we_d,
++                     phase_addr_d, phase_data_d, ce_d6, ext_enable, offset_step,
++                     harm_rd, phase_slot, offset_wdata, offset_addr,
++                     ce_d8, ext_req_reg, ext_kind_reg, ext_value_reg,
++                     ext_index_reg, ext_rd_addr)
+     variable w : std_logic_vector(35 downto 0);
+     variable n : natural range 0 to 3;
+   begin
+@@ -276,58 +286,109 @@
+     end if;
+   end process;
+ 
+-  process(clk)
++  ---------------------------------------------------------------------------
++  -- All extension control state is explicit *_reg / *_next, so the clocked
++  -- process only copies next values. The RAM array itself stays synchronous
++  -- and separate to preserve M9K inference.
++  ext_state_regs: process(clk)
++  begin
++    if rising_edge(clk) then
++      det_valid_reg <= det_valid_next;
++      stoch_valid_reg <= stoch_valid_next;
++      off_valid_reg <= off_valid_next;
++      ext_req_reg <= ext_req_next;
++      ext_pending_reg <= ext_pending_next;
++      ext_ack_reg <= ext_ack_next;
++      ext_kind_reg <= ext_kind_next;
++      ext_index_reg <= ext_index_next;
++      ext_value_reg <= ext_value_next;
++      off_new_reg <= off_new_next;
++      detune_hold_reg <= detune_hold_next;
++      stoch_hold_reg <= stoch_hold_next;
++      if ext_reset = '0' and ext_we = '1' and ext_kind /= "00" then
++        assert ext_req_reg = '0' and ext_pending_reg = '0'
++          report "extension RAM write overrun" severity failure;
++      end if;
++    end if;
++  end process;
++
++  ext_state_comb: process(ext_reset, ext_we, ext_kind, ext_index, ext_value,
++                          ext_req_reg, ext_pending_reg, ext_ack_reg,
++                          ext_kind_reg, ext_index_reg, ext_value_reg,
++                          det_valid_reg, stoch_valid_reg, off_valid_reg,
++                          detune_hold_reg, stoch_hold_reg, off_new_reg,
++                          ce, ce_d4, ce_d5, ce_d6, ce_d8,
++                          offset_step, offset_wdata, ext_enable, phase_slot,
++                          harm_rd)
++    variable h : natural range 0 to 63;
+     variable n : natural range 0 to 3;
+-    variable h : natural range 0 to 63;
+-  begin
+-    if rising_edge(clk) then
+-      if ext_reset = '1' then
+-        det_valid <= (others => '0');
+-        stoch_valid <= (others => '0');
+-        off_valid <= (others => '0');
+-        ext_req_reg <= '0';
+-        ext_pending_reg <= '0';
+-        ext_ack_reg <= '0';
+-        off_new_hold <= (others => '0');
+-      else
+-        ext_ack_reg <= '0';
+-        if ext_we = '1' and ext_kind /= "00" then
+-          assert ext_req_reg = '0' and ext_pending_reg = '0'
+-             report "extension RAM write overrun" severity failure;
+-          ext_pending_reg <= '1';
+-          ext_kind_reg <= ext_kind;
+-          ext_index_reg <= ext_index;
+-          ext_value_reg <= ext_value;
++  begin
++    det_valid_next <= det_valid_reg;
++    stoch_valid_next <= stoch_valid_reg;
++    off_valid_next <= off_valid_reg;
++    ext_req_next <= ext_req_reg;
++    ext_pending_next <= ext_pending_reg;
++    ext_ack_next <= '0';
++    ext_kind_next <= ext_kind_reg;
++    ext_index_next <= ext_index_reg;
++    ext_value_next <= ext_value_reg;
++    off_new_next <= off_new_reg;
++    detune_hold_next <= detune_hold_reg;
++    stoch_hold_next <= stoch_hold_reg;
++    if ext_reset = '1' then
++      det_valid_next <= (others => '0');
++      stoch_valid_next <= (others => '0');
++      off_valid_next <= (others => '0');
++      ext_req_next <= '0';
++      ext_pending_next <= '0';
++      ext_ack_next <= '0';
++      off_new_next <= (others => '0');
++    else
++      if ext_we = '1' and ext_kind /= "00" then
++        ext_pending_next <= '1';
++        ext_kind_next <= ext_kind;
++        ext_index_next <= ext_index;
++        ext_value_next <= ext_value;
++      end if;
++      -- Arm on a complete chip-clock boundary, not between e7 and e8.
++      if ce = '1' and ext_pending_reg = '1' then
++        ext_req_next <= '1';
++        ext_pending_next <= '0';
++      end if;
++      if ce_d6 = '1' and offset_step = '1' then
++        if ext_enable = '1' then
++          off_new_next <= offset_wdata;
++          off_valid_next(to_integer(unsigned(phase_slot))) <= '1';
++        else
++          off_new_next <= (others => '0');
+         end if;
+-        -- Arm at a complete chip-clock boundary; never start between e7/e8.
+-        if ce = '1' and ext_pending_reg = '1' then
+-          ext_req_reg <= '1';
+-          ext_pending_reg <= '0';
++      end if;
++      if ce_d8 = '1' and ext_req_reg = '1' then
++        h := to_integer(unsigned(ext_index_reg));
++        if ext_kind_reg = "01" then
++          det_valid_next(h) <= '1';
++        else
++          stoch_valid_next(h) <= '1';
+         end if;
+-        if ce_d6 = '1' and offset_step = '1' then
+-          off_new_hold <= offset_wdata when ext_enable = '1' else (others => '0');
+-          if ext_enable = '1' then
+-            off_valid(to_integer(unsigned(phase_slot))) <= '1';
+-          end if;
+-        end if;
+-        if ce_d8 = '1' and ext_req_reg = '1' then
+-          h := to_integer(unsigned(ext_index_reg));
+-          if ext_kind_reg = "01" then
+-            det_valid(h) <= '1';
+-          else
+-            stoch_valid(h) <= '1';
+-          end if;
+-          ext_req_reg <= '0';
+-          ext_ack_reg <= '1';
+-        end if;
+-      end if;
++        ext_req_next <= '0';
++        ext_ack_next <= '1';
++      end if;
++    end if;
++    if ce_d4 = '1' then
++      detune_hold_next <= harm_rd(35 downto 30);
++    end if;
++    if ce_d5 = '1' then
++      n := to_integer(unsigned(phase_slot(1 downto 0)));
++      stoch_hold_next <= harm_rd(n*6+5 downto n*6);
++    end if;
++  end process;
++
++  -- Legacy RAM/phase hold registers remain simple clock-enabled pipelines.
++  harm_hold_regs: process(clk)
++  begin
++    if rising_edge(clk) then
+       if ce_d2 = '1' then harm_hold <= harm_rd; end if;
+       if ce_d3 = '1' then phase_hold <= harm_rd(19 downto 0); end if;
+-      if ce_d4 = '1' then d_hold <= harm_rd(35 downto 30); end if;
+-      if ce_d5 = '1' then
+-        n := to_integer(unsigned(phase_slot(1 downto 0)));
+-        s_hold <= harm_rd(n*6+5 downto n*6);
+-      end if;
+       phase_we_d <= ce and phaseram_we;
+       if ce = '1' then
+         phase_addr_d <= phaseram_addr;
+@@ -342,12 +403,12 @@
+   lhpram_q <= harm_q(29 downto 29);
+   phaseram_q <= phase_hold;
+ 
+-  detune_q <= d_hold when det_valid(to_integer(unsigned(phase_slot))) = '1' else (others => '0');
+-  stoch_q <= s_hold when stoch_valid(to_integer(unsigned(phase_slot))) = '1' else (others => '0');
+-  offset_old_q <= (others => '0') when off_valid(to_integer(unsigned(phase_slot))) = '0' else
++  detune_q <= detune_hold_reg when det_valid_reg(to_integer(unsigned(phase_slot))) = '1' else (others => '0');
++  stoch_q <= stoch_hold_reg when stoch_valid_reg(to_integer(unsigned(phase_slot))) = '1' else (others => '0');
++  offset_old_q <= (others => '0') when off_valid_reg(to_integer(unsigned(phase_slot))) = '0' else
+                   harm_rd(17 downto 0) when phase_slot(0) = '0' else
+                   harm_rd(35 downto 18);
+-  offset_new_q <= off_new_hold;
++  offset_new_q <= off_new_reg;
+   ext_ack <= ext_ack_reg;
+ 
+   ---------------------------------------------------------------------------
+--- a/vhdl/amy1_noise_generator.vhd
++++ b/vhdl/amy1_noise_generator.vhd
+@@ -119,7 +119,7 @@
+   signal gen     : std_logic;             -- generator accessed (RAM address bit 0 = not gen)
+   signal word    : std_logic_vector(11 downto 0);
+   signal psync   : std_logic;             -- the pass ends (P3 of row 31): sync with 64 harmonics
+-  signal white_lfsr : std_logic_vector(15 downto 0) := x"ACE1";
++  signal white_lfsr_reg, white_lfsr_next : std_logic_vector(15 downto 0) := x"ACE1";
+   signal gsel    : std_logic;             -- the generator of the next pass
+ 
+ begin
+@@ -311,16 +311,22 @@
+   -- No RAM ports or legacy generator state are modified.
+   -----------------------------------------------------------------------------
+   process(clk)
++  begin
++    if rising_edge(clk) then
++      white_lfsr_reg <= white_lfsr_next;
++    end if;
++  end process;
++
++  process(white_lfsr_reg, reset, ce, p, host_mode)
+     variable feedback : std_logic;
+   begin
+-    if rising_edge(clk) then
+-      if reset = '1' then
+-        white_lfsr <= x"ACE1";
+-      elsif ce = '1' and p(0) = '1' and host_mode = '0' then
+-        feedback := white_lfsr(15) xor white_lfsr(13) xor
+-                    white_lfsr(12) xor white_lfsr(10);
+-        white_lfsr <= white_lfsr(14 downto 0) & feedback;
+-      end if;
++    white_lfsr_next <= white_lfsr_reg;
++    if reset = '1' then
++      white_lfsr_next <= x"ACE1";
++    elsif ce = '1' and p(0) = '1' and host_mode = '0' then
++      feedback := white_lfsr_reg(15) xor white_lfsr_reg(13) xor
++                  white_lfsr_reg(12) xor white_lfsr_reg(10);
++      white_lfsr_next <= white_lfsr_reg(14 downto 0) & feedback;
+     end if;
+   end process;
+ 
+@@ -329,8 +335,8 @@
+   -----------------------------------------------------------------------------
+   word   <= word1_reg when noise_gen = '1' else word0_reg;
+   noise  <= (others => '0') when mute = '1' else
+-            white_lfsr(11 downto 0) when white_sel = '1' else word;
+-  random_byte <= white_lfsr(15 downto 8);
++            white_lfsr_reg(11 downto 0) when white_sel = '1' else word;
++  random_byte <= white_lfsr_reg(15 downto 8);
+   serial <= val_sum;
+   hwr_next <= '1' when p(2) = '1' and cmd.op = OP_WR_NOISE and host_mode = '1' else '0';
+   host_wr  <= hwr_reg;
+--- a/vhdl/amy1_top.vhd
++++ b/vhdl/amy1_top.vhd
+@@ -148,9 +148,10 @@
+   signal full                    : std_logic;
+   signal individual_reg, individual_next : std_logic := '0';   -- system options bit 2
+   signal reset_req_reg, reset_req_next   : std_logic := '0';   -- host asked for a chip reset
+-  signal ext_enable_reg          : std_logic := '0'; -- unlocked after $A5,$5A sequence
+-  signal ext_key_reg             : std_logic := '0';
++  signal ext_enable_reg, ext_enable_next : std_logic := '0'; -- unlocked after $A5,$5A sequence
++  signal ext_key_reg, ext_key_next       : std_logic := '0';
+   signal ext_a_reg, ext_b_reg, ext_c_reg : std_logic_vector(7 downto 0) := (others => '0');
++  signal ext_a_next, ext_b_next, ext_c_next : std_logic_vector(7 downto 0);
+   signal ext_we, ext_clear, ext_ack : std_logic;
+   signal ext_kind : std_logic_vector(1 downto 0);
+   signal ext_index : std_logic_vector(5 downto 0);
+@@ -252,32 +253,11 @@
+       wr_ptr_reg     <= wr_ptr_next;
+       count_reg      <= count_next;
+       individual_reg <= individual_next;
+-      if reset_taken = '1' or timeout = '1' then
+-        ext_enable_reg <= '0';
+-        ext_key_reg <= '0';
+-      elsif WRITE_ENABLE = '1' and ADDR = "0111" then
+-        -- $A5 followed by $5A unlocks; $00 locks without altering Atari commands.
+-        -- The host must let the FIFO and note engine go idle before unlocking.
+-        if DI = x"A5" and busy = '0' then
+-          ext_key_reg <= '1';
+-        elsif DI = x"5A" and ext_key_reg = '1' and busy = '0' then
+-          ext_enable_reg <= '1';
+-          ext_key_reg <= '0';
+-        elsif DI = x"00" and busy = '0' then
+-          ext_enable_reg <= '0';
+-          ext_key_reg <= '0';
+-        else
+-          ext_key_reg <= '0';
+-        end if;
+-      elsif chip_we = '1' then
+-        -- Shadow the *dequeued* Atari operands (also covers note-engine commands).
+-        case chip_addr is
+-          when "01" => ext_a_reg <= chip_wdata;
+-          when "10" => ext_b_reg <= chip_wdata;
+-          when "11" => ext_c_reg <= chip_wdata;
+-          when others => null;
+-        end case;
+-      end if;
++      ext_enable_reg <= ext_enable_next;
++      ext_key_reg <= ext_key_next;
++      ext_a_reg <= ext_a_next;
++      ext_b_reg <= ext_b_next;
++      ext_c_reg <= ext_c_next;
+       reset_req_reg  <= reset_req_next;
+       voice_l_reg    <= voice_l_next;
+       voice_r_reg    <= voice_r_next;
+@@ -299,6 +279,44 @@
+       aud_l_reg      <= aud_l_next;
+       aud_r_reg      <= aud_r_next;
+       aud_strobe_reg <= strobe_reg;
++    end if;
++  end process;
++
++  ---------------------------------------------------------------------------
++  -- Revision C extension state, separated from the register process.
++  -- 6502 writes to $D2C7 form the unlock sequence; the legacy command
++  -- operands are shadowed as they reach the chip (including engine writes).
++  process (ext_enable_reg, ext_key_reg, ext_a_reg, ext_b_reg, ext_c_reg,
++           reset_taken, timeout, WRITE_ENABLE, ADDR, DI, busy,
++           chip_we, chip_addr, chip_wdata)
++  begin
++    ext_enable_next <= ext_enable_reg;
++    ext_key_next <= ext_key_reg;
++    ext_a_next <= ext_a_reg;
++    ext_b_next <= ext_b_reg;
++    ext_c_next <= ext_c_reg;
++    if reset_taken = '1' or timeout = '1' then
++      ext_enable_next <= '0';
++      ext_key_next <= '0';
++    elsif WRITE_ENABLE = '1' and ADDR = "0111" then
++      if DI = x"A5" and busy = '0' then
++        ext_key_next <= '1';
++      elsif DI = x"5A" and ext_key_reg = '1' and busy = '0' then
++        ext_enable_next <= '1';
++        ext_key_next <= '0';
++      elsif DI = x"00" and busy = '0' then
++        ext_enable_next <= '0';
++        ext_key_next <= '0';
++      else
++        ext_key_next <= '0';
++      end if;
++    elsif chip_we = '1' then
++      case chip_addr is
++        when "01" => ext_a_next <= chip_wdata;
++        when "10" => ext_b_next <= chip_wdata;
++        when "11" => ext_c_next <= chip_wdata;
++        when others => null;
++      end case;
+     end if;
+   end process;
+ 
+--- a/test/revc/tb_ext_phase.vhd
++++ b/test/revc/tb_ext_phase.vhd
+@@ -1,7 +1,6 @@
+ library ieee;
+ use ieee.std_logic_1164.all;
+ use ieee.numeric_std.all;
+-use std.env.all;
+ entity tb_ext_phase is end;
+ architecture sim of tb_ext_phase is
+   signal freq : std_logic_vector(17 downto 0) := (others=>'0');
+@@ -41,6 +40,6 @@
+     wait for 1 ns;
+     assert unsigned(new_p)=63 report "phase addition must wrap modulo 2^18" severity failure;
+     report "tb_ext_phase passed";
+-    finish;
++    wait;
+   end process;
+ end architecture;
+--- a/test/revc/tb_ext_memory.vhd
++++ b/test/revc/tb_ext_memory.vhd
+@@ -1,7 +1,6 @@
+ library ieee;
+ use ieee.std_logic_1164.all;
+ use ieee.numeric_std.all;
+-use std.env.all;
+ entity tb_ext_memory is end;
+ architecture sim of tb_ext_memory is
+   signal clk : std_logic := '0';
+@@ -78,6 +77,6 @@
+     reset<='1'; wait for 25 ns; reset<='0';
+     wait for 300 ns;
+     assert d="000000" and s="000000" report "logical reset did not clear coefficients" severity failure;
+-    report "tb_ext_memory passed"; finish;
++    report "tb_ext_memory passed"; wait;
+   end process;
+ end architecture;
+--- a/test/revc/run_combined.sh
++++ b/test/revc/run_combined.sh
+@@ -1,5 +1,5 @@
+ #!/usr/bin/env bash
+-# Combined original-sound and new-feature test runner (requires GHDL >= 4 and Python 3).
++# Combined original-sound and new-feature test runner (requires GHDL with VHDL-93 support and Python 3).
+ set -euo pipefail
+ HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+ ROOT=$(cd "$HERE/../.." && pwd)
+@@ -17,32 +17,33 @@
+ compile() {
+   local name=$1 src=$2
+   cd "$WORK/$name"
+-  rm -f work-obj08.cf
++  rm -f work-obj93.cf
+   local files=( amy1_mem_pkg amy1_mem amy1_dpram_sim amy1_mem_packed
+      amy1_pkg amy1_host_interface amy1_command_unit amy1_timebase amy1_ram_addressing
+      amy1_envelope_generator amy1_noise_generator amy1_exp_rom amy1_phase_generator
+      amy1_sine_rom amy1_output_accumulator )
+-  for x in "${files[@]}"; do ghdl -a --std=08 "$src/$x.vhd"; done
+-  [[ "$name" != new ]] || ghdl -a --std=08 "$src/amy1_ext_phase.vhd"
+-  for x in amy1_core amy1 amy1_engine amy1_top tb_top; do
+-    ghdl -a --std=08 "$src/$x.vhd"
++  for x in "${files[@]}"; do ghdl -a --std=93 "$src/$x.vhd"; done
++  [[ "$name" != new ]] || ghdl -a --std=93 "$src/amy1_ext_phase.vhd"
++  for x in amy1_core amy1_engine amy1 amy1_top; do
++    ghdl -a --std=93 "$src/$x.vhd"
+   done
++  ghdl -a --std=93 "$HERE/tb_top93.vhd"
+   if [[ "$name" == new ]]; then
+-    ghdl -a --std=08 "$HERE/tb_ext_phase.vhd" "$HERE/tb_ext_memory.vhd"
+-    ghdl -e --std=08 tb_ext_phase
+-    ghdl -e --std=08 tb_ext_memory
++    ghdl -a --std=93 "$HERE/tb_ext_phase.vhd" "$HERE/tb_ext_memory.vhd"
++    ghdl -e --std=93 tb_ext_phase
++    ghdl -e --std=93 tb_ext_memory
+   fi
+-  ghdl -e --std=08 tb_top
++  ghdl -e --std=93 tb_top
+ }
+ compile ref "$REF"
+ compile new "$NEW"
+-(cd "$WORK/new" && ghdl -r --std=08 tb_ext_phase --assert-level=error --stop-time=1us)
+-(cd "$WORK/new" && ghdl -r --std=08 tb_ext_memory --assert-level=error --stop-time=100us)
++(cd "$WORK/new" && ghdl -r --std=93 tb_ext_phase --assert-level=error --stop-time=1us)
++(cd "$WORK/new" && ghdl -r --std=93 tb_ext_memory --assert-level=error --stop-time=100us)
+ run_tb() {
+   local name=$1 vector=$2 tag=$3 stop=$4 extra=${5:-}
+   local p="$WORK/output/$name-$tag"
+   # Use GHDL generic string path options; run from a directory containing the ROM file.
+-  (cd "$WORK/$name" && ghdl -r --std=08 tb_top \
++  (cd "$WORK/$name" && ghdl -r --std=93 tb_top \
+     -gSTEP_NUM=3 -gSTEP_DEN=7 -gENGINE=true -gUNIT_LOG2=15 \
+     -gMEM_FILE="$ROOT/vhdl/amy1_mem.hex" -gCMD_FILE="$vector" \
+     -gOUT_FILE="$p.samples" -gPCM_FILE="$p.pcm" \
+--- a/test_stage1.py
++++ b/test_stage1.py
+@@ -11,7 +11,7 @@
+ assert 'ext_enable   => ext_enable_reg' in top
+ assert 'white_sel => white_sel' in core
+ assert 'vt_reg = "11"' in env
+-assert 'white_lfsr(15) xor white_lfsr(13)' in noise
++assert 'white_lfsr_reg(15) xor white_lfsr_reg(13)' in noise
+ # Verify primitive polynomial cycles through nonzero 16-bit states (period 65535).
+ state=0xACE1; seen=set(); vals=[]
+ for i in range(65535):
+--- a/README_REVC_COMBINED.md
++++ b/README_REVC_COMBINED.md
+@@ -1,6 +1,6 @@
+ # AMY Rev C: combined synthesis extensions — validation candidate
+ 
+-**Status: source patch ready for GHDL and Quartus; NOT YET HDL-compiled or regression-certified.**
++**Status: VHDL-93 compatibility refactor; not yet HDL-compiled or regression-certified. See `README_VHDL93.md`.**
+ 
+ This working package builds on the cleaned November 6 / Stage 1 AMY1 project, and includes white-noise type 3, a gated extension command interface, eight voice-attenuation registers, six-bit per-harmonic detuning and independent six-bit per-harmonic phase diffusion.
+ 
+@@ -51,7 +51,7 @@
+ 
+ ## Combined test suite
+ 
+-Requires **GHDL >= 4.1** with VHDL-2008 support and Python 3. From the root:
++Requires **GHDL with VHDL-1993 support** and Python 3. See `README_VHDL93.md` for the portable testbench limitations. From the root:
+ 
+ ```sh
+ bash test/revc/run_combined.sh
+--- a/test/revc/README.md
++++ b/test/revc/README.md
+@@ -1,6 +1,6 @@
+ # Combined GHDL regression and feature test vectors
+ 
+-Run `bash test/revc/run_combined.sh` **from any directory**, with GHDL 4.1+.
++Run `bash test/revc/run_combined.sh` **from any directory**, with GHDL supporting VHDL-93 (`--std=93`).
+ 
+ - `baseline_vhdl/`: frozen cleaned Stage 1 VHDL reference.
+ - `tb_ext_phase.vhd`: directed arithmetic for detuning, stochasticity, overflow, disabled bypass.
+@@ -10,3 +10,10 @@
+ - `static_interface_check.py` and `test_reference.py`: Python-only sanity tests.
+ 
+ Full regression criterion is **byte-exact output under locked extensions and with unlocked zero coefficients**. The feature traces are preliminary smoke tests; confirm auditory and spectral behaviour separately.
++
++- `tb_top93.vhd`: VHDL-93 public-interface regression bench (sample, PCM, register reads).
++- `check_vhdl93.py`: structural VHDL-93 syntax/style smoke check (not a compiler).
++
++Historical detailed testbenches under `vhdl/tb_*.vhd` still contain
++VHDL-2008 external signal names for internal traces. They are not compiled
++by `run_combined.sh`; use them separately if you need internal chip/busy traces.
+--- a/test/revc/check_vhdl93.py
++++ b/test/revc/check_vhdl93.py
+@@ -0,0 +1,28 @@
++"""Conservative VHDL-93 language/style smoke checks. Not a substitute for an HDL compiler."""
++from pathlib import Path
++import re
++ROOT = Path(__file__).resolve().parents[2]
++rtls = sorted(p for p in (ROOT / 'vhdl').glob('*.vhd') if not p.name.startswith('tb_'))
++tests = [ROOT/'test/revc/tb_top93.vhd', ROOT/'test/revc/tb_ext_phase.vhd', ROOT/'test/revc/tb_ext_memory.vhd']
++issues = []
++for p in rtls + tests:
++    s = re.sub(r'--[^\n]*', '', p.read_text())
++    for pat, desc in [
++        (r'\bprocess\s*\(\s*all\s*\)', 'process(all) is VHDL-2008'),
++        (r'<<\s*signal\b', 'VHDL-2008 external name'),
++        (r'\bstd\.env\b', 'VHDL-2008 std.env'),
++        (r'\bto_hstring\s*\(', 'VHDL-2008 to_hstring'),
++        (r'\bcontext\s+\w+\s+is\b', 'VHDL-2008 context declaration'),
++    ]:
++        if re.search(pat, s, re.I): issues.append(f'{p.relative_to(ROOT)}: {desc}')
++    # Neither sequential conditional signal assignment nor the 2008 ternary
++    # conditional expression may appear inside a process; concurrent `when`
++    # outside processes is standard VHDL-93 and deliberately allowed.
++    for m in re.finditer(r'(?m)^\s*(?:\w+\s*:\s*)?process\s*(?:\([^)]*\))?\s*(?:is\s*)?', s, re.I):
++        end = re.search(r'\bend\s+process\b', s[m.end():], re.I)
++        if end is None: continue
++        body = s[m.end():m.end()+end.start()]
++        if re.search(r'<=\s*[^;]*?\s+when\s+', body, re.I|re.S):
++            issues.append(f'{p.relative_to(ROOT)}: conditional signal assignment inside process')
++if issues: raise SystemExit('FAIL:\n'+'\n'.join(issues))
++print('PASS: VHDL-93 static language checks on', len(rtls), 'RTL units and', len(tests), 'portable testbenches')
+--- a/test/revc/tb_top93.vhd
++++ b/test/revc/tb_top93.vhd
+@@ -0,0 +1,276 @@
++-------------------------------------------------------------------------------
++-- Testbench for amy1_top at 57.344 MHz. Host writes ("time addr data" per line,
++-- 5 ns units, one chip step = 8 units) are pulsed on WRITE_ENABLE during the first
++-- clock of step time/8 (amy1_top still makes six steps per chip clock; ce is the sixth).
++-- Logs DBG_SAMP (the sample, two's complement) on every DBG_OUTSTBN edge (time = step * 8)
++-- and every output (PCM_FILE). BUSY_FILE: per chip clock, each command's busy start
++-- ("clock CMND") and, with NZ_ALL or in NZINIT, every Noise RAM write ("N clock addr data").
++-- addr 8+r reads register r and logs it; addr 16+r writes register r (8..15, the
++-- note engine; EVENT waits while the engine's queue is full). With ENGINE, CHIP_FILE
++-- logs every chip write ("W step addr data", from the register port), every sample
++-- ("S step") and the engine's time when it reads ("r now") and writes ("w now")
++-- a voice state.
++-------------------------------------------------------------------------------
++library ieee;
++use ieee.std_logic_1164.all;
++use ieee.numeric_std.all;
++use std.textio.all;
++
++entity tb_top is
++  generic (
++    CMD_FILE : string  := "cmds.txt";
++    OUT_FILE : string  := "samples.txt";
++    PCM_FILE : string  := "pcm.txt";
++    V0_COL   : boolean := false;
++    READ_FILE : string := "reads.txt";
++    STOP     : natural := 1300000;
++    STEP_NUM : natural := 375;
++    STEP_DEN : natural := 896;
++    MEM_FILE : string  := "amy1_mem.hex";
++    ROM_BASE : natural := 4096;
++    VOICES_L : std_logic_vector(7 downto 0) := x"FF";
++    VOICES_R : std_logic_vector(7 downto 0) := x"FF";
++    TICK_EVERY : natural := 0;            -- > 0: USE_TICK with a tick every TICK_EVERY clocks
++    STEP_SPACING : natural := 4;          -- clocks between the 3 steps of a tick (USE_TICK)
++    UNIT_LOG2 : natural := 14;            -- the engine's time unit
++    ENGINE   : boolean := false;
++    CHIP_FILE : string := "chip.txt";
++    BUSY_FILE : string := "busy.txt";
++    NZ_ALL    : boolean := false;
++    NZ_WORDS  : boolean := false          -- BUSY_FILE also logs every new noise word ("Z clock gen word")
++  );
++end entity;
++
++architecture sim of tb_top is
++  -- Portable VHDL-93 file format helpers (no VHDL-2008 to_hstring).
++  function nibble(c : character) return std_logic_vector is
++  begin
++    case c is
++      when '0' => return "0000";
++      when '1' => return "0001";
++      when '2' => return "0010";
++      when '3' => return "0011";
++      when '4' => return "0100";
++      when '5' => return "0101";
++      when '6' => return "0110";
++      when '7' => return "0111";
++      when '8' => return "1000";
++      when '9' => return "1001";
++      when 'a' | 'A' => return "1010";
++      when 'b' | 'B' => return "1011";
++      when 'c' | 'C' => return "1100";
++      when 'd' | 'D' => return "1101";
++      when 'e' | 'E' => return "1110";
++      when 'f' | 'F' => return "1111";
++      when others => assert false report "non-hex input" severity failure;
++                     return "0000";
++    end case;
++  end function;
++
++  function hex_digits(v : std_logic_vector) return string is
++    constant n : natural := (v'length + 3) / 4;
++    variable padded : std_logic_vector(n*4-1 downto 0) := (others => '0');
++    variable result : string(1 to n);
++    variable code : integer;
++  begin
++    padded(v'length-1 downto 0) := v;
++    for i in 0 to n-1 loop
++      code := to_integer(unsigned(padded((n-i)*4-1 downto (n-i-1)*4)));
++      if code < 10 then
++        result(i+1) := character'val(character'pos('0')+code);
++      else
++        result(i+1) := character'val(character'pos('A')+code-10);
++      end if;
++    end loop;
++    return result;
++  end function;
++
++  function sl_char(v : std_logic) return character is
++  begin
++    if v = '0' then return '0';
++    elsif v = '1' then return '1';
++    else return 'X'; end if;
++  end function;
++
++  function bit_digits(v : std_logic_vector) return string is
++    variable result : string(1 to v'length);
++    variable bit_no : natural := 1;
++  begin
++    for i in v'range loop
++      if v(i) = '1' then result(bit_no) := '1';
++      elsif v(i) = '0' then result(bit_no) := '0';
++      else result(bit_no) := 'X'; end if;
++      bit_no := bit_no + 1;
++    end loop;
++    return result;
++  end function;
++
++  signal clk     : std_logic := '0';
++  signal reset_n : std_logic := '0';
++  signal addr    : std_logic_vector(3 downto 0) := "0000";
++  signal we      : std_logic := '0';
++  signal di      : std_logic_vector(7 downto 0) := (others => '0');
++  signal audio_l, audio_r : signed(15 downto 0);
++  signal strobe, step_en, outstbn, v0 : std_logic;
++  signal rom_addr    : std_logic_vector(16 downto 0);
++  signal rom_data    : std_logic_vector(31 downto 0) := (others => '0');
++  signal rom_request : std_logic;
++  signal rom_ready   : std_logic := '0';
++  signal samp    : std_logic_vector(15 downto 0);
++  signal tick    : std_logic := '0';
++  signal do_s    : std_logic_vector(7 downto 0);
++begin
++  dut: entity work.amy1_top
++    generic map (STEP_NUM => STEP_NUM, STEP_DEN => STEP_DEN, ROM_BASE => ROM_BASE,
++                 USE_TICK => TICK_EVERY > 0, STEP_SPACING => STEP_SPACING, ENGINE => ENGINE,
++                 ENGINE_UNIT_LOG2 => UNIT_LOG2)
++    port map (CLK => clk, RESET_N => reset_n, CHIP_CLK_TICK => tick, ADDR => addr, WRITE_ENABLE => we, DI => di, DO => do_s,
++              ROM_ADDR => rom_addr, ROM_DATA => rom_data, ROM_REQUEST => rom_request, ROM_READY => rom_ready,
++              AUDIO_L => audio_l, AUDIO_R => audio_r, SAMPLE_STROBE => strobe, READY => open,
++              DBG_STEP_EN => step_en, DBG_SAMP => samp, DBG_OUTSTBN => outstbn, DBG_V0 => v0);
++
++  -- flash: the image at ROM_BASE, answering a request after three clocks
++  flash: process
++    file fm : text open read_mode is MEM_FILE;
++    type image_t is array (0 to 2047) of std_logic_vector(31 downto 0);
++    variable image : image_t := (others => (others => '0'));
++    variable l : line;
++    variable n : natural := 0;
++    variable hex_c : character;
++    variable word_v : std_logic_vector(31 downto 0);
++  begin
++    while not endfile(fm) loop
++      readline(fm, l);
++      word_v := (others => '0');
++      for k in 7 downto 0 loop
++        read(l, hex_c);
++        word_v(k*4+3 downto k*4) := nibble(hex_c);
++      end loop;
++      image(n) := word_v;
++      n := n + 1;
++    end loop;
++    loop
++      wait until rising_edge(clk) and rom_request = '1';
++      wait until rising_edge(clk);
++      wait until rising_edge(clk);
++      rom_data  <= image(to_integer(unsigned(rom_addr)) - ROM_BASE);
++      rom_ready <= '1';
++      wait until rising_edge(clk);
++      rom_ready <= '0';
++    end loop;
++  end process;
++
++  -- AMY clock edges (e.g. both PHI2 edges)
++  ticks: process
++    variable n : natural := 0;
++  begin
++    wait until rising_edge(clk);
++    if TICK_EVERY > 0 then
++      n := n + 1;
++      if n = TICK_EVERY then
++        n := 0; tick <= '1';
++      else
++        tick <= '0';
++      end if;
++    end if;
++  end process;
++
++  -- VHDL-93 note: the old chiplog/busylog test blocks use VHDL-2008
++  -- external names, which cannot be expressed without changing the DUT ports.
++  -- This portable bench checks the full public output stream and reads.
++
++  run: process
++    file fc : text open read_mode is CMD_FILE;
++    file fo : text open write_mode is OUT_FILE;
++    file fp : text open write_mode is PCM_FILE;
++    file fr : text open write_mode is READ_FILE;
++    variable l : line;
++    variable t_cmd, a_cmd, d_cmd : integer;
++    variable have        : boolean := false;
++    variable step        : natural := 0;      -- the step in progress
++    variable init        : natural := 0;
++    variable first       : boolean := true;   -- first clock of that step
++    variable ending      : boolean;
++    variable last_strobe : std_logic := 'U';
++
++    procedure next_cmd is
++    begin
++      have := false;
++      while not endfile(fc) loop
++        readline(fc, l);
++        if l'length > 0 then
++          read(l, t_cmd); read(l, a_cmd); read(l, d_cmd); have := true; exit;
++        end if;
++      end loop;
++    end procedure;
++
++    procedure clock is
++    begin
++      wait for 4 ns;  clk <= '1';
++      wait for 1 ns;
++    end procedure;
++  begin
++    next_cmd;
++    clock; reset_n <= '1';
++    while step * 8 < STOP loop
++      wait for 3 ns; clk <= '0';
++      we <= '0';
++      addr <= "0000";              -- reads (the FIFO-full poll) see the status register
++      wait for 100 ps;
++      if init < 2 then
++        -- first: the stereo voice registers
++        we <= '1';
++        if init = 0 then addr <= "0100"; di <= VOICES_L; else addr <= "0101"; di <= VOICES_R; end if;
++        init := init + 1;
++      elsif first and have and t_cmd / 8 <= step and a_cmd >= 24 then
++        -- "t 16+r d": write engine register r (EVENT once the queue has room)
++        addr <= "1110";
++        wait for 100 ps;
++        if a_cmd /= 27 or do_s(6) = '0' then
++          we   <= '1';
++          addr <= std_logic_vector(to_unsigned(a_cmd - 16, 4));
++          di   <= std_logic_vector(to_unsigned(d_cmd, 8));
++          next_cmd;
++        else
++          addr <= "0000";
++        end if;
++      elsif first and have and t_cmd / 8 <= step and a_cmd >= 8 and do_s(7) = '0' then
++        -- "t 8+r 0": once not busy, read register r and log it
++        addr <= std_logic_vector(to_unsigned(a_cmd - 8, 4));
++        wait for 100 ps;
++        write(l, step * 8); write(l, string'(" read ")); write(l, a_cmd - 8);
++        write(l, string'(" = ")); write(l, hex_digits(do_s)); writeline(fr, l);
++        addr <= "0000";
++        next_cmd;
++      elsif first and have and t_cmd / 8 <= step and a_cmd < 8 and do_s(6) = '0' then   -- wait while the FIFO is full
++        we   <= '1';
++        addr <= std_logic_vector(to_unsigned(a_cmd, 4));
++        di   <= std_logic_vector(to_unsigned(d_cmd, 8));
++        next_cmd;
++      end if;
++      first := false;
++      wait for 1 ns;
++      ending := step_en = '1';
++      clock;
++      if strobe = '1' then
++        write(l, to_integer(audio_l)); write(l, string'(" "));
++        write(l, to_integer(audio_r)); writeline(fp, l);
++      end if;
++      if ending then
++        if outstbn /= last_strobe then
++          write(l, step * 8); write(l, string'(" "));
++          write(l, sl_char(outstbn)); write(l, string'(" "));
++          if V0_COL then write(l, sl_char(v0)); write(l, string'(" ")); end if;
++          write(l, hex_digits(samp)); write(l, string'(" "));
++          write(l, bit_digits(samp));
++          writeline(fo, l);
++          last_strobe := outstbn;
++        end if;
++        step := step + 1;
++        first := true;
++      end if;
++    end loop;
++    report "done";
++    wait;
++  end process;
++end architecture;
+--- a/README_VHDL93.md
++++ b/README_VHDL93.md
+@@ -0,0 +1,37 @@
++# AMY Revision C — strict VHDL-1993 candidate
++
++This is the November 7 combined Rev C extension candidate reformatted for **VHDL-1993** and the preferred `*_reg` / `*_next` state style. No feature or register assignment was intentionally changed. It is **not HDL-compiled or regression-verified** in this environment.
++
++## Changed synthesizable source
++
++- `vhdl/amy1_ext_phase.vhd`: explicit combinational sensitivity list instead of `process(all)`.
++- `vhdl/amy1_mem_packed.vhd`: explicit sensitivity for harmonic RAM write mux; removed the conditional signal assignment from a clocked process. Extension control and coefficient latches now have separate `*_reg` / `*_next` paths; RAM read/write remains in its inferred synchronous process.
++- `vhdl/amy1_top.vhd`: extension unlock and A/B/C shadow registers split into synchronous register and combinational next-state processes.
++- `vhdl/amy1_core.vhd`: attenuation register bank split into synchronous register and combinational next-state processes.
++- `vhdl/amy1_noise_generator.vhd`: white-noise LFSR split into synchronous register and combinational next-state processes.
++
++Other legacy RTL is unchanged. **Concurrent** `a <= b when condition else c` assignments are valid VHDL-1993 and remain unchanged. `case ... when` alternatives inside processes are likewise standard VHDL-1993 (not the forbidden sequential conditional signal assignment).
++
++## Tests
++
++- `test/revc/run_combined.sh` now compiles the design and the *portable* benches using `ghdl --std=93`.
++- `test/revc/tb_top93.vhd` retains sample, PCM, and public register-read logs; it does **not** use the older VHDL-2008 external-name mechanism to inspect internal signals. Detailed internal busy/chip diagnostics are therefore unavailable in this portable regression (the original `vhdl/tb_top.vhd` remains as a VHDL-2008-only diagnostic testbench).
++- `test/revc/tb_ext_phase.vhd` and `tb_ext_memory.vhd` no longer use `std.env.finish`; they can be compiled under VHDL-93.
++- `test/revc/check_vhdl93.py` tests key language/style restrictions, but is **not a VHDL compiler**.
++- `test_stage1.py` was updated to check the renamed white-noise PRBS register.
++
++### Run from the package root
++
++```bash
++python3 test/revc/check_vhdl93.py
++python3 test_stage1.py
++python3 test/revc/test_reference.py
++python3 test/revc/static_interface_check.py
++bash test/revc/run_combined.sh
++```
++
++For Quartus, use the full `vhdl/` RTL set *except* testbench files named `tb_*.vhd`, and add `amy1_ext_phase.vhd`. Use VHDL-1993 analysis for these RTL files. Compare four M9Ks, LEs, multipliers and slack with the previous build.
++
++## Known limitation
++
++**No GHDL or Quartus run was possible here.** The structural checker and Python tests pass, but synthesis, HDL execution, equivalence, legacy audio regression and spectral/audio correctness remain to be verified. The new clock/state scheduling deserves careful simulation.

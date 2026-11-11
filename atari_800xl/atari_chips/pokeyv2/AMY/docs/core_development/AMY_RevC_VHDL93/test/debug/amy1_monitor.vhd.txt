@@ -1,0 +1,86 @@
+-- AMY1 debug monitor (simulation only, never for Quartus), 6 Nov 2026.
+--
+-- Two processes to paste into a COPY of vhdl/amy1.vhd, just before its final "end architecture;"
+-- (they use the chip's core/memory signals: harm_addr, harmbrkpoint_*, harmcurntval_*,
+-- voice_addr, voice18_*, voice3_*). Build that copy in its own directory (GHDL mcode re-reads
+-- sources, so never edit vhdl/ itself while a run is going) and run tb_top as usual.
+--
+-- Reports (GHDL "report note" lines in the run's log):
+--   LOST JUMP harmonic h ...  a harmonic breakpoint write while a jump (mantissa 0) is pending
+--   WRAP harmonic h a -> b    a harmonic's current value moved by more than half the range in one
+--                             step (a wrong-way slope wrapping: the loud "blat")
+--   LOST FJUMP voice v ...    the same for voice frequency breakpoints
+--   FWRAP voice v a -> b      the same for voice frequencies
+-- With the Q1 fixes a jump is applied with its own write, so LOST counts are 0 by construction:
+-- the WRAP counts are the evidence. One "FWRAP voice 0 0 -> 5952" at ~66 us is a start-up
+-- artifact (the first current-value write after reset), seen with and without the fixes.
+--
+-- Results (Warhawk via test/engine/mkwh2.py, CLK / 8, ENGINE=true, UNIT_LOG2=15):
+--   4 Nov design: frames 1-50: 32 lost jumps, 4 wraps, 2 lost frequency jumps;
+--                 frames 790-845: 33 lost jumps, 5 wraps (one is the ~17 s beep: harmonic 23).
+--   6 Nov design: 0 wraps in both windows.
+--
+-- tb_top run (tb_top's command-file time unit is 1/8 clk, i.e. 2.18 ns at 57.344 MHz):
+--   ghdl --elab-run --std=08 tb_top -gENGINE=true -gUNIT_LOG2=15 -gMEM_FILE=<vhdl>/amy1_mem.hex \
+--     -gCMD_FILE=wh2.txt -gOUT_FILE=o.txt -gPCM_FILE=p.txt -gBUSY_FILE=b.txt -gCHIP_FILE=c.txt \
+--     -gSTOP=<stop from mkwh2.py> -gSTEP_NUM=3 -gSTEP_DEN=8 > run.log 2>&1
+-- About 30 minutes per simulated second on one core.
+
+  -- DEBUG (simulation only): lost jumps and wrapping amplitudes
+  mon: process (clk)
+    type iv_t is array (0 to 63) of integer;
+    variable pend : std_logic_vector(0 to 63) := (others => '0');
+    variable pdst : iv_t := (others => 0);
+    variable h, o, n : integer;
+  begin
+    if rising_edge(clk) and ce = '1' then
+      h := to_integer(unsigned(harm_addr));
+      if harmcurntval_we = '1' and harmbrkpoint_we = '1' then
+        null;                                   -- a jump applied with its write
+      elsif harmcurntval_we = '1' then
+        o := to_integer(unsigned(harmcurntval_q)); n := to_integer(unsigned(harmcurntval_wdata));
+        if harmbrkpoint_q(4 downto 0) = "00000" then
+          pend(h) := '0';
+        elsif abs (n - o) > 4096 then
+          report "WRAP harmonic " & integer'image(h) & " " & integer'image(o) & " -> " & integer'image(n) &
+                 " slope " & to_hstring(harmbrkpoint_q(7 downto 0)) & " dest " & to_hstring(harmbrkpoint_q(15 downto 8));
+        end if;
+      end if;
+      if harmbrkpoint_we = '1' then
+        if pend(h) = '1' then
+          report "LOST JUMP harmonic " & integer'image(h) & " to " & integer'image(pdst(h)) &
+                 ", current " & integer'image(to_integer(unsigned(harmcurntval_q))) &
+                 ", replaced by slope " & to_hstring(harmbrkpoint_wdata(7 downto 0)) & " dest " & to_hstring(harmbrkpoint_wdata(15 downto 8));
+        end if;
+        if harmbrkpoint_wdata(4 downto 0) = "00000" and harmcurntval_we = '0' then
+          pend(h) := '1'; pdst(h) := to_integer(unsigned(harmbrkpoint_wdata(15 downto 8)));
+        else
+          pend(h) := '0';
+        end if;
+      end if;
+    end if;
+  end process;
+  -- DEBUG (simulation only): lost frequency jumps and wrapping frequencies
+  vmon: process (clk)
+    variable pend : std_logic_vector(0 to 7) := (others => '0');
+    variable v, o, n : integer;
+    variable m : std_logic_vector(4 downto 0);
+  begin
+    if rising_edge(clk) and ce = '1' and voice18_we = '1' then
+      v := to_integer(unsigned(voice_addr(3 downto 1)));
+      if voice_addr(0) = '1' and voice3_we = '1' then              -- breakpoint (WR_FREQ)
+        m := voice18_wdata(1 downto 0) & voice3_wdata;
+        if pend(v) = '1' then
+          report "LOST FJUMP voice " & integer'image(v) & ", replaced by mantissa " & to_hstring(m);
+        end if;
+        if m = "00000" then pend(v) := '1'; else pend(v) := '0'; end if;
+      elsif voice_addr(0) = '0' and voice3_we = '0' then           -- current value
+        o := to_integer(unsigned(voice18_q(12 downto 0))); n := to_integer(unsigned(voice18_wdata(12 downto 0)));
+        if pend(v) = '1' then
+          pend(v) := '0';
+        elsif abs (n - o) > 4096 then
+          report "FWRAP voice " & integer'image(v) & " " & integer'image(o) & " -> " & integer'image(n);
+        end if;
+      end if;
+    end if;
+  end process;

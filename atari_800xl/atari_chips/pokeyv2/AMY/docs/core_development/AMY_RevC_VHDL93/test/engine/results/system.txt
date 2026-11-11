@@ -1,0 +1,9 @@
+system 16x4: chip writes 688 expected 688, IDENTICAL
+   jumps 60, next write to the same harmonic after 2.98 samples at the least; closer than a sample: 0
+   samples 147, peak 8096
+SYSTEM PASS
+system 8x8: chip writes 524 expected 524, IDENTICAL
+   jumps 48, next write to the same harmonic after 1.48 samples at the least; closer than a sample: 0
+   samples 186, peak 16790
+SYSTEM PASS
+
