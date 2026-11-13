@@ -6,18 +6,9 @@ event, sent from a 50 Hz frame loop. The 1 ms POKEY timer and the 6502
 envelope, sweep and burst scheduling are gone.
 
 `amy_drums.xex` needs the C.3 RTL with `revc_prop.patch` and
-`revc_engine.patch` (the timing patches don't change behaviour). The screen
-goes white while the player code runs.
-
-**Keys:** R switches the Rev C features on or off (it's on at start); the
-change takes effect at the next bar, when the kit is set up again, unlocked
-or locked. Any other key stops.
-
-**Volume:** the kick is the loudest voice. With Rev C on, every other
-instrument is trimmed down 3 dB (`MIX_TRIM`, sent as `EXT_VATT` on select)
-and the master volume is 160 (`VOLUME_EXT`). With Rev C off there are no
-trims, the noise slots become tones and there are no pitch drops, so it
-runs at 112 (`VOLUME_OFF`). Both peak just under 0 dBFS in the model.
+`revc_engine.patch` (the timing patches don't change behaviour). Any key
+stops it. The screen goes white while the player code runs, and
+`MASTER_VOLUME` is 140.
 
 ## What the 6502 does now
 
@@ -50,7 +41,7 @@ one group of instruments that may cut each other:
 
 | Voice | Instruments | Engine features |
 |---|---|---|
-| 0 | kick, 808 | kick: 49 Hz with its 2nd–4th harmonics nearly as loud as the fundamental (a driven, square-ish body), pitch drop +24 st with τ 16 ms; detuned, diffused beater partials; noise click. 808: +10 st, τ 16 ms |
+| 0 | kick, 808 | pitch drop +24 st, τ 8 ms (808: +10 st, τ 16 ms); detuned, diffused beater partials; noise click |
 | 1 | snare head | membrane modes by detune, diffusion rattle, +3 st drop |
 | 2 | snare wires | white-noise voice (type 3): crack, body, tail |
 | 3 | hats | 5 diffused partials + 3 noise slots; closed = note-off at once |
@@ -76,19 +67,30 @@ What changed against the old scripts, all small:
 Pitches are quantised to semitones above the note-0 word (2418, chosen so
 the snare and toms are exact). The others are within ½ semitone.
 
+## Start-up
+
+The engine keeps its state through an Atari reset (only the FPGA's reset
+clears it), and an EVENT write ($D2CB) is queued even while the engine is
+off. A queued event keeps STATUS busy until the engine is turned on, so a
+stray write there from another program used to hang this one at its first
+wait for idle (after the "R: Rev C on/off" line). `configure()` now turns
+the engine on first (the queue drains), resets the chip, then waits. Every
+wait on the chip is also bounded (about 1 s), so a wedged chip can't hang
+the program.
+
 ## Checks
 
 | Check | Result |
 |---|---|
-| `make test`: the cc65 build run in `sim65` against the gcc host build | Identical register logs for the whole song, Rev C on (7,276 writes) and off |
-| `test/rtl_engine.py`: the engine writes through the RTL engine (`tb_engine`), against `tools/engine.py` | Identical push for push: the first 15 s (set-up, tour) with Rev C on and off; the whole song in the version before the toggle (65,706 pushes) |
+| `make test`: the cc65 build run in `sim65` against the gcc host build | Identical register logs (12,562 writes, the whole song) |
+| `test/rtl_engine.py`: every engine write in the log through the RTL engine (`tb_engine`), all three parts of the song (unlocked, extensions off, unlocked again), against `tools/engine.py` | Identical push for push |
 | `test/latency.py`: set-up plus one busy step on the full RTL (`amy1_top`, 8.192 MHz) | Within 0.5 ms (above) |
 | `test/check_log.py` on the expanded chip log | No extension command while locked, no stuck harmonic, frequencies in range, LHP layout as intended |
 | Tour against the old player in the model | Each instrument's peak, RMS, brightness and decay length within a few dB / similar |
 
 `tools/render.py` runs the log through the engine model and then the chip
 model (`tools/amy_model.py`, which now also has proportional mode) to give
-`preview/amy_drums_preview.mp3`. That's a guide to intent, not what the FPGA
+`out/amy_drums_preview.mp3`. That's a guide to intent, not what the FPGA
 will sound like exactly.
 
 ## Things to listen for on hardware
@@ -98,8 +100,9 @@ will sound like exactly.
    white path is the alternative for whole voices.
 2. **Closed hat length:** the hat header's release slope, `DEC(45)`.
 3. **Cowbell:** proportional decay τ 256/128 ms. `PROP(2, k)` in its slots.
-4. **Levels:** the slot levels, `MIX_TRIM` and the volumes were set in the model.
-   With Rev C off it runs at a lower volume, because its noise slots become tones.
+4. **Levels:** the slot levels and `MASTER_VOLUME` were set in the model.
+   The extensions-off pass is the loudest part (about 0 dBFS in the model),
+   because its noise slots become tones.
 
 ## Files
 

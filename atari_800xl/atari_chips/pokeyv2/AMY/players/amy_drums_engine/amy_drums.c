@@ -280,10 +280,22 @@ static const idef_t idef[IN_COUNT] = {
 
 static uint8_t cur_inst[8];
 
+/* Every wait on the chip is bounded (about 1 s on the Atari), so a wedged
+ * chip can't hang the program: it gives up and carries on, and the next
+ * configure() resets it. */
+#define SPIN_MAX    20000U
+
+static void spin_while(uint8_t reg, uint8_t mask)
+{
+    uint16_t n = SPIN_MAX;
+
+    while ((amy_peek(reg) & mask) && --n)
+        ;
+}
+
 static void eng_wait_idle(void)
 {
-    while (amy_peek(E_STATUS) & 0x80)
-        ;
+    spin_while(E_STATUS, 0x80);
 }
 
 static void eng_word(uint8_t addr, uint32_t w)
@@ -298,8 +310,7 @@ static void eng_word(uint8_t addr, uint32_t w)
 
 static void eng_event(uint8_t ev, uint8_t w0, uint8_t w1, uint8_t w2)
 {
-    while (amy_peek(E_STATUS) & 0x40)       /* queue full */
-        ;
+    spin_while(E_STATUS, 0x40);             /* queue full */
     amy_reg(E_W0, w0);
     amy_reg(E_W1, w1);
     amy_reg(E_W2, w2);
@@ -368,8 +379,7 @@ static void upload_kit(void)
 
 static void amy_put(uint8_t r, uint8_t v)
 {
-    while (amy_peek(R_CMD) & 0x40)          /* FIFO full */
-        ;
+    spin_while(R_CMD, 0x40);                /* FIFO full */
     amy_reg(r, v);
 }
 
@@ -385,8 +395,7 @@ static void amy_cmd(uint8_t cmd, uint8_t a, uint8_t b, uint8_t c)
 
 static void amy_wait_idle(void)
 {
-    while (amy_peek(R_CMD) & 0x80)
-        ;
+    spin_while(R_CMD, 0x80);
 }
 
 /*
@@ -421,6 +430,14 @@ static void configure(uint8_t extended)
 {
     uint8_t i;
 
+    /* The engine keeps its state through an Atari reset (only the FPGA's
+     * own reset clears it), and an EVENT write is queued even while the
+     * engine is off: a write to $D2CB from any other program leaves an
+     * event that keeps STATUS busy until the engine is turned on. So: turn
+     * it on first (the queue drains), reset the chip (its FIFO empties, so
+     * the engine's writes can't wait on it), and only then wait for idle. */
+    amy_reg(E_CONFIG, 0x03);                /* engine on: drain its queue */
+    amy_reg(R_CMD, 0);                      /* wrapper/core reset */
     eng_wait_idle();
     amy_reg(E_CONFIG, 0);                   /* engine off */
     amy_reg(R_CMD, 0);                      /* wrapper/core reset */
