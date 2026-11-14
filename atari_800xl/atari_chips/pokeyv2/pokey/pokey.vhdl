@@ -1086,10 +1086,18 @@ BEGIN
 	end process;
 	
 	-- serial port output	
-	-- urghhh (TODO: If timers are cleared with stimer_write, some clocks are still triggering. This workaround fixes the acid test. Investigate the proper fix)
-        serout_sync_reset <= serial_clock_reset or stimer_write_delayed;
+	-- Serial clock pipeline. On the die the timer pulse directly clocks the
+	-- divide-by-two flip-flops (Cell 2, Ld = Timer2/Timer4), and the clocked
+	-- stages sit after them, in the edge detectors (sdoClock/sdiClock) and the
+	-- state latches. STIMER only suppresses timer pulses that have not fired
+	-- yet (reload12/34 on the timer output NOR); it does not reach these flip-flops
+	-- or anything after them, so a pulse that has already fired still clocks the
+	-- serial port. Only the %000 clock mode resets them (R input).
+	-- Output: timer 2/4 pulse to shift register load (and IRQST bit 3) is one
+	-- cycle; with two, Acid800 pokey_sertiming fails ("loaded too late").
+	serout_sync_reset <= serial_clock_reset;
 	serout_clock_delay : delay_line
-		generic map (count=>2)
+		generic map (count=>1)
 		port map (clk=>clk, sync_reset=>serout_sync_reset,data_in=>serout_enable, enable=>enable_179, reset_n=>reset_n, data_out=>serout_enable_delayed);
 
 	serin_clock_delay : delay_line
