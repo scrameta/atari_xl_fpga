@@ -17,7 +17,8 @@ LIBRARY work;
 ENTITY sample_top IS 
 	GENERIC
 	(
-		enable_record : integer := 0
+		enable_record : integer := 0;
+		enable_copper : integer := 0
 	);
 	PORT
 	(
@@ -25,6 +26,7 @@ ENTITY sample_top IS
 		RESET_N : in std_logic;
 
 		ENABLE : in std_logic;  -- end of cycle
+		ENABLE_SCANLINE : in std_logic;  -- one cycle per scanline (PHI2/114)
 		REQUEST : in std_logic; -- read request, provide data next cycle
 		
 		WRITE_ENABLE : in std_logic;
@@ -46,6 +48,15 @@ ENTITY sample_top IS
 		RAM_DATA : in std_logic_vector(7 downto 0); -- next cycle: TODO, what if we use rom?
 		RAM_BUSY : in std_logic := '0'; -- RAM finishing a write: the address given now is not read
 		RAM_WRITE_DATA : out std_logic_vector(7 downto 0);
+
+		-- copper: register accesses into the internal bus, beside the 6502's
+		COPPER_AREA_EN : in std_logic_vector(8 downto 0) := (others=>'1'); -- chips present and not restricted
+		INTBUS_REQUEST : out std_logic;                       -- held until INTBUS_ACK
+		INTBUS_ACK : in std_logic;                            -- one cycle; read data valid with it
+		INTBUS_ADDR : out std_logic_vector(7 downto 0);       -- $D2xx low byte, full map (never config)
+		INTBUS_WRITE_ENABLE : out std_logic;
+		INTBUS_DI : in std_logic_vector(7 downto 0);          -- read data (WAITBIT)
+		INTBUS_WRITE_DATA : out std_logic_vector(7 downto 0);
 
 		ADPCM_STEP_ADDR : out std_logic_vector(6 downto 0);
 		ADPCM_STEP_REQUEST : out std_logic;
@@ -120,13 +131,13 @@ ARCHITECTURE vhdl OF sample_top IS
 	signal ch2_addr : std_logic_vector(16 downto 0);
 	signal ch3_addr : std_logic_vector(16 downto 0);
 
-	signal irq_en_reg : std_logic_vector(3 downto 0);
-	signal irq_en_next : std_logic_vector(3 downto 0);
-	signal irq_trigger : std_logic_vector(3 downto 0);
+	signal irq_en_reg : std_logic_vector(4 downto 0);
+	signal irq_en_next : std_logic_vector(4 downto 0);
+	signal irq_trigger : std_logic_vector(4 downto 0);
 	signal data_request : std_logic_vector(3 downto 0);
-	signal irq_clear_n : std_logic_vector(3 downto 0);
-	signal irq_active_reg : std_logic_vector(3 downto 0);
-	signal irq_active_next : std_logic_vector(3 downto 0);
+	signal irq_clear_n : std_logic_vector(4 downto 0);
+	signal irq_active_reg : std_logic_vector(4 downto 0);
+	signal irq_active_next : std_logic_vector(4 downto 0);
 
 	signal adpcm_decoded : std_logic_vector(15 downto 0);
 	signal adpcm_reg : std_logic_vector(3 downto 0);
@@ -156,6 +167,16 @@ ARCHITECTURE vhdl OF sample_top IS
 	signal store_channel : std_logic_vector(1 downto 0);
 	signal store : std_logic;
 
+	signal sample_do : std_logic_vector(7 downto 0);
+	signal copper_do : std_logic_vector(7 downto 0);
+	signal copper_sig_clear : std_logic;
+	signal copper_ram_req : std_logic;
+	signal copper_ram_we : std_logic;
+	signal copper_ram_addr : std_logic_vector(15 downto 0);
+	signal copper_ram_wdata : std_logic_vector(7 downto 0);
+	signal copper_grant : std_logic;      -- the copper has the RAM this cycle
+	signal copper_ram_ack_reg : std_logic; -- ... and its data is on RAM_DATA now
+
 BEGIN
 
 	decode_addr2 : entity work.complete_address_decoder
@@ -169,49 +190,51 @@ BEGIN
 		ram_record_enabled_reg
 		)
 	begin
-		DO <= (others=>'0');
+		sample_do <= (others=>'0');
 	
 		if (addr_decoded5(0)='1') then
-			DO <= CH0_REG(12 downto 5);
+			sample_do <= CH0_REG(12 downto 5);
 		end if;
 	
 		if (addr_decoded5(1)='1') then
-			DO <= CH1_REG(12 downto 5);
+			sample_do <= CH1_REG(12 downto 5);
 		end if;
 	
 		if (addr_decoded5(2)='1') then
-			DO <= CH2_REG(12 downto 5);
+			sample_do <= CH2_REG(12 downto 5);
 		end if;
 	
 		if (addr_decoded5(3)='1') then
-			DO <= CH3_REG(12 downto 5);
+			sample_do <= CH3_REG(12 downto 5);
 		end if;
 	
 		if (addr_decoded5(4)='1') then
-			DO <= ram_cpu_addr_reg(7 downto 0);
+			sample_do <= ram_cpu_addr_reg(7 downto 0);
 		end if;
 		if (addr_decoded5(5)='1') then
-			DO <= ram_cpu_addr_reg(15 downto 8);
+			sample_do <= ram_cpu_addr_reg(15 downto 8);
 		end if;
 		if (addr_decoded5(6)='1') then --manual addr inc
-			DO <= ram_data;
+			sample_do <= ram_data;
 		end if;
 		if (addr_decoded5(17)='1') then
-			DO(3 downto 0) <= irq_en_reg;
+			sample_do(4 downto 0) <= irq_en_reg;
 		end if;
 		if (addr_decoded5(18)='1') then
-			DO(3 downto 0) <= irq_active_reg;
+			sample_do(4 downto 0) <= irq_active_reg;
 		end if;
 		if (addr_decoded5(19)='1') then
-			DO(3 downto 0) <= adpcm_reg;
-			DO(7 downto 4) <= bits8_reg;
+			sample_do(3 downto 0) <= adpcm_reg;
+			sample_do(7 downto 4) <= bits8_reg;
 		end if;
 		if (enable_record = 1) then
  			if (addr_decoded5(20)='1') then
- 				DO(3 downto 0) <= ram_record_enabled_reg;
+ 				sample_do(3 downto 0) <= ram_record_enabled_reg;
  			end if;
  		end if;
 	end process;
+
+	DO <= sample_do or copper_do;
 
 	cpu_covox_write <= write_enable and not(or_reduce(ADDR(4 downto 2)));
 
@@ -299,7 +322,7 @@ BEGIN
 		(
 			clk=>clk,
 			reset_n=>reset_n,
-			syncreset=>irq_trigger,
+			syncreset=>irq_trigger(3 downto 0),
 
 			select_channel=>adpcm_channel,
 
@@ -491,10 +514,10 @@ BEGIN
 				dma_on_next <= DI(3 downto 0);
 			end if;
 			if (addr_decoded5(17)='1') then
-				irq_en_next <= DI(3 downto 0);
+				irq_en_next <= DI(4 downto 0);
 			end if;
 			if (addr_decoded5(18)='1') then
-				irq_clear_n <= DI(3 downto 0); --write 0 to disable
+				irq_clear_n <= DI(4 downto 0); --write 0 to disable
 			end if;
 			if (addr_decoded5(19)='1') then
 				adpcm_next <= DI(3 downto 0); 
@@ -613,7 +636,8 @@ BEGIN
 		bits8_reg,
 		adpcm_data_request,
 		ram_record_enabled_reg,
-		ram_busy)
+		ram_busy,
+		copper_ram_req, copper_ram_addr, copper_ram_ack_reg, ram_cpu_write_enable)
 	begin
 		ram_addr <= (others=>'0');
 		data_nibble <= '0';
@@ -689,13 +713,36 @@ BEGIN
 			adpcm_data_ready_next <= '0';
 			ram_record_write_enable <= '0';
 		end if;
+
+		-- The copper takes the RAM in a cycle nobody else uses it: no CPU access, no DMA
+		-- read, no record write, not busy. Not two cycles running: its request is still up
+		-- in the cycle after a grant, while the data comes back (copper_ram_ack_reg).
+		copper_grant <= '0';
+		if (copper_ram_req='1' and request='0' and adpcm_data_request='0' and ram_busy='0' and
+			ram_cpu_write_enable='0' and copper_ram_ack_reg='0' and
+			not(enable_record=1 and ram_record_enabled_reg/="0000")) then
+			copper_grant <= '1';
+			ram_addr <= copper_ram_addr;
+		end if;
 	end process;
 
-	process(request, DI, AUDIO_RECORD)
+	process(request, DI, AUDIO_RECORD, copper_grant, copper_ram_wdata)
 	begin
 		DATA_TO_WRITE <= DI;
 		if (request='0') then
 			DATA_TO_WRITE <= std_logic_vector(AUDIO_RECORD);
+		end if;
+		if (copper_grant='1') then
+			DATA_TO_WRITE <= copper_ram_wdata;
+		end if;
+	end process;
+
+	process(clk,reset_n)
+	begin
+		if (reset_n='0') then
+			copper_ram_ack_reg <= '0';
+		elsif (clk'event and clk='1') then
+			copper_ram_ack_reg <= copper_grant;
 		end if;
 	end process;
 	
@@ -784,10 +831,51 @@ BEGIN
 			end if;
 		end if;
 	end process;
+
+	copper : entity work.copper
+	GENERIC MAP
+	(
+		ENABLE => enable_copper=1
+	)
+	PORT MAP(
+		clk        => CLK,
+		reset_n    => RESET_N,
+		tick_15k   => ENABLE_SCANLINE,              -- must be PHI2/114, one cycle per scanline
+
+		-- host registers: $D295-$D29E (ADDR 21-30)
+		cpu_we     => WRITE_ENABLE,
+		cpu_addr   => ADDR,
+		cpu_di     => DI,
+		cpu_do     => copper_do,
+
+		-- SAMIRQACT bit 4
+		sig_any    => irq_trigger(4),
+		sig_clear  => copper_sig_clear,
+
+		-- sample RAM
+		ram_req    => copper_ram_req,
+		ram_we     => copper_ram_we,
+		ram_addr   => copper_ram_addr,
+		ram_wdata  => copper_ram_wdata,
+		ram_ack    => copper_ram_ack_reg,
+		ram_rdata  => RAM_DATA,
+
+		-- chip registers
+		area_en    => COPPER_AREA_EN,
+		bus_req    => INTBUS_REQUEST,
+		bus_we     => INTBUS_WRITE_ENABLE,
+		bus_addr   => INTBUS_ADDR,
+		bus_wdata  => INTBUS_WRITE_DATA,
+		bus_ack    => INTBUS_ACK,
+		bus_rdata  => INTBUS_DI
+	);
+
+	-- writing 0 to SAMIRQACT bit 4 clears the copper's signal flags (irq_clear_n is active low)
+	copper_sig_clear <= not(irq_clear_n(4));
 	
 	IRQ <= or_reduce(irq_active_reg);
 
-	RAM_WRITE_ENABLE <= RAM_CPU_WRITE_ENABLE OR RAM_RECORD_WRITE_ENABLE;
+	RAM_WRITE_ENABLE <= RAM_CPU_WRITE_ENABLE OR RAM_RECORD_WRITE_ENABLE OR (copper_grant AND copper_ram_we);
 
 	RAM_WRITE_DATA <= DATA_TO_WRITE;
 END vhdl;

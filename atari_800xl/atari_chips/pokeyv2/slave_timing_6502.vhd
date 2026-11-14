@@ -32,8 +32,9 @@ ENTITY slave_timing_6502 IS
 				ENABLE_CYCLE : out std_logic;
 				ENABLE_DOUBLE_CYCLE : out std_logic;
 
-				DATA_OUT: in std_logic_vector(7 downto 0); -- read_data
-				DRIVE_DATA_OUT: in std_logic 
+				DATA_OUT: in std_logic_vector(7 downto 0); -- read_data, taken when BUS_ACK is high
+				DRIVE_DATA_OUT: in std_logic;
+				BUS_ACK : in std_logic -- read data valid: at least one cycle after BUS_REQUEST
 			);
 END slave_timing_6502;
 
@@ -52,6 +53,7 @@ ARCHITECTURE vhdl OF slave_timing_6502 IS
 
 	signal state_reg : std_logic_vector(1 downto 0);
 	signal state_next : std_logic_vector(1 downto 0);
+	constant state_read_wait : std_logic_vector(1 downto 0) := "00";   -- read requested, no data yet
 	constant state_wait_addrctl : std_logic_vector(1 downto 0) := "01";
 	constant state_write_request : std_logic_vector(1 downto 0) := "10";
 	constant state_read_output : std_logic_vector(1 downto 0) := "11";
@@ -135,7 +137,7 @@ begin
 	phi2_rising_edge <= not(phi_edge_prev_reg) and phi2_sync;
 
 	process(registered_read_data_reg, data_out,
-		registered_drive_bus_reg, drive_data_out,
+		registered_drive_bus_reg, drive_data_out, bus_ack,
 		bus_drive_reg,bus_data_out_reg, 
 		phi2_rising_edge,
 		phi2_falling_edge,
@@ -199,13 +201,11 @@ begin
 		state_next <= state_reg;
 		case (state_reg) is
 			when state_wait_addrctl =>
-				registered_read_data_next <= data_out;
-				registered_drive_bus_next <= drive_data_out;
 				if (phi2_rising_edge='1' and phi_cs_reg='1') then
 					-- snap control signals, should be stable by now
 					if (phi_rw_n_reg='1') then -- read
 						internal_memory_request <= '1';
-						state_next <= state_read_output;
+						state_next <= state_read_wait;
 					else
 						state_next <= state_write_request;
 					end if;
@@ -213,6 +213,17 @@ begin
 			when state_write_request =>
 				if (phi2_falling_edge='1') then
 					internal_memory_request <= '1';
+					state_next <= state_wait_addrctl;
+				end if;
+			when state_read_wait =>
+				-- the data is taken when the bus says it is valid (the bus may be shared, and
+				-- some reads, e.g. sample RAM, only have their data a cycle later)
+				if (bus_ack='1') then
+					registered_read_data_next <= data_out;
+					registered_drive_bus_next <= drive_data_out;
+					state_next <= state_read_output;
+				end if;
+				if (phi2_falling_edge='1') then -- no answer: don't drive
 					state_next <= state_wait_addrctl;
 				end if;
 			when state_read_output =>

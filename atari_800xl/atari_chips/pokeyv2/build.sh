@@ -908,6 +908,7 @@ my %variants =
 				"enable_psg" => 1,
 				"enable_covox" => 1,
 				"enable_sample" => 1,
+				"enable_copper" => 1,
 				"enable_flash" => 1,
 				"enable_spdif" => 1,
 				"enable_ps2" => 1,

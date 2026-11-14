@@ -256,7 +256,6 @@ set_global_assignment -name VHDL_FILE SID/postFilterSum.vhdl
 set_global_assignment -name VHDL_FILE AMY/amy1_command_unit.vhd
 set_global_assignment -name VHDL_FILE AMY/amy1_core.vhd
 set_global_assignment -name VHDL_FILE AMY/amy1_dpram_altera.vhd
-set_global_assignment -name VHDL_FILE AMY/amy1_engine.vhd
 set_global_assignment -name VHDL_FILE AMY/amy1_envelope_generator.vhd
 set_global_assignment -name VHDL_FILE AMY/amy1_exp_rom.vhd
 set_global_assignment -name VHDL_FILE AMY/amy1_ext_phase.vhd
@@ -274,6 +273,7 @@ set_global_assignment -name VHDL_FILE AMY/amy1_timebase.vhd
 set_global_assignment -name VHDL_FILE AMY/amy1_top.vhd
 set_global_assignment -name VHDL_FILE AMY/amy1.vhd
 set_global_assignment -name VHDL_FILE sample/channel.vhdl
+set_global_assignment -name VHDL_FILE sample/copper.vhdl
 set_global_assignment -name VHDL_FILE sample/adpcm.vhdl
 set_global_assignment -name VHDL_FILE sample/top.vhdl
 set_global_assignment -name VHDL_FILE covox/top.vhdl

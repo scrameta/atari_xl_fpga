@@ -25,6 +25,9 @@ PORT
 	WR_EN : IN STD_LOGIC;
 	
 	RESET_N : IN STD_LOGIC;
+
+	-- scanline enable for copper etc
+	ENABLE_SCANLINE : out std_logic;
 	
 	-- keyboard interface
 	keyboard_scan_enable : in std_logic := '0';
@@ -1447,6 +1450,8 @@ end generate;
 	allpot_next <= not(pot_in) when pot_reset_reg = '0' else (others=>'0');
 
 	-- Outputs
+ 	enable_scanline <= enable_15;
+
 	irq_n_out <= irq_n_reg;	
 	
 	CHANNEL_0_OUT <= volume_channel_0_reg;

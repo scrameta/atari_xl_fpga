@@ -57,6 +57,7 @@ ENTITY pokeymax IS
 		enable_ps2: integer := 0;
 		enable_adc: integer := 0;
 		enable_routing: integer := 0;
+		enable_copper: integer := 0;
 		paddle_lvds: integer := 0;
 		paddle_comp: integer := 1;
 		enable_iox: integer := 1;
@@ -248,8 +249,6 @@ ARCHITECTURE vhdl OF pokeymax IS
 
 	signal POKEY_IRQ : std_logic_vector(3 downto 0);
 
-	signal ADDR_IN : std_logic_vector(7 downto 0);
-	signal WRITE_DATA : std_logic_vector(7 downto 0);
 	signal DEVICE_ADDR : std_logic_vector(3 downto 0);
 
 	signal POKEY_AUDIO_UNSIGNED : UNSIGNED_AUDIO_TYPE(3 downto 0);	
@@ -280,7 +279,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 
         -- AMY
 	signal AMY_AUDIO_SIGNED : SIGNED_AUDIO_TYPE(1 downto 0);
-	signal AMY_FLASH_ADDR : std_logic_vector(10 downto 0);
+	signal AMY_FLASH_ADDR : std_logic_vector(16 downto 0);   -- the image is 2K words: bits 10..0 used
         signal AMY_FLASH_ROMREQUEST : std_logic;
         signal AMY_FLASH_ROMREADY : std_logic;
 
@@ -341,8 +340,10 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal BUS_DATA : std_logic_vector(7 downto 0);
 	signal BUS_OE : std_logic;
 
-	signal REQUEST : std_logic;
-	signal WRITE_N : std_logic;
+	signal CPU_REQUEST : std_logic;
+	signal CPU_ADDR_IN : std_logic_vector(7 downto 0);
+	signal CPU_WRITE_DATA : std_logic_vector(7 downto 0);
+	signal CPU_WRITE_N : std_logic;
 
 	signal DO_MUX : std_logic_vector(7 downto 0);
 	signal DRIVE_DO_MUX : std_logic;
@@ -524,6 +525,23 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal SIO_AUDIO_UNSIGNED : unsigned(15 downto 0);	
 	signal SIO_AUDIO_SIGNED : signed(15 downto 0);	
 
+	-- copper
+	signal ENABLE_SCANLINE : std_logic;
+	signal COPPER_AREA_EN : std_logic_vector(8 downto 0);
+	signal COPPER_ACK : std_logic;
+	signal COPPER_REQUEST : std_logic;
+	signal COPPER_ADDR : std_logic_vector(7 downto 0);
+	signal COPPER_WRITE_ENABLE : std_logic;
+	signal COPPER_DO : std_logic_vector(7 downto 0);
+
+	-- arbitrate copper and 6502
+	signal COPPER_CYCLE : std_logic;      -- the copper has the device bus this cycle
+	signal CPU_AFTER_REG : std_logic;     -- the cycle after a 6502 access: its read data is taken then
+	signal REQUEST : std_logic;
+	signal ADDR_IN : std_logic_vector(7 downto 0);
+	signal WRITE_DATA : std_logic_vector(7 downto 0);
+	signal WRITE_N : std_logic;
+
 	-- paddles
 	signal PADDLE_ADJ : std_logic_vector(7 downto 0);
 
@@ -679,7 +697,7 @@ flash_on : if enable_flash=1 generate
 		flash_req8_addr(11 downto 0) => "11"&FIR_DATA_ADDRESS, -- Clash??
 
 		flash_req9_addr(12 downto 11) => "10",
-		flash_req9_addr(10 downto 0) => AMY_FLASH_ADDR,
+		flash_req9_addr(10 downto 0) => AMY_FLASH_ADDR(10 downto 0),
 
 		flash_req_request(0) => CPU_FLASH_REQUEST_REG,
 		flash_req_request(1) => CONFIG_FLASH_REQUEST,
@@ -812,18 +830,54 @@ bus_adapt : entity work.slave_timing_6502
 		bus_rw_n => W_N,
 
 		-- request for a memory bus cycle (read or write)
-		BUS_REQUEST => REQUEST,
-		ADDR_IN => ADDR_IN,
-		DATA_IN => WRITE_DATA,
-		RW_N => WRITE_N,
+		BUS_REQUEST => CPU_REQUEST,
+		ADDR_IN => CPU_ADDR_IN,
+		DATA_IN => CPU_WRITE_DATA,
+		RW_N => CPU_WRITE_N,
 
 		-- end of cycle
 		ENABLE_CYCLE => ENABLE_CYCLE,
 		ENABLE_DOUBLE_CYCLE => ENABLE_DOUBLE_CYCLE,
 
 		DATA_OUT => DO_MUX,
-		DRIVE_DATA_OUT => DRIVE_DO_MUX
+		DRIVE_DATA_OUT => DRIVE_DO_MUX,
+		BUS_ACK => CPU_AFTER_REG
 	);
+
+-------------------------------------------------------
+-- Arbitrate the 6502 and the copper for the device bus (ADDR_IN, WRITE_DATA, WRITE_N, REQUEST).
+-- The 6502 always wins and owns the bus for its request cycle and the one after, where
+-- slave_timing_6502 takes its read data (BUS_ACK): by then a RAMDATA read's byte has come
+-- from the sample RAM. The copper gets any other cycle. A copper access is one cycle, acked at
+-- once: device read data (DO_MUX) is combinational from ADDR_IN, so it is valid with the ack.
+COPPER_CYCLE <= COPPER_REQUEST and not(CPU_REQUEST) and not(CPU_AFTER_REG);
+COPPER_ACK <= COPPER_CYCLE;
+
+REQUEST <= CPU_REQUEST or COPPER_CYCLE;
+ADDR_IN <= CPU_ADDR_IN when (CPU_REQUEST='1' or CPU_AFTER_REG='1') else COPPER_ADDR;
+WRITE_DATA <= CPU_WRITE_DATA when (CPU_REQUEST='1' or CPU_AFTER_REG='1') else COPPER_DO;
+WRITE_N <= CPU_WRITE_N when (CPU_REQUEST='1' or CPU_AFTER_REG='1') else not(COPPER_WRITE_ENABLE);
+
+process(clk,reset_n)
+begin
+	if (reset_n='0') then
+		CPU_AFTER_REG <= '0';
+	elsif (clk'event and clk='1') then
+		CPU_AFTER_REG <= CPU_REQUEST;
+	end if;
+end process;
+
+-- What the copper may reach: present in this build and not restricted. These must match the
+-- enable_region decode below, or a restricted area's writes would land on POKEY 1's shadow.
+COPPER_AREA_EN(0) <= to_sl(pokeys>=2) and (RESTRICT_CAPABILITY_REG(0) or RESTRICT_CAPABILITY_REG(1)); -- POKEY 2  $D210
+COPPER_AREA_EN(1) <= to_sl(pokeys=4) and RESTRICT_CAPABILITY_REG(1);                              -- POKEY 3  $D220
+COPPER_AREA_EN(2) <= to_sl(pokeys=4) and RESTRICT_CAPABILITY_REG(1);                              -- POKEY 4  $D230
+COPPER_AREA_EN(3) <= to_sl(enable_sid=1) and RESTRICT_CAPABILITY_REG(2);                          -- SID 1    $D240
+COPPER_AREA_EN(4) <= to_sl(enable_sid=1) and RESTRICT_CAPABILITY_REG(2);                          -- SID 2    $D260
+COPPER_AREA_EN(5) <= to_sl(enable_sample=1 or enable_covox=1) and RESTRICT_CAPABILITY_REG(4);     -- COVOX/sample $D280
+COPPER_AREA_EN(6) <= to_sl(enable_psg=1) and RESTRICT_CAPABILITY_REG(3);                          -- PSG 1    $D2A0
+COPPER_AREA_EN(7) <= to_sl(enable_psg=1) and RESTRICT_CAPABILITY_REG(3);                          -- PSG 2    $D2B0
+COPPER_AREA_EN(8) <= to_sl(enable_amy=1) and RESTRICT_CAPABILITY_REG(5);                          -- AMY      $D2C0
 	
 auto_stereo : if enable_auto_stereo=1 generate -- auto detect
 	a4 : ENTITY work.stereo_detect
@@ -945,6 +999,7 @@ PORT MAP(CLK => CLK,
 		 ENABLE_179 => ENABLE_CYCLE,
 		 WR_EN => POKEY_WRITE_ENABLE(0),
 		 RESET_N => RESET_N,
+		 ENABLE_SCANLINE => ENABLE_SCANLINE, 
 		 SIO_IN1 => SIO_RXD,
 		 SIO_CLOCKIN_IN => SIO_CLOCKIN_IN,
 		 SIO_CLOCKIN_OUT => SIO_CLOCKIN_OUT,
@@ -1011,6 +1066,7 @@ POKEY_AUDIO_SIGNED(0) <= DCB_OUT(0);
 		)
 		PORT MAP(CLK => CLK,
 				 ENABLE_179 => ENABLE_CYCLE,
+		 		 ENABLE_SCANLINE => open, 
 				 WR_EN => POKEY_WRITE_ENABLE(I),
 				 RESET_N => RESET_N,
 				 ADDR => ADDR_IN(3 DOWNTO 0),
@@ -1063,9 +1119,7 @@ amy1 : entity work.amy1_top
 GENERIC MAP(
 	USE_TICK => false,
 	STEP_NUM => 3,
-	STEP_DEN => 7,
-	ENGINE_UNIT_LOG2 => 15,
-	ENGINE => true
+	STEP_DEN => 7
 )
 PORT MAP(
 	CLK => CLK,
@@ -1076,7 +1130,7 @@ PORT MAP(
 	DI => WRITE_DATA(7 downto 0),
 	DO => AMY_DO(0),
 
-	rom_addr(10 downto 0) => amy_flash_addr,
+	rom_addr => amy_flash_addr,
 	rom_data => flash_do_slow,
        	rom_request => amy_flash_romrequest,
 	rom_ready => amy_flash_romready,
@@ -1388,13 +1442,15 @@ sample_on : if enable_sample=1 generate
 
 	sample1 : entity work.sample_top
 	GENERIC MAP(
-		enable_record => enable_routing
+		enable_record => enable_routing,
+		enable_copper => enable_copper
 	)
 	PORT MAP(
 		CLK => CLK,
 		RESET_N => RESET_N,
 
 		ENABLE => ENABLE_DOUBLE_CYCLE, 
+		ENABLE_SCANLINE => ENABLE_SCANLINE, 
 		REQUEST => REQUEST,
 	
 		WRITE_ENABLE => SAMPLE_WRITE_ENABLE,
@@ -1415,6 +1471,14 @@ sample_on : if enable_sample=1 generate
 		RAM_DATA => SAMPLE_RAM_READ_DATA,
 		RAM_BUSY => SAMPLE_RAM_BUSY,
 		RAM_WRITE_DATA => SAMPLE_RAM_WRITE_DATA,
+
+		COPPER_AREA_EN =>  COPPER_AREA_EN, -- chips present and not restricted
+		INTBUS_REQUEST => COPPER_REQUEST,              -- held until INTBUS_ACK
+		INTBUS_ACK => COPPER_ACK,
+		INTBUS_ADDR => COPPER_ADDR,
+		INTBUS_WRITE_ENABLE => COPPER_WRITE_ENABLE,
+		INTBUS_DI => DO_MUX,
+		INTBUS_WRITE_DATA => COPPER_DO,
 
 		ADPCM_STEP_ADDR => ADPCM_STEP_ADDR,
 		ADPCM_STEP_REQUEST => ADPCM_STEP_REQUEST,
@@ -1498,7 +1562,7 @@ end generate sample_on;
 -- d2b0 - ym2
 -- d2f0 - config (write 0x3f to d21c to map it in d210, for low bit devices)
 
-process(CONFIG_ENABLE_REG,ADDR_IN,addr_decoded4,FANCY_ENABLE)
+process(CONFIG_ENABLE_REG,ADDR_IN,addr_decoded4,FANCY_ENABLE,COPPER_CYCLE)
 	variable addr_bits : std_logic_vector(3 downto 0);
 begin
 	-- choose which bank
@@ -1516,6 +1580,12 @@ begin
 	if ((config_enable_reg='1' and addr_bits="0001") or (addr_bits(3 downto 2) = "00" and addr_decoded4(12)='1')) then
 		addr_bits := x"f";
 	end if;
+
+	-- The copper always sees the full map: no mono folding, never the config
+	-- (that also keeps it off CONFIG at $D22C/$D23C, which the copper itself doesn't drop)
+	if (COPPER_CYCLE='1') then
+		addr_bits := ADDR_IN(7 downto 4);
+	end if;
 	
 	DEVICE_ADDR <= addr_bits;
 end process;			
@@ -1530,7 +1600,8 @@ process(
 	CONFIG_DO,
 	write_n,
 	request,
-	RESTRICT_CAPABILITY_REG, readreq_s, writereq_s
+	RESTRICT_CAPABILITY_REG, readreq_s, writereq_s,
+	COPPER_CYCLE
 	)
 	variable writereq : std_logic;
 	variable readreq : std_logic;
@@ -1604,7 +1675,11 @@ begin
 
 	if enable_region='0' then
 		DO_MUX <= POKEY_DO(0);
-		POKEY_WRITE_ENABLE(0) <= writereq;
+		-- a restricted area falls back to POKEY 1 for the 6502; the copper's writes are
+		-- dropped instead (COPPER_AREA_EN normally stops them before they get here)
+		if (COPPER_CYCLE='0' or DEVICE_ADDR="0000") then
+			POKEY_WRITE_ENABLE(0) <= writereq;
+		end if;
 	end if;
 end process;
 

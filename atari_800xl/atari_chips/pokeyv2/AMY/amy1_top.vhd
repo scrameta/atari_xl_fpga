@@ -35,11 +35,6 @@
 --       5 r/w        VOICE_RIGHT: voices on the right channel (bit n = voice n)
 --       6 r/w        VOLUME: output x VOLUME/32 (32 = x1, $FF = x7.97, the default)
 --       7 read       status, as 0
---       8..15        the note engine (ENGINE = true), see amy1_engine.vhd;
---                    without it they read as status and ignore writes. The
---                    engine's chip writes share the FIFO with the host's, after
---                    them: write 0..3 (including a reset) only while the
---                    engine's STATUS (register 14) says it is idle
 --     If INT/RDY ever stays low for 255 internal clocks the chip is reset too.
 --   * output volume: the chip leaves headroom for 64 full-scale harmonics, so
 --     music is quiet. VOLUME (register 6) scales the output by VOLUME/32,
@@ -61,10 +56,7 @@ entity amy1_top is
     STEP_SPACING : natural := 4;                       -- CLKs between steps (USE_TICK)
     FIFO_LOG2    : natural := 2;                       -- host write FIFO: 2**FIFO_LOG2 entries
     STEREO       : boolean := true;                    -- false: mono (use SUM mode), saves ~120 LEs
-    ROM_BASE     : natural := 0;                       -- word address of amy1_mem.bin
-    ENGINE       : boolean := false;                   -- the note engine, registers 8..15
-    ENGINE_GLIDE : boolean := true;                    -- ... with glide slopes (~25 LEs)
-    ENGINE_UNIT_LOG2 : natural := 15                   -- ... time unit: 14 at 2 x PHI2, 15 at 4 x PHI2
+    ROM_BASE     : natural := 0                        -- word address of amy1_mem.bin
   );
   port (
     CLK          : in  std_logic;
@@ -72,7 +64,7 @@ entity amy1_top is
     CHIP_CLK_TICK: in  std_logic := '0';               -- one CLK pulse per AMY clock edge (USE_TICK)
 
     -- host (registered on the PokeyMAX side)
-    ADDR         : in  std_logic_vector(3 downto 0);   -- 0..3 the chip, 4..7 wrapper, 8..15 engine
+    ADDR         : in  std_logic_vector(3 downto 0);   -- 0..3 the chip, 4..7 wrapper
     WRITE_ENABLE : in  std_logic;                      -- one CLK pulse per 6502 write
     DI           : in  std_logic_vector(7 downto 0);
     DO           : out std_logic_vector(7 downto 0);   -- status / read-back, see above
@@ -128,17 +120,6 @@ architecture vhdl of amy1_top is
   signal pending_reg, pending_next : unsigned(3 downto 0) := (others => '0');   -- steps owed (USE_TICK)
   signal space_reg, space_next     : unsigned(3 downto 0) := (others => '0');
   signal tick                      : std_logic;    -- the chip clock enable (ce): the sixth step
-
-  -- note engine
-  signal eng_cpu_we, eng_push_req, eng_push_ack : std_logic;
-  signal eng_push_addr               : std_logic_vector(1 downto 0);
-  signal eng_push_data, eng_do       : std_logic_vector(7 downto 0);
-  signal aux_re, aux_rack, aux_we, aux_wack : std_logic;
-  signal aux_raddr, aux_waddr        : std_logic_vector(7 downto 0);
-  signal aux_rdata, aux_wdata        : std_logic_vector(35 downto 0);
-  signal aux2_re, aux2_rack, aux2_we, aux2_wack : std_logic;
-  signal aux2_raddr, aux2_waddr      : std_logic_vector(6 downto 0);
-  signal aux2_rdata, aux2_wdata      : std_logic_vector(35 downto 0);
 
   ---------------------------------------------------------------------------
   -- write FIFO: 2**FIFO_LOG2 x {addr, data}
@@ -288,7 +269,7 @@ begin
   ---------------------------------------------------------------------------
   -- Revision C extension state, separated from the register process.
   -- 6502 writes to $D2C7 form the unlock sequence; the legacy command
-  -- operands are shadowed as they reach the chip (including engine writes).
+  -- operands are shadowed as they reach the chip
   process (ext_enable_reg, ext_key_reg, ext_a_reg, ext_b_reg, ext_c_reg,
            reset_taken, timeout, WRITE_ENABLE, ADDR, DI, busy,
            chip_we, chip_addr, chip_wdata)
@@ -343,7 +324,7 @@ begin
   ROM_ADDR    <= std_logic_vector(to_unsigned(ROM_BASE, 17) + resize(load_idx_reg, 17));
   READY       <= loaded_reg;
 
-  -- Rev C (extension phase writes at e8, aux2 port): at least 9 clocks per chip clock,
+  -- Rev C (extension phase writes at e8): at least 9 clocks per chip clock,
   -- that is 6 * STEP_DEN / STEP_NUM >= 9.  3/7 of 57.344 MHz gives 14.
   assert USE_TICK or 2 * STEP_DEN >= 3 * STEP_NUM
     report "amy1_top: Rev C needs at least 9 clocks per chip clock (2*STEP_DEN >= 3*STEP_NUM)"
@@ -407,10 +388,8 @@ begin
   ---------------------------------------------------------------------------
   -- host writes go into the FIFO
   process (fifo_reg, wr_ptr_reg, rd_ptr_reg, count_reg, full, individual_reg, reset_req_reg,
-           WRITE_ENABLE, ADDR, DI, bus_reg, up_reg, tick, reset_taken, timeout,
-           eng_push_req, eng_push_addr, eng_push_data)
-    variable reset_cmd, push, eng, pop : std_logic;
-    variable entry : std_logic_vector(9 downto 0);
+           WRITE_ENABLE, ADDR, DI, bus_reg, up_reg, tick, reset_taken, timeout)
+    variable reset_cmd, push, pop : std_logic;
   begin
     fifo_next       <= fifo_reg;
     wr_ptr_next     <= wr_ptr_reg;
@@ -428,18 +407,11 @@ begin
       reset_cmd := '1';
     end if;
 
-    -- the host's writes, else the engine's
+    -- the host's writes to the chip's registers 0..3
     push := '0';
-    eng  := '0';
-    entry := ADDR(1 downto 0) & DI;
     if WRITE_ENABLE = '1' and ADDR(3 downto 2) = "00" and reset_cmd = '0' and full = '0' then
       push := '1';
-    elsif eng_push_req = '1' and reset_cmd = '0' and timeout = '0' and full = '0' then
-      push := '1';
-      eng  := '1';
-      entry := eng_push_addr & eng_push_data;
     end if;
-    eng_push_ack <= eng;
     pop := '0';
     if bus_reg = bus_idle and count_reg /= 0 and up_reg = '1' and reset_req_reg = '0' then
       pop := '1';
@@ -452,10 +424,10 @@ begin
       reset_req_next <= reset_cmd;
     else
       if push = '1' then
-        fifo_next(to_integer(wr_ptr_reg)) <= entry;
+        fifo_next(to_integer(wr_ptr_reg)) <= ADDR(1 downto 0) & DI;
         wr_ptr_next <= wr_ptr_reg + 1;
         -- snoop "write system options" for the output format
-        if eng = '0' and ADDR = "0000" and DI(7 downto 4) = "0010" then
+        if ADDR = "0000" and DI(7 downto 4) = "0010" then
           individual_next <= DI(2);
         end if;
       end if;
@@ -613,61 +585,7 @@ begin
     voice_l_reg            when "0100",
     voice_r_reg            when "0101",
     volume_reg             when "0110",
-    busy & full & "000000" when "0111",
-    eng_do                 when "1000" | "1001" | "1010" | "1011" | "1100" | "1101" | "1110" | "1111",
-    busy & full & "000000" when others;
-
-  ---------------------------------------------------------------------------
-  -- the note engine
-  engine_on: if ENGINE generate
-    eng: entity work.amy1_engine generic map (GLIDE => ENGINE_GLIDE, UNIT_LOG2 => ENGINE_UNIT_LOG2) port map (
-      clk       => CLK,
-      reset_n   => RESET_N,
-      tick      => tick,
-      ext_enable => ext_enable_reg,
-      cpu_we    => eng_cpu_we,
-      cpu_addr  => ADDR(2 downto 0),
-      cpu_di    => DI,
-      cpu_do    => eng_do,
-      aux_re    => aux_re,
-      aux_raddr => aux_raddr,
-      aux_rack  => aux_rack,
-      aux_rdata => aux_rdata,
-      aux_we    => aux_we,
-      aux_waddr => aux_waddr,
-      aux_wdata => aux_wdata,
-      aux_wack  => aux_wack,
-      aux2_re    => aux2_re,
-      aux2_raddr => aux2_raddr,
-      aux2_rack  => aux2_rack,
-      aux2_rdata => aux2_rdata,
-      aux2_we    => aux2_we,
-      aux2_waddr => aux2_waddr,
-      aux2_wdata => aux2_wdata,
-      aux2_wack  => aux2_wack,
-      push_req  => eng_push_req,
-      push_addr => eng_push_addr,
-      push_data => eng_push_data,
-      push_ack  => eng_push_ack);
-  end generate;
-  eng_cpu_we <= WRITE_ENABLE and ADDR(3);
-
-  engine_off: if not ENGINE generate
-    eng_do        <= busy & full & "000000";
-    aux_re        <= '0';
-    aux_raddr     <= (others => '0');
-    aux_we        <= '0';
-    aux_waddr     <= (others => '0');
-    aux_wdata     <= (others => '0');
-    aux2_re       <= '0';
-    aux2_raddr    <= (others => '0');
-    aux2_we       <= '0';
-    aux2_waddr    <= (others => '0');
-    aux2_wdata    <= (others => '0');
-    eng_push_req  <= '0';
-    eng_push_addr <= "00";
-    eng_push_data <= (others => '0');
-  end generate;
+    busy & full & "000000" when others;            -- 0, 1, 7 and 8..15 (nothing there now)
 
   ---------------------------------------------------------------------------
   -- the chip
@@ -692,23 +610,7 @@ begin
     sample_v0    => v0,
     load_we      => load_we,
     load_addr    => std_logic_vector(load_idx_reg),
-    load_data    => ROM_DATA,
-    aux_re       => aux_re,
-    aux_raddr    => aux_raddr,
-    aux_rack     => aux_rack,
-    aux_rdata    => aux_rdata,
-    aux_we       => aux_we,
-    aux_waddr    => aux_waddr,
-    aux_wdata    => aux_wdata,
-    aux_wack     => aux_wack,
-    aux2_re      => aux2_re,
-    aux2_raddr   => aux2_raddr,
-    aux2_rack    => aux2_rack,
-    aux2_rdata   => aux2_rdata,
-    aux2_we      => aux2_we,
-    aux2_waddr   => aux2_waddr,
-    aux2_wdata   => aux2_wdata,
-    aux2_wack    => aux2_wack
+    load_data    => ROM_DATA
   );
 
   ---------------------------------------------------------------------------
