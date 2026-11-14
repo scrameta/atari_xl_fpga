@@ -1,0 +1,5 @@
+etr: simulation finished @10915436800ps
+etn: simulation finished @24310582200ps
+ENGINE off, rich 375/896: identical to the previous build
+REGDONE
+

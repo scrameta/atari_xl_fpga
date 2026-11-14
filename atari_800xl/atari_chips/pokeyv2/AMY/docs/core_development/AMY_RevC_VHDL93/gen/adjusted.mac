@@ -1,0 +1,448 @@
+$
+$	This file contains macros for cell definitions used in the
+$ DAISY generated net list for the AMY1 sound synthesizer.
+$
+$	This file
+$ has been hand editted to add the macro "cntr2" which is used in a
+$ hand editted version of the original chip net list.
+$
+$	This file has had the CMP cell modified to eliminate a 
+$ feedback path thru the two nmos transistors.  This gives SILOS a
+$ problem in that an unknown input to the selector input effectively
+$ shorts the inverse of one input to the other input.
+$
+$	This file has also had all occurances of vcc replaced by .vcc
+$ and gnd replaced by .gnd
+$ to take advantage of SILOS automatic definition and anticipated
+$ updates to SILOS that will make certain substitution of resistive
+$ uni-directional functions for bi-directionals controlled by supplies.
+$
+$
+$	A "trihpu" cell is substituted for the "trih" at the outputs
+$ of the phase ram and the transistor pullups were eliminated to permit
+$ the ram, with its resistive strength low level, to drive the outputs.
+$
+$
+$
+.MACRO   ADD   A B PR CON S
+X4K0                .NAND/N      A B                                 $/USER/BOB/AMY/CELLS/ADD 1 XCMP10 PAGE=0 71 59
+X3K0                .NOR/N      X4K0 PR                              $/USER/BOB/AMY/CELLS/ADD 1 XCMP11 PAGE=0 56 58
+XCMP12              .NMOS     PR .vcc CON                             $/USER/BOB/AMY/CELLS/ADD 1 65 68
+XCMP13              .NMOS     X3K0 CON .gnd                           $/USER/BOB/AMY/CELLS/ADD 1 52 58
+X5K0                .NOR/N      A B                                  $/USER/BOB/AMY/CELLS/ADD 1 XCMP4 PAGE=0 105 82
+S                   .NOR/N      X5K0 X6K0                            $/USER/BOB/AMY/CELLS/ADD 1 XCMP5 PAGE=0 123 81
+X6K0                .AND/N      A B                                  $/USER/BOB/AMY/CELLS/ADD 1 XCMP6 PAGE=0 112 77
+.EOM  ADD
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   ALEIOB   IN SEL OUT ALE
+XCMP21              .NMOS     ALE X17K0 .gnd                          $/USER/BOB/AMY/CELLS/ALEIOB 1 120 39
+XCMP22              .NMOS     ALE X17K0 .gnd                          $/USER/BOB/AMY/CELLS/ALEIOB 1 112 33
+XCMP23              .NMOS     .vcc X19K0 X17K0                        $/USER/BOB/AMY/CELLS/ALEIOB 1 116 45
+$ XCMP24              .NMOS     .vcc .VCC X19K0                          $/USER/BOB/AMY/CELLS/ALEIOB 1 116 51
+x19k0 .res .vcc
+X6K0                .NOR/N      IN  X28K0                            $/USER/BOB/AMY/CELLS/ALEIOB 1 XCMP25 103 75
+X21K0               .NOR/N      X28K0 IN                             $/USER/BOB/AMY/CELLS/ALEIOB 1 XCMP26 PAGE=0 100 81
+X5K0                .NOR/N      X28K0  X2K0                          $/USER/BOB/AMY/CELLS/ALEIOB 1 XCMP27 103 94
+X22K0               .NOR/N      X28K0 X2K0                           $/USER/BOB/AMY/CELLS/ALEIOB 1 XCMP28 PAGE=0 100 100
+OUT                 .NOR/N      X17K0 X23K0                          $/USER/BOB/AMY/CELLS/ALEIOB 1 XCMP29 PAGE=0 92 44
+XCMP3               .NMOS     X5K0 .vcc ALE                           $/USER/BOB/AMY/CELLS/ALEIOB 1 122 93
+X23K0               .INV/N      X28K0                                $/USER/BOB/AMY/CELLS/ALEIOB 1 XCMP30 PAGE=0 95 63
+X28K0               .INV/N      SEL                                  $/USER/BOB/AMY/CELLS/ALEIOB 1 XCMP37 PAGE=0 66 106
+XCMP4               .NMOS     X6K0 ALE .gnd                           $/USER/BOB/AMY/CELLS/ALEIOB 1 122 74
+X2K0                .INV/N      IN                                   $/USER/BOB/AMY/CELLS/ALEIOB 1 XCMP8 PAGE=0 87 82
+.EOM  ALEIOB
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   CMP   A B EQ
+XCMP13              .NMOS     X5K0 EQ .gnd                            $/USER/BOB/AMY/CELLS/CMP 1 140 45
+X3K0                .INV/N      A                                    $/USER/BOB/AMY/CELLS/CMP 1 XCMP4 PAGE=0 72 60
+X4K0                .INV/N      B                                    $/USER/BOB/AMY/CELLS/CMP 1 XCMP5 PAGE=0 72 51
+aa	.inv/n	x3k0
+bb	.inv/n	x4k0
+$XCMP6               .NMOS     A X4K0 X5K0                            $/USER/BOB/AMY/CELLS/CMP 1 110 53
+$XCMP7               .NMOS     X3K0 B X5K0                            $/USER/BOB/AMY/CELLS/CMP 1 118 47
+xcmp6	.nmos	aa x4k0 x5k0
+xcmp7	.nmos	x3k0 bb x5k0
+.EOM  CMP
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   CNTR   C CIN CN R CO Q QN
+QN                  .INV/N      Q                                    $/USER/BOB/AMY/CELLS/CNTR 1 XCMP12 PAGE=0 137 80
+X29K0               .INV/N      CIN                                  $/USER/BOB/AMY/CELLS/CNTR 1 XCMP16 PAGE=0 107 60
+CO                  .NOR/N      QN X29K0                             $/USER/BOB/AMY/CELLS/CNTR 1 XCMP17 PAGE=0 156 61
+XCMP19              .NMOS     C X27K0 X11K0                          $/USER/BOB/AMY/CELLS/CNTR 1 112 82
+XCMP20              .NMOS     CN X18K0 X26K0                         $/USER/BOB/AMY/CELLS/CNTR 1 79 82
+X18K0               .NOR/N      R X1K0                               $/USER/BOB/AMY/CELLS/CNTR 1 XCMP21 PAGE=0 65 80
+X27K0               .INV/N      X26K0                                $/USER/BOB/AMY/CELLS/CNTR 1 XCMP22 PAGE=0 89 80
+XCMP23              .NMOS     CIN X1K0 Q                             $/USER/BOB/AMY/CELLS/CNTR 1 93 60
+XCMP24              .NMOS     X29K0 X1K0 QN                          $/USER/BOB/AMY/CELLS/CNTR 1 126 60
+Q                   .INV/N      X11K0                                $/USER/BOB/AMY/CELLS/CNTR 1 XCMP5 PAGE=0 120 80
+.EOM  CNTR
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   CNTR2   C CIN CN R CO Q QN
+$ a counter cell with buffered drive to internal feed-back transistors
+QN                  .INV/N      Q                                    $/USER/BOB/AMY/CELLS/CNTR 1 XCMP12 PAGE=0 137 80
+X29K0               .INV/N      CIN                                  $/USER/BOB/AMY/CELLS/CNTR 1 XCMP16 PAGE=0 107 60
+CO                  .NOR/N      QN X29K0                             $/USER/BOB/AMY/CELLS/CNTR 1 XCMP17 PAGE=0 156 61
+XCMP19              .NMOS     C X27K0 X11K0                          $/USER/BOB/AMY/CELLS/CNTR 1 112 82
+XCMP20              .NMOS     CN X18K0 X26K0                         $/USER/BOB/AMY/CELLS/CNTR 1 79 82
+X18K0               .NOR/N      R X1K0                               $/USER/BOB/AMY/CELLS/CNTR 1 XCMP21 PAGE=0 65 80
+X27K0               .INV/N      X26K0                                $/USER/BOB/AMY/CELLS/CNTR 1 XCMP22 PAGE=0 89 80
+Q                   .INV/N      X11K0                                $/USER/BOB/AMY/CELLS/CNTR 1 XCMP5 PAGE=0 120 80
+XCMP23              .NMOS     CIN X1K0 whiskey                          $/USER/BOB/AMY/CELLS/CNTR 1 93 60
+XCMP24              .NMOS     X29K0 X1K0 xray                       $/USER/BOB/AMY/CELLS/CNTR 1 126 60
+whiskey	.inv/n qn
+xray	.inv/n q
+.EOM  CNTR2
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO	CNTR3	C CIN CN R CO Q QN
+$ a counter cell with buffered drive to one internal feed-back transistor
+QN		.INV/N	Q
+X29K0		.INV/N	CIN
+CO		.NOR/N	QN X29K0
+XCMP19		.NMOS	C X27K0 X11K0
+XCMP20		.NMOS	CN X18K0 X26K0
+X18K0		.NOR/N	R X1K0
+X27K0		.INV/N	X26K0
+Q		.INV/N	X11K0
+XCMP23		.NMOS	CIN X1K0 yankee
+XCMP24		.NMOS	X29K0 X1K0 qn
+yankee		.inv/n	x11k0
+.EOM	CNTR3
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   DL   C CN D Q
+XCMP12              .NMOS     C X3K0 X4K0                            $/USER/BOB/AMY/CELLS/DL 1 120 66
+XCMP13              .NMOS     CN D X2K0                              $/USER/BOB/AMY/CELLS/DL 1 82 66
+X3K0                .INV/N      X2K0                                 $/USER/BOB/AMY/CELLS/DL 1 XCMP3 PAGE=0 96 64
+Q                   .INV/N      X4K0                                 $/USER/BOB/AMY/CELLS/DL 1 XCMP5 PAGE=0 137 64
+.EOM  DL
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   DLN   C CN D QN
+QN                  .INV/N      X11K0                                $/USER/BOB/AMY/CELLS/DLN 1 XCMP12 PAGE=0 146 64
+XCMP13              .NMOS     C X3K0 X4K0                            $/USER/BOB/AMY/CELLS/DLN 1 120 66
+XCMP14              .NMOS     CN D X2K0                              $/USER/BOB/AMY/CELLS/DLN 1 82 66
+X3K0                .INV/N      X2K0                                 $/USER/BOB/AMY/CELLS/DLN 1 XCMP3 PAGE=0 96 64
+X11K0               .INV/N      X4K0                                 $/USER/BOB/AMY/CELLS/DLN 1 XCMP5 PAGE=0 133 64
+.EOM  DLN
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   DLR   C CN D R Q
+Q                   .NOR/N      X4K0 R                               $/USER/BOB/AMY/CELLS/DLR 1 XCMP12 PAGE=0 138 63
+XCMP14              .NMOS     C X3K0 X4K0                            $/USER/BOB/AMY/CELLS/DLR 1 120 66
+XCMP15              .NMOS     CN D X2K0                              $/USER/BOB/AMY/CELLS/DLR 1 82 66
+X3K0                .INV/N      X2K0                                 $/USER/BOB/AMY/CELLS/DLR 1 XCMP3 PAGE=0 96 64
+.EOM  DLR
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   DREG   C CN D LD LDN Q
+XCMP16              .NMOS     LD D X1K0                              $/USER/BOB/AMY/CELLS/DREG 1 58 66
+XCMP17              .NMOS     CN X1K0 X2K0                           $/USER/BOB/AMY/CELLS/DREG 1 82 66
+XCMP18              .NMOS     C X3K0 X4K0                            $/USER/BOB/AMY/CELLS/DREG 1 120 66
+XCMP19              .NMOS     LDN Q X1K0                             $/USER/BOB/AMY/CELLS/DREG 1 68 56
+X3K0                .INV/N      X2K0                                 $/USER/BOB/AMY/CELLS/DREG 1 XCMP3 PAGE=0 96 64
+Q                   .INV/N      X4K0                                 $/USER/BOB/AMY/CELLS/DREG 1 XCMP5 PAGE=0 137 64
+.EOM  DREG
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   DREG1   C CN D LD LDN QN
+XCMP16              .NMOS     LD X21K0 X1K0                          $/USER/BOB/AMY/CELLS/DREG1 1 58 66
+XCMP17              .NMOS     CN X1K0 X2K0                           $/USER/BOB/AMY/CELLS/DREG1 1 82 66
+XCMP18              .NMOS     C X3K0 X4K0                            $/USER/BOB/AMY/CELLS/DREG1 1 120 66
+XCMP19              .NMOS     LDN QN X1K0                            $/USER/BOB/AMY/CELLS/DREG1 1 68 56
+X21K0               .INV/N      D                                    $/USER/BOB/AMY/CELLS/DREG1 1 XCMP27 PAGE=0 40 64
+X3K0                .INV/N      X2K0                                 $/USER/BOB/AMY/CELLS/DREG1 1 XCMP3 PAGE=0 96 64
+QN                  .INV/N      X4K0                                 $/USER/BOB/AMY/CELLS/DREG1 1 XCMP5 PAGE=0 137 64
+.EOM  DREG1
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   DREG2   C CN D LD LDN Q
+XCMP16              .NMOS     LD D X1K0                              $/USER/BOB/AMY/CELLS/DREG2 1 58 66
+XCMP17              .NMOS     CN X1K0 X2K0                           $/USER/BOB/AMY/CELLS/DREG2 1 82 66
+XCMP18              .NMOS     C X3K0 X4K0                            $/USER/BOB/AMY/CELLS/DREG2 1 120 66
+XCMP19              .NMOS     LDN X5K0 X1K0                          $/USER/BOB/AMY/CELLS/DREG2 1 68 56
+Q                   .INV/N      X5K0                                 $/USER/BOB/AMY/CELLS/DREG2 1 XCMP21 PAGE=0 148 64
+X3K0                .INV/N      X2K0                                 $/USER/BOB/AMY/CELLS/DREG2 1 XCMP3 PAGE=0 96 64
+X5K0                .INV/N      X4K0                                 $/USER/BOB/AMY/CELLS/DREG2 1 XCMP5 PAGE=0 129 64
+.EOM  DREG2
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   DREGR   C CN D LD LDN R Q
+XCMP16              .NMOS     LD D X1K0                              $/USER/BOB/AMY/CELLS/DREGR 1 58 66
+XCMP17              .NMOS     CN X1K0 X2K0                           $/USER/BOB/AMY/CELLS/DREGR 1 82 66
+XCMP18              .NMOS     C X3K0 X19K0                           $/USER/BOB/AMY/CELLS/DREGR 1 120 66
+XCMP19              .NMOS     LDN Q X1K0                             $/USER/BOB/AMY/CELLS/DREGR 1 68 56
+Q                   .NOR/N      X19K0 R                              $/USER/BOB/AMY/CELLS/DREGR 1 XCMP21 PAGE=0 132 63
+X3K0                .INV/N      X2K0                                 $/USER/BOB/AMY/CELLS/DREGR 1 XCMP3 PAGE=0 96 64
+.EOM  DREGR
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   FADD   A B CIN PR CON S
+X4K0                .NAND/N      A B                                 $/USER/BOB/AMY/CELLS/FADD 1 XCMP10 PAGE=0 71 59
+X3K0                .NOR/N      X4K0 PR                              $/USER/BOB/AMY/CELLS/FADD 1 XCMP11 PAGE=0 56 58
+XCMP12              .NMOS     PR .vcc CON                             $/USER/BOB/AMY/CELLS/FADD 1 65 68
+XCMP13              .NMOS     X3K0 CON .gnd                           $/USER/BOB/AMY/CELLS/FADD 1 52 58
+XCMP15              .NMOS     X10K0 CON CIN                          $/USER/BOB/AMY/CELLS/FADD 1 45 51
+X12K0               .INV/N      CIN                                  $/USER/BOB/AMY/CELLS/FADD 1 XCMP17 PAGE=0 98 67
+X5K0                .NOR/N      A B                                  $/USER/BOB/AMY/CELLS/FADD 1 XCMP4 PAGE=0 85 82
+X10K0               .NOR/N      X5K0 X6K0                            $/USER/BOB/AMY/CELLS/FADD 1 XCMP5 PAGE=0 103 81
+X6K0                .AND/N      A B                                  $/USER/BOB/AMY/CELLS/FADD 1 XCMP6 PAGE=0 92 77
+X13K0               .NOR/N      X10K0 X12K0                          $/USER/BOB/AMY/CELLS/FADD 1 XCMP7 PAGE=0 125 80
+S                   .NOR/N      X13K0 X14K0                          $/USER/BOB/AMY/CELLS/FADD 1 XCMP8 PAGE=0 143 79
+X14K0               .AND/N      X12K0 X10K0                          $/USER/BOB/AMY/CELLS/FADD 1 XCMP9 PAGE=0 132 75
+.EOM  FADD
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   FADDS   A B CI CON S
+X11K0               .AND/N      X8K0 CI                              $/USER/BOB/AMY/CELLS/FADDS 1 XCMP10 PAGE=0 103 85
+X12K0               .AND/N      B A                                  $/USER/BOB/AMY/CELLS/FADDS 1 XCMP11 PAGE=0 86 85
+CON                 .NOR/N      X12K0 X11K0                          $/USER/BOB/AMY/CELLS/FADDS 1 XCMP14 PAGE=0 94 100
+X3K0                .NOR/N      A B                                  $/USER/BOB/AMY/CELLS/FADDS 1 XCMP2 PAGE=0 71 74
+X8K0                .NOR/N      X3K0 X4K0                            $/USER/BOB/AMY/CELLS/FADDS 1 XCMP3 PAGE=0 92 73
+X6K0                .NOR/N      X8K0 CI                              $/USER/BOB/AMY/CELLS/FADDS 1 XCMP4 PAGE=0 117 72
+S                   .NOR/N      X6K0 X7K0                            $/USER/BOB/AMY/CELLS/FADDS 1 XCMP5 PAGE=0 135 71
+X4K0                .AND/N      A B                                  $/USER/BOB/AMY/CELLS/FADDS 1 XCMP6 PAGE=0 79 69
+X7K0                .AND/N      CI X8K0                              $/USER/BOB/AMY/CELLS/FADDS 1 XCMP7 PAGE=0 125 67
+.EOM  FADDS
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   HADD   A CIN PR CON S
+XCMP12              .NMOS     PR .vcc CON                             $/USER/BOB/AMY/CELLS/HADD 1 65 68
+XCMP15              .NMOS     X21K0 CON CIN                          $/USER/BOB/AMY/CELLS/HADD 1 45 51
+X18K0               .INV/N      CIN                                  $/USER/BOB/AMY/CELLS/HADD 1 XCMP21 PAGE=0 83 64
+X20K0               .INV/N      A                                    $/USER/BOB/AMY/CELLS/HADD 1 XCMP22 PAGE=0 76 70
+X21K0               .INV/N      X20K0                                $/USER/BOB/AMY/CELLS/HADD 1 XCMP23 PAGE=0 76 58
+X5K0                .NOR/N      A X18K0                              $/USER/BOB/AMY/CELLS/HADD 1 XCMP4 PAGE=0 85 82
+S                   .NOR/N      X5K0 X6K0                            $/USER/BOB/AMY/CELLS/HADD 1 XCMP5 PAGE=0 103 81
+X6K0                .AND/N      A X18K0                              $/USER/BOB/AMY/CELLS/HADD 1 XCMP6 PAGE=0 92 77
+.EOM  HADD
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   IOB   ENI ENO DB IB
+X13K0               .INV/N      X24K0                                $/USER/BOB/AMY/CELLS/IOB 1 XCMP13 PAGE=0 82 56
+XCMP14              .NMOS     X13K0 X10K0 .gnd                        $/USER/BOB/AMY/CELLS/IOB 1 74 56
+XCMP15              .NMOS     ENI IB X10K0                           $/USER/BOB/AMY/CELLS/IOB 1 64 62
+XCMP17              .NMOS     DB X17K0 .gnd                           $/USER/BOB/AMY/CELLS/IOB 1 125 38
+XCMP18              .NMOS     DB X17K0 .gnd                           $/USER/BOB/AMY/CELLS/IOB 1 116 34
+$ XCMP19              .NMOS     .vcc X16K0 X17K0                        $/USER/BOB/AMY/CELLS/IOB 1 119 46
+x17k0 .res x16k0
+$ XCMP20              .NMOS     .vcc .vcc X16K0                          $/USER/BOB/AMY/CELLS/IOB 1 119 52
+x16k0 .res .vcc
+X6K0                .NOR/N      IB  ENO                              $/USER/BOB/AMY/CELLS/IOB 1 XCMP21 103 75
+X20K0               .NOR/N      ENO IB                               $/USER/BOB/AMY/CELLS/IOB 1 XCMP22 PAGE=0 100 79
+X2K0                .INV/N      IB                                   $/USER/BOB/AMY/CELLS/IOB 1 XCMP23 PAGE=0 88 83
+X5K0                .NOR/N      ENO  X2K0                            $/USER/BOB/AMY/CELLS/IOB 1 XCMP24 103 94
+X21K0               .NOR/N      ENO X2K0                             $/USER/BOB/AMY/CELLS/IOB 1 XCMP25 PAGE=0 100 98
+XCMP3               .NMOS     X5K0 .vcc DB                            $/USER/BOB/AMY/CELLS/IOB 1 122 93
+X24K0               .INV/N      X17K0                                $/USER/BOB/AMY/CELLS/IOB 1 XCMP30 103 42
+X22K0               .INV/N      X17K0                                $/USER/BOB/AMY/CELLS/IOB 1 XCMP31 PAGE=0 105 47
+XCMP4               .NMOS     X6K0 DB .gnd                            $/USER/BOB/AMY/CELLS/IOB 1 122 74
+.EOM  IOB
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   IOB1   E I O IO
+O                   .INV/N      X17K0                                $/USER/BOB/AMY/CELLS/IOB1 1 XCMP12 PAGE=0 90 42
+XCMP21              .NMOS     IO X17K0 .gnd                           $/USER/BOB/AMY/CELLS/IOB1 1 120 39
+XCMP22              .NMOS     IO X17K0 .gnd                           $/USER/BOB/AMY/CELLS/IOB1 1 112 33
+$ XCMP23              .NMOS     .vcc X19K0 X17K0                        $/USER/BOB/AMY/CELLS/IOB1 1 116 45
+x17k0 .res x19k0
+$ XCMP24              .NMOS     .vcc .vcc X19K0                          $/USER/BOB/AMY/CELLS/IOB1 1 116 51
+x19k0 .res .vcc
+X6K0                .NOR/N      I  E                                 $/USER/BOB/AMY/CELLS/IOB1 1 XCMP25 103 75
+X21K0               .NOR/N      E I                                  $/USER/BOB/AMY/CELLS/IOB1 1 XCMP26 PAGE=0 100 81
+X5K0                .NOR/N      E  X2K0                              $/USER/BOB/AMY/CELLS/IOB1 1 XCMP27 103 94
+X22K0               .NOR/N      E X2K0                               $/USER/BOB/AMY/CELLS/IOB1 1 XCMP28 PAGE=0 100 100
+XCMP3               .NMOS     X5K0 .vcc IO                            $/USER/BOB/AMY/CELLS/IOB1 1 122 93
+XCMP4               .NMOS     X6K0 IO .gnd                            $/USER/BOB/AMY/CELLS/IOB1 1 122 74
+X2K0                .INV/N      I                                    $/USER/BOB/AMY/CELLS/IOB1 1 XCMP8 PAGE=0 87 82
+.EOM  IOB1
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   IOB2   ENI ENO DBB DB IB
+X13K0               .INV/N      DBB                                  $/USER/BOB/AMY/CELLS/IOB2 1 XCMP13 PAGE=0 82 56
+XCMP14              .NMOS     X13K0 X10K0 .gnd                        $/USER/BOB/AMY/CELLS/IOB2 1 74 56
+XCMP15              .NMOS     ENI IB X10K0                           $/USER/BOB/AMY/CELLS/IOB2 1 64 62
+XCMP17              .NMOS     DB X17K0 .gnd                           $/USER/BOB/AMY/CELLS/IOB2 1 125 38
+XCMP18              .NMOS     DB X17K0 .gnd                           $/USER/BOB/AMY/CELLS/IOB2 1 116 34
+$ XCMP19              .NMOS     .vcc X16K0 X17K0                        $/USER/BOB/AMY/CELLS/IOB2 1 119 46
+x17k0 .res x16k0
+$ XCMP20              .NMOS     .vcc .vcc X16K0                          $/USER/BOB/AMY/CELLS/IOB2 1 119 52
+x16k0 .res .vcc
+X6K0                .NOR/N      IB  ENO                              $/USER/BOB/AMY/CELLS/IOB2 1 XCMP21 103 75
+X20K0               .NOR/N      ENO IB                               $/USER/BOB/AMY/CELLS/IOB2 1 XCMP22 PAGE=0 100 79
+X2K0                .INV/N      IB                                   $/USER/BOB/AMY/CELLS/IOB2 1 XCMP23 PAGE=0 88 83
+X5K0                .NOR/N      ENO  X2K0                            $/USER/BOB/AMY/CELLS/IOB2 1 XCMP24 103 94
+X21K0               .NOR/N      ENO X2K0                             $/USER/BOB/AMY/CELLS/IOB2 1 XCMP25 PAGE=0 100 98
+XCMP3               .NMOS     X5K0 .vcc DB                            $/USER/BOB/AMY/CELLS/IOB2 1 122 93
+DBB                 .INV/N      X17K0                                $/USER/BOB/AMY/CELLS/IOB2 1 XCMP30 103 42
+X22K0               .INV/N      X17K0                                $/USER/BOB/AMY/CELLS/IOB2 1 XCMP31 PAGE=0 105 47
+XCMP4               .NMOS     X6K0 DB .gnd                            $/USER/BOB/AMY/CELLS/IOB2 1 122 74
+.EOM  IOB2
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   J   C IN NIN Q QN
+Q                   .NOR/N      X4K0 QN                              $/USER/BOB/AMY/CELLS/J 1 XCMP17 PAGE=0 144 89
+X8K0                .OR/N      IN C                                  $/USER/BOB/AMY/CELLS/J 1 XCMP2 PAGE=0 92 92
+X5K0                .NAND/N      X8K0 X6K0                           $/USER/BOB/AMY/CELLS/J 1 XCMP3 PAGE=0 103 91
+X6K0                .NAND/N      X5K0 X7K0                           $/USER/BOB/AMY/CELLS/J 1 XCMP4 PAGE=0 103 75
+X7K0                .OR/N      NIN C                                 $/USER/BOB/AMY/CELLS/J 1 XCMP5 PAGE=0 92 74
+X4K0                .AND/N      X5K0 C                               $/USER/BOB/AMY/CELLS/J 1 XCMP7 PAGE=0 131 90
+X3K0                .AND/N      C X6K0                               $/USER/BOB/AMY/CELLS/J 1 XCMP8 PAGE=0 131 76
+QN                  .NOR/N      Q X3K0                               $/USER/BOB/AMY/CELLS/J 1 XCMP9 PAGE=0 144 77
+.EOM  J
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   JR   C IN NIN R Q QN
+Q                   .NOR/N      R X4K0 QN                            $/USER/BOB/AMY/CELLS/JR 1 XCMP15 PAGE=0 144 90
+X8K0                .OR/N      IN C                                  $/USER/BOB/AMY/CELLS/JR 1 XCMP2 PAGE=0 92 92
+X5K0                .NAND/N      X8K0 X6K0                           $/USER/BOB/AMY/CELLS/JR 1 XCMP3 PAGE=0 103 91
+X6K0                .NAND/N      X5K0 X7K0                           $/USER/BOB/AMY/CELLS/JR 1 XCMP4 PAGE=0 103 75
+X7K0                .OR/N      NIN C                                 $/USER/BOB/AMY/CELLS/JR 1 XCMP5 PAGE=0 92 74
+X4K0                .AND/N      X5K0 C                               $/USER/BOB/AMY/CELLS/JR 1 XCMP7 PAGE=0 131 90
+X3K0                .AND/N      C X6K0                               $/USER/BOB/AMY/CELLS/JR 1 XCMP8 PAGE=0 131 76
+QN                  .NOR/N      Q X3K0                               $/USER/BOB/AMY/CELLS/JR 1 XCMP9 PAGE=0 144 77
+.EOM  JR
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   MUX   I1 I2 S SN OUT
+XCMP2               .NMOS     SN I1 OUT                              $/USER/BOB/AMY/CELLS/MUX 1 101 76
+XCMP3               .NMOS     S I2 OUT                               $/USER/BOB/AMY/CELLS/MUX 1 110 66
+.EOM  MUX
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   MUX1   IN S SN OUT
+X2K0                .INV/N      IN                                   $/USER/BOB/AMY/CELLS/MUX1 1 XCMP10 PAGE=0 87 64
+XCMP2               .NMOS     SN IN X3K0                             $/USER/BOB/AMY/CELLS/MUX1 1 101 76
+XCMP3               .NMOS     S X2K0 X3K0                            $/USER/BOB/AMY/CELLS/MUX1 1 110 66
+OUT                 .INV/N      X3K0                                 $/USER/BOB/AMY/CELLS/MUX1 1 XCMP9 PAGE=0 130 74
+.EOM  MUX1
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   MUX2   I1 I2 S SN OUT
+XCMP2               .NMOS     SN I1 X3K0                             $/USER/BOB/AMY/CELLS/MUX2 1 101 76
+XCMP3               .NMOS     S I2 X3K0                              $/USER/BOB/AMY/CELLS/MUX2 1 110 66
+OUT                 .INV/N      X3K0                                 $/USER/BOB/AMY/CELLS/MUX2 1 XCMP9 PAGE=0 124 74
+.EOM  MUX2
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   MUX2B   I1 I2 S SN OUT
+OUT                 .INV/N      X3K0                                 $/USER/BOB/AMY/CELLS/MUX2B 1 XCMP15 125 75
+X7K0                .INV/N      X3K0                                 $/USER/BOB/AMY/CELLS/MUX2B 1 XCMP16 PAGE=0 122 81
+XCMP2               .NMOS     SN I1 X3K0                             $/USER/BOB/AMY/CELLS/MUX2B 1 101 76
+XCMP3               .NMOS     S I2 X3K0                              $/USER/BOB/AMY/CELLS/MUX2B 1 110 66
+.EOM  MUX2B
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   OB   I O
+X3K0                .INV/N      X1K0                                 $/USER/BOB/AMY/CELLS/OB 1 XCMP10 127 84
+X1K0                .INV/N      I                                    $/USER/BOB/AMY/CELLS/OB 1 XCMP11 109 73
+X7K0                .INV/N      I                                    $/USER/BOB/AMY/CELLS/OB 1 XCMP12 PAGE=0 107 81
+X8K0                .INV/N      X1K0                                 $/USER/BOB/AMY/CELLS/OB 1 XCMP13 PAGE=0 125 94
+XCMP5               .NMOS     X3K0 .vcc O                             $/USER/BOB/AMY/CELLS/OB 1 146 83
+XCMP6               .NMOS     X1K0 O .gnd                             $/USER/BOB/AMY/CELLS/OB 1 146 72
+.EOM  OB
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   OB1   EN IN OUT
+X8K0                .NOR/N      EN  X7K0                             $/USER/BOB/AMY/CELLS/OB1 1 XCMP10 89 80
+X2K0                .NOR/N      EN  IN                               $/USER/BOB/AMY/CELLS/OB1 1 XCMP11 89 61
+X11K0               .NOR/N      IN EN                                $/USER/BOB/AMY/CELLS/OB1 1 XCMP3 PAGE=0 83 65
+XCMP4               .NMOS     X2K0 OUT .gnd                           $/USER/BOB/AMY/CELLS/OB1 1 103 65
+XCMP7               .NMOS     X8K0 .vcc OUT                           $/USER/BOB/AMY/CELLS/OB1 1 103 83
+X10K0               .NOR/N      X7K0 EN                              $/USER/BOB/AMY/CELLS/OB1 1 XCMP8 PAGE=0 83 83
+X7K0                .INV/N      IN                                   $/USER/BOB/AMY/CELLS/OB1 1 XCMP9 PAGE=0 69 76
+.EOM  OB1
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   SWAP   A B S SN Q1 Q2
+XCMP10              .NMOS     S B Q1                                 $/USER/BOB/AMY/CELLS/SWAP 1 117 58
+XCMP2               .NMOS     SN A Q1                                $/USER/BOB/AMY/CELLS/SWAP 1 101 76
+XCMP3               .NMOS     S A Q2                                 $/USER/BOB/AMY/CELLS/SWAP 1 117 66
+XCMP9               .NMOS     SN B Q2                                $/USER/BOB/AMY/CELLS/SWAP 1 101 52
+.EOM  SWAP
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   TL   D LD LDN Q
+XCMP3               .NMOS     LD D X2K0                              $/USER/BOB/AMY/CELLS/TL 1 77 73
+X3K0                .INV/N      X2K0                                 $/USER/BOB/AMY/CELLS/TL 1 XCMP4 PAGE=0 92 71
+Q                   .INV/N      X3K0                                 $/USER/BOB/AMY/CELLS/TL 1 XCMP5 PAGE=0 112 71
+XCMP6               .NMOS     LDN Q X2K0                             $/USER/BOB/AMY/CELLS/TL 1 85 64
+.EOM  TL
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   TL3S   LD LDN RD Q IO
+XCMP10              .NMOS     RD IO X8K0                             $/USER/BOB/AMY/CELLS/TL3S 1 75 49
+XCMP3               .NMOS     LD IO X2K0                             $/USER/BOB/AMY/CELLS/TL3S 1 77 73
+X3K0                .INV/N      X2K0                                 $/USER/BOB/AMY/CELLS/TL3S 1 XCMP4 PAGE=0 92 71
+Q                   .INV/N      X3K0                                 $/USER/BOB/AMY/CELLS/TL3S 1 XCMP5 PAGE=0 112 71
+XCMP6               .NMOS     LDN Q X2K0                             $/USER/BOB/AMY/CELLS/TL3S 1 85 64
+XCMP9               .NMOS     X3K0 X8K0 .gnd                          $/USER/BOB/AMY/CELLS/TL3S 1 98 45
+.EOM  TL3S
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   TOG   C CN EN IN R Q
+XCMP17              .NMOS     CN X1K0 X2K0                           $/USER/BOB/AMY/CELLS/TOG 1 82 82
+XCMP18              .NMOS     C X3K0 X19K0                           $/USER/BOB/AMY/CELLS/TOG 1 120 82
+XCMP19              .NMOS     X23K0 Q X1K0                           $/USER/BOB/AMY/CELLS/TOG 1 68 68
+Q                   .NOR/N      X19K0 R                              $/USER/BOB/AMY/CELLS/TOG 1 XCMP21 PAGE=0 132 79
+X23K0               .NAND/N      IN EN                               $/USER/BOB/AMY/CELLS/TOG 1 XCMP23 PAGE=0 58 54
+X24K0               .INV/N      X23K0                                $/USER/BOB/AMY/CELLS/TOG 1 XCMP24 PAGE=0 58 71
+XCMP25              .NMOS     X24K0 X25K0 X1K0                       $/USER/BOB/AMY/CELLS/TOG 1 58 80
+X25K0               .INV/N      Q                                    $/USER/BOB/AMY/CELLS/TOG 1 XCMP26 PAGE=0 49 71
+X3K0                .INV/N      X2K0                                 $/USER/BOB/AMY/CELLS/TOG 1 XCMP3 PAGE=0 96 80
+.EOM  TOG
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$
+.MACRO   TRIH   D S Q
+XCMP4               .NMOS     S X6K0 Q                               $/USER/BOB/AMY/CELLS/TRIH 1 111 82
+XCMP5               .NMOS     X5K0 X6K0 .gnd                          $/USER/BOB/AMY/CELLS/TRIH 1 111 61
+X5K0                .INV/N      D                                    $/USER/BOB/AMY/CELLS/TRIH 1 XCMP6 PAGE=0 80 61
+.EOM  TRIH
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$ Special version with a pullup to fake out SILOS resistive ram outputs
+.MACRO   TRIHpu   D S Q
+XCMP4               .NMOS     S X6K0 Q                               $/USER/BOB/AMY/CELLS/TRIH 1 111 82
+XCMP5               .NMOS     X5K0 X6K0 .gnd                          $/USER/BOB/AMY/CELLS/TRIH 1 111 61
+X5K0                .INV/N      D                                    $/USER/BOB/AMY/CELLS/TRIH 1 XCMP6 PAGE=0 80 61
+xcmp6	.nmos	d .vcc x6k0
+.EOM  TRIHpu
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
