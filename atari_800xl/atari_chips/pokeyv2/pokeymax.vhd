@@ -400,6 +400,9 @@ ARCHITECTURE vhdl OF pokeymax IS
 	signal addr_decoded4 : std_logic_vector(15 downto 0);	
 	signal CONFIG_ENABLE_REG : std_logic;
 	signal CONFIG_ENABLE_NEXT: std_logic;
+	signal CONFIG_PAGE2 : std_logic;      -- $D220-$D22F of the 32-byte window (CAPABILITY2, RESTRICT2)
+	signal RESTRICT2_REG : std_logic;     -- RESTRICT2 bit 0: the copper's registers visible
+	signal RESTRICT2_NEXT : std_logic;
 	
 	-- SAMPLE/COVOX
 	signal SAMPLE_AUDIO_SIGNED : SIGNED_AUDIO_TYPE(1 downto 0);	
@@ -536,6 +539,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 
 	-- arbitrate copper and 6502
 	signal COPPER_CYCLE : std_logic;      -- the copper has the device bus this cycle
+	signal AMY_FULL : std_logic;          -- AMY's write FIFO is full: a copper write to it waits
 	signal CPU_AFTER_REG : std_logic;     -- the cycle after a 6502 access: its read data is taken then
 	signal REQUEST : std_logic;
 	signal ADDR_IN : std_logic_vector(7 downto 0);
@@ -594,7 +598,7 @@ ARCHITECTURE vhdl OF pokeymax IS
 	-- shared dc blocker channel layout: pokey mixer outputs, then psg, then sio adc
 	constant dcb_psg_base : integer := pokeys;
 	constant dcb_sio_base : integer := dcb_psg_base + 2*to_int(enable_psg=1);
-	constant dcb_channels : integer := dcb_sio_base + to_int(enable_adc=1);
+	constant dcb_channels : integer := dcb_sio_base + 1;   -- the sio channel: the adc's (enable_adc=1) or the SIO data line's
 	signal DCB_IN  : UNSIGNED_AUDIO_TYPE(dcb_channels-1 downto 0);
 	signal DCB_OUT : SIGNED_AUDIO_TYPE(dcb_channels-1 downto 0);
 
@@ -850,7 +854,10 @@ bus_adapt : entity work.slave_timing_6502
 -- slave_timing_6502 takes its read data (BUS_ACK): by then a RAMDATA read's byte has come
 -- from the sample RAM. The copper gets any other cycle. A copper access is one cycle, acked at
 -- once: device read data (DO_MUX) is combinational from ADDR_IN, so it is valid with the ack.
-COPPER_CYCLE <= COPPER_REQUEST and not(CPU_REQUEST) and not(CPU_AFTER_REG);
+-- A copper write to AMY's command registers ($D2C0-$D2C3) waits while AMY's FIFO is full,
+-- so it is never dropped (the copper holds its request until the ack).
+COPPER_CYCLE <= COPPER_REQUEST and not(CPU_REQUEST) and not(CPU_AFTER_REG) and
+	not(AMY_FULL and COPPER_WRITE_ENABLE and to_sl(COPPER_ADDR(7 downto 2) = "110000"));
 COPPER_ACK <= COPPER_CYCLE;
 
 REQUEST <= CPU_REQUEST or COPPER_CYCLE;
@@ -1111,6 +1118,7 @@ amy_off : if enable_amy=0 generate
 	AMY_AUDIO_SIGNED(1) <= to_signed(0,16);
 	AMY_DO(0) <= (others=>'0');
 	AMY_DO(1) <= (others=>'0');
+	AMY_FULL <= '0';
 end generate amy_off;
 
 amy_on : if enable_amy=1 generate 
@@ -1129,6 +1137,7 @@ PORT MAP(
 	ADDR => ADDR_IN(3 downto 0),
 	DI => WRITE_DATA(7 downto 0),
 	DO => AMY_DO(0),
+	FIFO_FULL => AMY_FULL,
 
 	rom_addr => amy_flash_addr,
 	rom_data => flash_do_slow,
@@ -1473,6 +1482,7 @@ sample_on : if enable_sample=1 generate
 		RAM_WRITE_DATA => SAMPLE_RAM_WRITE_DATA,
 
 		COPPER_AREA_EN =>  COPPER_AREA_EN, -- chips present and not restricted
+		COPPER_VISIBLE => RESTRICT2_REG,   -- RESTRICT2 bit 0: the copper's registers
 		INTBUS_REQUEST => COPPER_REQUEST,              -- held until INTBUS_ACK
 		INTBUS_ACK => COPPER_ACK,
 		INTBUS_ADDR => COPPER_ADDR,
@@ -1577,7 +1587,8 @@ begin
 		addr_bits := x"0"; --disable config access here
 	end if;
 
-	if ((config_enable_reg='1' and addr_bits="0001") or (addr_bits(3 downto 2) = "00" and addr_decoded4(12)='1')) then
+	-- the configuration window is 32 bytes: $D210-$D22F
+	if ((config_enable_reg='1' and (addr_bits="0001" or addr_bits="0010")) or (addr_bits(3 downto 2) = "00" and addr_decoded4(12)='1')) then
 		addr_bits := x"f";
 	end if;
 
@@ -1588,7 +1599,10 @@ begin
 	end if;
 	
 	DEVICE_ADDR <= addr_bits;
-end process;			
+end process;
+
+-- its second half: CAPABILITY2 at $D220, RESTRICT2 at $D221 (offset C stays CONFIG, as everywhere)
+CONFIG_PAGE2 <= '1' when ADDR_IN(7 downto 4)="0010" and addr_decoded4(12)='0' else '0';			
 
 process(
 	DEVICE_ADDR,
@@ -1720,6 +1734,7 @@ begin
 		end if;
 		RESTRICT_CAPABILITY_REG <= (others=>'1');
 		CHANNEL_EN_REG <= (others=>'1');
+		RESTRICT2_REG <= '1';
 		if (enable_routing=1) then
 			MIXER_SIGNED_REG(0) <= to_signed(0,16);
 			MIXER_SIGNED_REG(1) <= to_signed(0,16);
@@ -1752,6 +1767,7 @@ begin
 		end if;
 		RESTRICT_CAPABILITY_REG <= RESTRICT_CAPABILITY_NEXT;
 		CHANNEL_EN_REG <= CHANNEL_EN_NEXT;
+		RESTRICT2_REG <= RESTRICT2_NEXT;
 		if (enable_routing=1) then
 			MIXER_SIGNED_REG <= MIXER_SIGNED_NEXT;
 			MIX_SEL1_REG <= MIX_SEL1_NEXT;
@@ -1786,7 +1802,8 @@ process(CONFIG_WRITE_ENABLE, WRITE_DATA, addr_decoded4,
 	RESTRICT_CAPABILITY_REG,
 	CHANNEL_EN_REG,
 	PAL_REG,
-	MIX_SEL1_REG, MIX_SEL2_REG
+	MIX_SEL1_REG, MIX_SEL2_REG,
+	CONFIG_PAGE2, RESTRICT2_REG
 )
 begin
 	SATURATE_NEXT <= SATURATE_REG;
@@ -1821,6 +1838,7 @@ begin
 
 	RESTRICT_CAPABILITY_NEXT <= RESTRICT_CAPABILITY_REG;
 	CHANNEL_EN_NEXT <= CHANNEL_EN_REG;
+	RESTRICT2_NEXT <= RESTRICT2_REG;
 
 	PAL_NEXT <= PAL_REG;
 
@@ -1865,6 +1883,10 @@ begin
 				-- 29-31 reserved
 			when others =>
 		end case;
+	elsif (CONFIG_WRITE_ENABLE='1' and CONFIG_PAGE2='1') then
+		if (addr_decoded4(1)='1') then
+			RESTRICT2_NEXT <= WRITE_DATA(0);
+		end if;
 	elsif (CONFIG_WRITE_ENABLE='1') then
 		if (addr_decoded4(0)='1') then
 			SATURATE_NEXT <= WRITE_DATA(0);
@@ -1967,9 +1989,11 @@ CPU_FLASH_REQUEST_REG, CPU_FLASH_WRITE_N_REG,
 RESTRICT_CAPABILITY_REG,
 CHANNEL_EN_REG,
 PAL_REG,
-MIX_SEL1_REG, MIX_SEL2_REG
+MIX_SEL1_REG, MIX_SEL2_REG,
+CONFIG_PAGE2, RESTRICT2_REG
 )
 	variable ACTUAL_CAPABILITY : std_logic_vector(7 downto 0);
+	variable CAPABILITY2 : std_logic_vector(7 downto 0);
 begin
 	CONFIG_DO <= (others=>'1');
 	
@@ -2084,6 +2108,7 @@ begin
 
 	if (addr_decoded4(7)='1') then
 		CONFIG_DO(5 downto 0) <= RESTRICT_CAPABILITY_REG(5 downto 0);
+		CONFIG_DO(7) <= '0';   -- 0: the window is 32 bytes, CAPABILITY2 is at $D220 (older cores read 1)
 	end if;
 
 	if (enable_routing=1) then
@@ -2130,7 +2155,21 @@ begin
 			end case;
 		end if;
 	end if;
-	
+
+	-- $D220-$D22F
+	if (CONFIG_PAGE2='1') then
+		CAPABILITY2 := (others=>'0');
+		CAPABILITY2(0) := to_sl(enable_amy=1) and RESTRICT_CAPABILITY_REG(5);
+		CAPABILITY2(1) := to_sl(enable_copper=1 and enable_sample=1) and RESTRICT_CAPABILITY_REG(4) and RESTRICT2_REG;
+		CAPABILITY2(2) := to_sl(enable_sample=1 and sample_ram_size=65536);
+		CONFIG_DO <= (others=>'1');
+		if (addr_decoded4(0)='1') then
+			CONFIG_DO <= CAPABILITY2;           -- bit 0 AMY, bit 1 copper, bit 2 64 KiB sample RAM
+		end if;
+		if (addr_decoded4(1)='1') then
+			CONFIG_DO <= "0000000" & RESTRICT2_REG;
+		end if;
+	end if;
 end process;
 
 end generate;
@@ -2552,9 +2591,6 @@ end generate fir_off;
 
 	SIO_AUDIO_UNSIGNED <= unsigned(not(adc_use_reg(15))&adc_use_reg(14 downto 0));
 
-DCB_IN(dcb_sio_base) <= SIO_AUDIO_UNSIGNED;
-SIO_AUDIO_SIGNED <= DCB_OUT(dcb_sio_base);
-
 process(adc_reg,adc_output,adc_valid,ADC_VOLUME_REG)
 	variable adc_shrunk : signed(19 downto 0);
 begin
@@ -2614,7 +2650,7 @@ end process;
 end generate adc_on;
 
 adc_off : if enable_adc=0 generate 
-	process(SIO_DATA_VOLUME_REG)
+	process(SIO_DATA_VOLUME_REG,SIO_RXD_ADC)
 	begin
 		SIO_AUDIO_UNSIGNED(15 downto 0) <= (others=>'0');
 
@@ -2629,6 +2665,10 @@ adc_off : if enable_adc=0 generate
 		end case;
 	end process;
 end generate adc_off;
+
+-- with or without the adc, SIO_AUDIO_UNSIGNED goes through the shared dc blocker to the mixer
+DCB_IN(dcb_sio_base) <= SIO_AUDIO_UNSIGNED;
+SIO_AUDIO_SIGNED <= DCB_OUT(dcb_sio_base);
 
 paddle_lvds_on : if paddle_lvds=1 generate 
 	 paddle_lvds_rx0: paddle_gpio

@@ -51,6 +51,7 @@ ENTITY sample_top IS
 
 		-- copper: register accesses into the internal bus, beside the 6502's
 		COPPER_AREA_EN : in std_logic_vector(8 downto 0) := (others=>'1'); -- chips present and not restricted
+		COPPER_VISIBLE : in std_logic := '1';                 -- RESTRICT2 bit 0: 0 hides the copper's registers
 		INTBUS_REQUEST : out std_logic;                       -- held until INTBUS_ACK
 		INTBUS_ACK : in std_logic;                            -- one cycle; read data valid with it
 		INTBUS_ADDR : out std_logic_vector(7 downto 0);       -- $D2xx low byte, full map (never config)
@@ -234,7 +235,7 @@ BEGIN
  		end if;
 	end process;
 
-	DO <= sample_do or copper_do;
+	DO <= sample_do or (copper_do and (7 downto 0 => COPPER_VISIBLE));
 
 	cpu_covox_write <= write_enable and not(or_reduce(ADDR(4 downto 2)));
 
@@ -843,7 +844,7 @@ BEGIN
 		tick_15k   => ENABLE_SCANLINE,              -- must be PHI2/114, one cycle per scanline
 
 		-- host registers: $D295-$D29E (ADDR 21-30)
-		cpu_we     => WRITE_ENABLE,
+		cpu_we     => WRITE_ENABLE and COPPER_VISIBLE,
 		cpu_addr   => ADDR,
 		cpu_di     => DI,
 		cpu_do     => copper_do,

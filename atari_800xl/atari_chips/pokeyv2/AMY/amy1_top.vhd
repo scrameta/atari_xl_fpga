@@ -68,6 +68,7 @@ entity amy1_top is
     WRITE_ENABLE : in  std_logic;                      -- one CLK pulse per 6502 write
     DI           : in  std_logic_vector(7 downto 0);
     DO           : out std_logic_vector(7 downto 0);   -- status / read-back, see above
+    FIFO_FULL    : out std_logic;                      -- the write FIFO is full: a write now is dropped
 
     -- flash, as for the SID (request held until ready; data valid with ready)
     ROM_ADDR     : out std_logic_vector(16 downto 0);
@@ -120,6 +121,7 @@ architecture vhdl of amy1_top is
   signal pending_reg, pending_next : unsigned(3 downto 0) := (others => '0');   -- steps owed (USE_TICK)
   signal space_reg, space_next     : unsigned(3 downto 0) := (others => '0');
   signal tick                      : std_logic;    -- the chip clock enable (ce): the sixth step
+  signal tick_reg                  : std_logic := '0';   -- (registered: the step adder stays off the chip's paths)
 
   ---------------------------------------------------------------------------
   -- write FIFO: 2**FIFO_LOG2 x {addr, data}
@@ -193,6 +195,7 @@ begin
       loaded_reg     <= '0';
       acc_reg        <= (others => '0');
       phase_reg      <= (others => '0');
+      tick_reg       <= '0';
       pending_reg    <= (others => '0');
       space_reg      <= (others => '0');
       rd_ptr_reg     <= (others => '0');
@@ -230,6 +233,7 @@ begin
       loaded_reg     <= loaded_next;
       acc_reg        <= acc_next;
       phase_reg      <= phase_next;
+      tick_reg       <= step_en and to_sl(phase_reg = 5);
       pending_reg    <= pending_next;
       space_reg      <= space_next;
       fifo_reg       <= fifo_next;
@@ -378,7 +382,8 @@ begin
     end if;
   end process;
 
-  tick <= step_en and to_sl(phase_reg = 5);
+  -- one clock after its step: a uniform delay of the chip clock enable, which is all the chip sees
+  tick <= tick_reg;
 
   -- a chip reset starts at the next chip clock after it is asked for, or when
   -- INT/RDY has been low for 255 internal clocks (commands take about 10)
@@ -443,6 +448,7 @@ begin
   end process;
 
   full <= count_reg(FIFO_LOG2);
+  FIFO_FULL <= full;                                      -- for the copper's bus arbitration
 
   -- wrapper registers 4..6, written directly
   process (voice_l_reg, voice_r_reg, volume_reg, WRITE_ENABLE, ADDR, DI)

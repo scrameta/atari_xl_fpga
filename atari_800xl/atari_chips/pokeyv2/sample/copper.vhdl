@@ -5,13 +5,15 @@
 -- RAM on a common tick, so music, sound effects and I/O sequences cost the
 -- 6502 nothing per frame; with the copper++ instructions (an accumulator, 16
 -- registers per thread, tables and branches) it also runs note engines for
--- any chip from a few parameters per note. See copper_spec.md (v0.6).
+-- any chip from a few parameters per note. See copper_spec.md (v0.7).
 --
 -- Host registers (cpu_addr is the sample engine's ADDR, $D280 + 0..31; the
 -- copper's are 21..30 = $D295-$D29E, shown here as $D295 + 0..9):
---   0 CCTRL   W: bit 0 run (0 = frozen), bit 1 STOPALL strobe, bit 2 SYNC strobe
---             R: bit 0 run, bit 6 a start is waiting in the latch, bit 7 any
---                thread stopped by an error
+--   0 CCTRL   W: bit 0 run (0 = freeze: each thread stops at its next instruction
+--                outside a LOCK), bit 1 STOPALL strobe, bit 2 SYNC strobe
+--             R: bit 0 run, bit 5 frozen (run is 0 and no thread is loaded: the
+--                6502 may write the chips itself), bit 6 a start is waiting in the
+--                latch, bit 7 any thread stopped by an error
 --   1 CADDRL  W: start address low
 --   2 CADDRH  W: start address high
 --   3 CSTART  W: thread number: start it at CADDR with base CBASE and the
@@ -23,6 +25,12 @@
 --             0 = the default, DEFAULT_PERIOD (312: PAL; NTSC software writes 262)
 --   8 CBASE   W: register base for CSTART
 --   9 CPARAM  W: the next start parameter: R0, R1, ... R7 of the started thread
+--
+-- Timing (v0.7.1): the sample RAM's read data and ack, a chip read's data, the
+-- chip address with its area check, and LDT's table address are registered, so
+-- the RAM, the device read mux and the address adders never reach the next-state
+-- logic in one clock. A RAM access takes 3 clocks (was 2), a chip access 2 more.
+-- ram_req drops while its ack comes in, so a request is never granted twice.
 --
 -- A start waits in the latch until its thread is at rest (stopped, or waiting
 -- at a WAIT): it never cuts a running program short. It is served between two
@@ -77,7 +85,9 @@
 -- byte is counted down (one read, maybe one write). A FORK of another thread
 -- writes that thread's context directly.
 --
--- Register accesses (bus_*): MOVE/MOVA writes and WAITBIT reads at base +
+-- Register accesses (bus_*): a device may hold bus_ack (e.g. AMY while its FIFO
+-- is full): the copper waits, so a write is never dropped and no polling is
+-- needed.  MOVE/MOVA writes and WAITBIT reads at base +
 -- offset, after the copper-side decode: CONFIG ($0C, $1C), the copper's own
 -- registers ($95-$9F) and $D0-$FF are never reached, nor an area whose area_en
 -- bit is 0 (absent or restricted chips: the write is dropped, not sent to a
@@ -133,7 +143,8 @@ end entity;
 
 architecture vhdl of copper is
   type state_t is (st_idle, st_init, st_par, st_tick, st_tickw, st_load, st_fetch, st_opnd, st_exec,
-                   st_bus, st_reg, st_regw, st_tab, st_waitw, st_push, st_pop, st_next, st_after, st_save);
+                   st_chk, st_bus, st_busr, st_reg, st_regw, st_tab, st_waitw, st_push, st_pop, st_next,
+                   st_after, st_save);
   signal state_reg, state_next : state_t := st_idle;
 
   constant BUDGET : unsigned(3 downto 0) := to_unsigned(15, 4);   -- 16 instructions a slice
@@ -196,6 +207,17 @@ architecture vhdl of copper is
   signal nops     : unsigned(1 downto 0);          -- operand bytes of op_reg
   signal acc_addr : unsigned(7 downto 0);          -- MOVE / MOVA / WAITBIT register address
   signal acc_ok   : std_logic;                     -- ... allowed
+
+  -- timing: the RAM's read data and ack, the chip address and its check, and a chip read's data
+  -- are registered, so none of them reaches the next-state logic (the PC above all) in the
+  -- same clock: a RAM access then takes a clock more, a chip access two
+  signal rack_reg     : std_logic := '0';
+  signal rdat_reg     : std_logic_vector(7 downto 0) := (others => '0');
+  signal ram_req_i    : std_logic;
+  signal acc_ok_reg   : std_logic := '0';
+  signal baddr_reg    : std_logic_vector(7 downto 0) := (others => '0');
+  signal brd_reg      : std_logic_vector(7 downto 0) := (others => '0');
+  signal tadr_reg     : unsigned(15 downto 0) := (others => '0');   -- LDT: the table byte's address
   signal target   : unsigned(15 downto 0);         -- REF/JUMP/CALL/FORK/LDT/branch address
   signal refn     : unsigned(8 downto 0);          -- REF/REFL count, 0 for CALL
   signal outer    : unsigned(7 downto 0);          -- push: the outer level's count after this instruction
@@ -204,6 +226,7 @@ architecture vhdl of copper is
   signal is_wr    : boolean;                       -- MOVE or MOVA
   signal st_rest  : boolean;                       -- the latched start's thread is at rest
   signal ca       : natural range 0 to 15;         -- host register 0..9, 15 = not the copper's
+  signal frozen   : std_logic;                     -- run = 0 and no thread loaded
 
   function allowed(a : unsigned(7 downto 0); en : std_logic_vector(8 downto 0)) return std_logic is
   begin
@@ -293,6 +316,7 @@ begin
         endsl_reg   <= '0';
         acc_reg     <= (others => '0');
         c_reg       <= '0';
+        rack_reg    <= '0';
         lock_reg    <= '0';
         op_reg      <= (others => '0');
         o1_reg      <= (others => '0');
@@ -342,6 +366,12 @@ begin
         tt_reg      <= tt_next;
         wv_reg      <= wv_next;
         iret_reg    <= iret_next;
+        rack_reg    <= ram_ack;
+        rdat_reg    <= ram_rdata;
+        acc_ok_reg  <= acc_ok;
+        baddr_reg   <= std_logic_vector(acc_addr);
+        tadr_reg    <= target + resize(acc_reg, 16);         -- ready by st_tab (op, operands, ACC set in st_exec)
+        if state_reg = st_bus and bus_ack = '1' then brd_reg <= bus_rdata; end if;
       end if;
     end process;
 
@@ -364,41 +394,41 @@ begin
     ------------------------------------------------------------------ sample RAM
     -- address: the PC, a table byte, or a context byte (thread, offset)
     process (state_reg, pc_reg, idx_reg, tt_reg, cur_reg, hdr_off, depth_reg, running_reg, ready_reg,
-             target, acc_reg, rn)
+             target, acc_reg, rn, tadr_reg)
       variable thr : std_logic_vector(2 downto 0);
       variable off : std_logic_vector(5 downto 0);
       variable d   : unsigned(2 downto 0);
     begin
-      ram_req <= '0';
+      ram_req_i <= '0';
       ram_we  <= '0';
       thr := std_logic_vector(cur_reg);
       off := "000" & std_logic_vector(hdr_off);
       if state_reg = st_pop then d := depth_reg(2 downto 0) - 1; else d := depth_reg(2 downto 0); end if;
       case state_reg is
-        when st_fetch | st_opnd | st_tab => ram_req <= '1';
-        when st_init            => ram_req <= '1'; ram_we <= '1';
+        when st_fetch | st_opnd | st_tab => ram_req_i <= '1';
+        when st_init            => ram_req_i <= '1'; ram_we <= '1';
                                    thr := std_logic_vector(tt_reg); off := "000" & std_logic_vector(idx_reg);
-        when st_par             => ram_req <= '1'; ram_we <= '1';
+        when st_par             => ram_req_i <= '1'; ram_we <= '1';
                                    thr := std_logic_vector(tt_reg); off := "010" & std_logic_vector(idx_reg);
-        when st_reg             => ram_req <= '1'; off := "01" & rn;
-        when st_regw            => ram_req <= '1'; ram_we <= '1'; off := "01" & rn;
-        when st_tick            => ram_req <= running_reg(to_integer(tt_reg)) and not ready_reg(to_integer(tt_reg));
+        when st_reg             => ram_req_i <= '1'; off := "01" & rn;
+        when st_regw            => ram_req_i <= '1'; ram_we <= '1'; off := "01" & rn;
+        when st_tick            => ram_req_i <= running_reg(to_integer(tt_reg)) and not ready_reg(to_integer(tt_reg));
                                    thr := std_logic_vector(tt_reg); off := "000010";
-        when st_tickw           => ram_req <= '1'; ram_we <= '1';
+        when st_tickw           => ram_req_i <= '1'; ram_we <= '1';
                                    thr := std_logic_vector(tt_reg); off := "000010";
-        when st_waitw           => ram_req <= '1'; ram_we <= '1'; off := "000010";
-        when st_load            => ram_req <= '1';
-        when st_save            => ram_req <= '1'; ram_we <= '1';
-        when st_push            => ram_req <= '1'; ram_we <= '1';
+        when st_waitw           => ram_req_i <= '1'; ram_we <= '1'; off := "000010";
+        when st_load            => ram_req_i <= '1';
+        when st_save            => ram_req_i <= '1'; ram_we <= '1';
+        when st_push            => ram_req_i <= '1'; ram_we <= '1';
                                    off := '1' & std_logic_vector(d) & std_logic_vector(idx_reg(1 downto 0));
-        when st_pop             => ram_req <= '1';
+        when st_pop             => ram_req_i <= '1';
                                    off := '1' & std_logic_vector(d) & std_logic_vector(idx_reg(1 downto 0));
         when others             => null;
       end case;
       if state_reg = st_fetch or state_reg = st_opnd then
         ram_addr <= std_logic_vector(pc_reg);
       elsif state_reg = st_tab then
-        ram_addr <= std_logic_vector(target + resize(acc_reg, 16));
+        ram_addr <= std_logic_vector(tadr_reg);
       else
         ram_addr <= CTX_HI & thr & off;
       end if;
@@ -451,18 +481,25 @@ begin
     ------------------------------------------------------------------ chip registers
     bus_req   <= '1' when state_reg = st_bus else '0';
     bus_we    <= '1' when is_wr else '0';
-    bus_addr  <= std_logic_vector(acc_addr);
+    bus_addr  <= baddr_reg;
+    -- a request is dropped while its ack comes in (ram_ack, then rack_reg), so it isn't granted twice
+    ram_req   <= ram_req_i and not ram_ack and not rack_reg;
     bus_wdata <= o1_reg when op_reg(7) = '0' else std_logic_vector(acc_reg);
 
     ------------------------------------------------------------------ host reads
     ca <= to_integer(unsigned(cpu_addr)) - 21 when unsigned(cpu_addr) >= 21 and unsigned(cpu_addr) <= 30 else 15;
 
-    process (ca, run_reg, err_reg, running_reg, sig_reg, spend_reg)
+    -- frozen: no thread is loaded (a host start being served is not one)
+    frozen <= '1' when run_reg = '0' and (state_reg = st_idle or
+                                          ((state_reg = st_init or state_reg = st_par) and iret_reg = "00")) else '0';
+
+    process (ca, run_reg, err_reg, running_reg, sig_reg, spend_reg, frozen)
     begin
       cpu_do <= (others => '0');
       case ca is
         when 0 =>
           cpu_do(0) <= run_reg;
+          cpu_do(5) <= frozen;
           cpu_do(6) <= spend_reg;
           if err_reg /= x"00" then cpu_do(7) <= '1'; end if;
         when 3 => cpu_do <= running_reg;
@@ -479,9 +516,9 @@ begin
              st_pc_reg, st_b_reg, st_n_reg, pcnt_reg, par_reg, div_reg, tpend_reg, running_reg,
              ready_reg, err_reg, sig_reg, cur_reg, pc_reg, base_reg, depth_reg, rem_reg, budget_reg,
              endsl_reg, acc_reg, c_reg, lock_reg, op_reg, o1_reg, o2_reg, o3_reg, oi_reg, idx_reg,
-             tt_reg, wv_reg, iret_reg, nops, acc_ok, target, refn, is_wr, st_rest,
+             tt_reg, wv_reg, iret_reg, nops, acc_ok_reg, brd_reg, target, refn, is_wr, st_rest,
              tick_15k, cpu_we, ca, cpu_di, sig_clear,
-             ram_ack, ram_rdata, bus_ack, bus_rdata)
+             rack_reg, rdat_reg, bus_ack)
       variable period : unsigned(15 downto 0);
       variable pick   : integer;
       variable t      : integer;
@@ -580,7 +617,7 @@ begin
           end if;
 
         when st_init =>                                         -- write thread tt's context header
-          if ram_ack = '1' then
+          if rack_reg = '1' then
             if idx_reg = 6 then
               idx_next <= (others => '0');
               if iret_reg /= "01" and st_n_reg /= 0 then
@@ -599,7 +636,7 @@ begin
           end if;
 
         when st_par =>                                          -- ... and the start parameters, R0 on
-          if ram_ack = '1' then
+          if rack_reg = '1' then
             if resize(idx_reg, 4) + 1 = st_n_reg then
               idx_next <= (others => '0');
               spend_next <= '0';
@@ -612,32 +649,32 @@ begin
         when st_tick =>
           if running_reg(to_integer(tt_reg)) = '0' or ready_reg(to_integer(tt_reg)) = '1' then
             if tt_reg = 7 then state_next <= st_idle; else tt_next <= tt_reg + 1; end if;
-          elsif ram_ack = '1' then
-            if ram_rdata = x"00" then
+          elsif rack_reg = '1' then
+            if rdat_reg = x"00" then
               mt := tt_reg; mrdy := true;
               if tt_reg = 7 then state_next <= st_idle; else tt_next <= tt_reg + 1; end if;
             else
-              wv_next <= std_logic_vector(unsigned(ram_rdata) - 1);
+              wv_next <= std_logic_vector(unsigned(rdat_reg) - 1);
               state_next <= st_tickw;
             end if;
           end if;
 
         when st_tickw =>
-          if ram_ack = '1' then
+          if rack_reg = '1' then
             if tt_reg = 7 then state_next <= st_idle;
             else tt_next <= tt_reg + 1; state_next <= st_tick; end if;
           end if;
 
         when st_load =>                                         -- header bytes 0, 1, 3, 4, 5, 6
-          if ram_ack = '1' then
+          if rack_reg = '1' then
             case to_integer(idx_reg) is
-              when 0 => pc_next(7 downto 0) <= unsigned(ram_rdata);
-              when 1 => pc_next(15 downto 8) <= unsigned(ram_rdata);
-              when 2 => base_next <= unsigned(ram_rdata);
-              when 3 => depth_next <= unsigned(ram_rdata(3 downto 0)); rem_next(8) <= ram_rdata(4);
-                        c_next <= ram_rdata(5);
-              when 4 => rem_next(7 downto 0) <= unsigned(ram_rdata);
-              when others => acc_next <= unsigned(ram_rdata);
+              when 0 => pc_next(7 downto 0) <= unsigned(rdat_reg);
+              when 1 => pc_next(15 downto 8) <= unsigned(rdat_reg);
+              when 2 => base_next <= unsigned(rdat_reg);
+              when 3 => depth_next <= unsigned(rdat_reg(3 downto 0)); rem_next(8) <= rdat_reg(4);
+                        c_next <= rdat_reg(5);
+              when 4 => rem_next(7 downto 0) <= unsigned(rdat_reg);
+              when others => acc_next <= unsigned(rdat_reg);
             end case;
             if idx_reg = 5 then
               idx_next <= (others => '0');
@@ -648,21 +685,21 @@ begin
           end if;
 
         when st_fetch =>
-          if ram_ack = '1' then
+          if rack_reg = '1' then
             pc_next <= pc_reg + 1;
-            op_next <= ram_rdata;
+            op_next <= rdat_reg;
             endsl_next <= '0';
             oi_next <= (others => '0');
-            if nops_of(ram_rdata) = 0 then state_next <= st_exec; else state_next <= st_opnd; end if;
+            if nops_of(rdat_reg) = 0 then state_next <= st_exec; else state_next <= st_opnd; end if;
           end if;
 
         when st_opnd =>
-          if ram_ack = '1' then
+          if rack_reg = '1' then
             pc_next <= pc_reg + 1;
             case to_integer(oi_reg) is
-              when 0 => o1_next <= ram_rdata;
-              when 1 => o2_next <= ram_rdata;
-              when others => o3_next <= ram_rdata;
+              when 0 => o1_next <= rdat_reg;
+              when 1 => o2_next <= rdat_reg;
+              when others => o3_next <= rdat_reg;
             end case;
             if oi_reg + 1 = nops then
               state_next <= st_exec;
@@ -675,7 +712,7 @@ begin
           state_next <= st_next;                                -- most instructions: count them
           idx_next <= (others => '0');
           if op_reg(7 downto 6) = "00" or op_reg = x"F0" then   -- MOVE, MOVA
-            if acc_ok = '1' then state_next <= st_bus; end if;
+            state_next <= st_chk;
           elsif op_reg(7 downto 6) = "01" or op_reg = x"C4" then  -- WAIT, WAITL
             if op_reg(7) = '0' then wv_next <= "00" & op_reg(5 downto 0); else wv_next <= o1_reg; end if;
             ma := 4;
@@ -705,12 +742,7 @@ begin
               state_next <= st_pop;
             end if;
           elsif op_reg = x"CA" or op_reg = x"CB" then           -- WAITBIT, WAITCLR
-            if acc_ok = '1' then
-              state_next <= st_bus;
-            elsif op_reg(0) = '1' then                          -- reads 0: WAITCLR stalls
-              pc_next <= pc_reg - 3;
-              state_next <= st_save;
-            end if;
+            state_next <= st_chk;
           elsif op_reg = x"FF" then                             -- STOP
             ma := 2;
             state_next <= st_save;
@@ -761,25 +793,33 @@ begin
             state_next <= st_save;
           end if;
 
+        when st_chk =>                                          -- the chip address, checked a clock ago
+          state_next <= st_next;                                -- not allowed: MOVE, MOVA, WAITBIT go on
+          if acc_ok_reg = '1' then
+            state_next <= st_bus;
+          elsif op_reg = x"CB" then                             -- reads 0: WAITCLR stalls
+            pc_next <= pc_reg - 3;
+            state_next <= st_save;
+          end if;
+
         when st_bus =>
           if bus_ack = '1' then
-            if is_wr then
-              state_next <= st_next;
-            else
-              if op_reg(0) = '0' then stall := (bus_rdata and o2_reg) /= x"00";
-              else stall := (bus_rdata and o2_reg) = x"00"; end if;
-              if stall then
-                pc_next <= pc_reg - 3;                          -- try again on the next turn
-                state_next <= st_save;
-              else
-                state_next <= st_next;
-              end if;
-            end if;
+            if is_wr then state_next <= st_next; else state_next <= st_busr; end if;
+          end if;
+
+        when st_busr =>                                         -- WAITBIT/WAITCLR: the byte read (brd_reg)
+          if op_reg(0) = '0' then stall := (brd_reg and o2_reg) /= x"00";
+          else stall := (brd_reg and o2_reg) = x"00"; end if;
+          if stall then
+            pc_next <= pc_reg - 3;                              -- try again on the next turn
+            state_next <= st_save;
+          else
+            state_next <= st_next;
           end if;
 
         when st_reg =>                                          -- a register's value: ALU or DJNZ
-          if ram_ack = '1' then
-            x := unsigned(ram_rdata);
+          if rack_reg = '1' then
+            x := unsigned(rdat_reg);
             if op_reg(3) = '1' then                             -- DJNZ
               wv_next <= std_logic_vector(x - 1);
               state_next <= st_regw;
@@ -794,22 +834,22 @@ begin
           end if;
 
         when st_regw =>                                         -- STA, DJNZ: write the register
-          if ram_ack = '1' then
+          if rack_reg = '1' then
             if op_reg(3) = '1' and wv_reg /= x"00" then pc_next <= target; end if;
             state_next <= st_next;
           end if;
 
         when st_tab =>                                          -- LDT
-          if ram_ack = '1' then
-            acc_next <= unsigned(ram_rdata);
+          if rack_reg = '1' then
+            acc_next <= unsigned(rdat_reg);
             state_next <= st_next;
           end if;
 
         when st_waitw =>
-          if ram_ack = '1' then state_next <= st_next; end if;
+          if rack_reg = '1' then state_next <= st_next; end if;
 
         when st_push =>
-          if ram_ack = '1' then
+          if rack_reg = '1' then
             if idx_reg = 2 then
               depth_next <= depth_reg + 1;
               pc_next <= target; rem_next <= refn;
@@ -821,11 +861,11 @@ begin
           end if;
 
         when st_pop =>
-          if ram_ack = '1' then
+          if rack_reg = '1' then
             case to_integer(idx_reg) is
-              when 0 => pc_next(7 downto 0) <= unsigned(ram_rdata);
-              when 1 => pc_next(15 downto 8) <= unsigned(ram_rdata);
-              when others => rem_next <= resize(unsigned(ram_rdata), 9);
+              when 0 => pc_next(7 downto 0) <= unsigned(rdat_reg);
+              when 1 => pc_next(15 downto 8) <= unsigned(rdat_reg);
+              when others => rem_next <= resize(unsigned(rdat_reg), 9);
             end case;
             if idx_reg = 2 then
               depth_next <= depth_reg - 1;
@@ -851,8 +891,8 @@ begin
             tt_next <= st_t_reg; iret_next <= "10";
             mt := st_t_reg; ma := 1;
             state_next <= st_init;
-          elsif endsl_reg = '1' or (budget_reg = 0 and lock_reg = '0') or running_reg(t) = '0' or
-                run_reg = '0' then
+          elsif endsl_reg = '1' or running_reg(t) = '0' or
+                ((budget_reg = 0 or run_reg = '0') and lock_reg = '0') then
             state_next <= st_save;
           else
             if budget_reg /= 0 then budget_next <= budget_reg - 1; end if;
@@ -860,7 +900,7 @@ begin
           end if;
 
         when st_save =>                                         -- header bytes 0, 1, 3, 4, 5, 6
-          if ram_ack = '1' then
+          if rack_reg = '1' then
             if idx_reg = 5 then
               idx_next <= (others => '0');
               state_next <= st_idle;
