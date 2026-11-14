@@ -8,7 +8,7 @@ my $name="eclaireXL";
 #Added like this to the generated qsf
 #set_parameter -name TV 1
 
-my $version = "32";
+my $version = "33";
 
 my %variants = 
 (
@@ -752,6 +752,7 @@ my %variants =
 				"enable_flash" => 1,
 				"enable_spdif" => 1,
 				"enable_ps2" => 1,
+				"enable_amy" => 1,
 				"enable_routing" => 1,
 				"flash_addr_bits" => 17,
 				#"sample_ram_size" => 65536, Not enough room with FIR
@@ -786,6 +787,7 @@ my %variants =
 				"enable_psg" => 1,
 				"enable_covox" => 1,
 				"enable_sample" => 1,
+				"enable_amy" => 1,
 				"enable_flash" => 1,
 				"enable_spdif" => 1,
 				"enable_ps2" => 1,
