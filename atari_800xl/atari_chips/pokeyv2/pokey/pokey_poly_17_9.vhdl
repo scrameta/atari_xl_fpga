@@ -73,7 +73,11 @@ BEGIN
 	end process;
 	
 		-- output
-	bit_out <= cycle_delay_reg; -- from pokey schematics
+	-- Audio tap: poly17Out on the die is node D0 of RANDOM (cycle_delay_reg always
+	-- equals shift_reg(8)), buffered with no clocked stage. It shares poly4's mux
+	-- and path into the channel output flip-flop, so like poly4 the channels see the
+	-- value of the current cycle (the one being shifted in this cycle).
+	bit_out <= cycle_delay_next;
 	RAND_OUT(7 downto 0) <= not(shift_reg(15 downto 8));
 		
 END vhdl;

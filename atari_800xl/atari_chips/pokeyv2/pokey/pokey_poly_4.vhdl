@@ -45,6 +45,12 @@ BEGIN
 	end process;
 	
 	-- output
-	bit_out <= shift_reg(0);
+	-- The channel noise latches are transparent while the timer pulse is active,
+	-- so they see the poly4 bit of the current cycle, i.e. the value shift_reg(0)
+	-- takes this cycle (= shift_reg(1) when shifting). Matches the measured
+	-- sampling points in P. Rosowski, "The C distortion in POKEY sound generator"
+	-- (tables 15/16: after init exit at cycle 0, ch1 sees E(n) at cycle n, so a
+	-- 64KHz sample at cycle 25 takes E10 and a 15KHz sample at cycle 84 takes E9).
+	bit_out <= shift_reg(1) when enable = '1' else shift_reg(0);
 		
 END vhdl;
