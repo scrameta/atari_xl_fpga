@@ -72,7 +72,10 @@ BEGIN
 		end if;
 
 		if (sync_reset = '1') then
-			out_next <= '0';
+			-- STIMER sets the channel output flip-flop (1 after the output
+			-- inversion), so with high-pass off ch1/2 go silent and ch3/4 go on
+			-- (AHRM STIMER register description; die: rstAudPhase forces the output node to 1).
+			out_next <= '1';
 		end if;
 
 	end process;

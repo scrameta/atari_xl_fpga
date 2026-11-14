@@ -8,7 +8,7 @@ my $name="eclaireXL";
 #Added like this to the generated qsf
 #set_parameter -name TV 1
 
-my $version = "32";
+my $version = "33";
 
 my %variants = 
 (
@@ -423,7 +423,8 @@ my %variants =
 				"ps2clk_bit" => 7,
 				"ps2dat_bit" => 8,
 				"ext_bits"=> 11,
-				"sigmadelta_implementation" => 2
+				"sigmadelta_implementation" => 2,
+				"optimisearea" => 1
 			},
 			"stereo_psg_covox_auto" =>
 			{
@@ -449,7 +450,8 @@ my %variants =
 				#"a7_bit" => 19,  #use CS1
 				"ext_bits"=> 11,
 				#"cs1_bit" => 20, #force high
-				"sigmadelta_implementation" => 2
+				"sigmadelta_implementation" => 2,
+				"optimisearea" => 1
 			},
 		},
 		"10M16SCU169C8G" =>
@@ -490,6 +492,7 @@ my %variants =
 				"enable_psg" => 1,
 				"enable_covox" => 1,
 				"enable_sample" => 1,
+				"enable_amy" => 1,
 				"enable_flash" => 1,
 				"enable_spdif" => 1,
 				"enable_ps2" => 1,
@@ -519,6 +522,7 @@ my %variants =
 				"enable_psg" => 1,
 				"enable_covox" => 1,
 				"enable_sample" => 1,
+				"enable_amy" => 1,
 				"enable_flash" => 1,
 				"enable_spdif" => 1,
 				"enable_ps2" => 1,
@@ -752,6 +756,7 @@ my %variants =
 				"enable_flash" => 1,
 				"enable_spdif" => 1,
 				"enable_ps2" => 1,
+				"enable_amy" => 1,
 				"enable_routing" => 1,
 				"flash_addr_bits" => 17,
 				#"sample_ram_size" => 65536, Not enough room with FIR
@@ -786,6 +791,7 @@ my %variants =
 				"enable_psg" => 1,
 				"enable_covox" => 1,
 				"enable_sample" => 1,
+				"enable_amy" => 1,
 				"enable_flash" => 1,
 				"enable_spdif" => 1,
 				"enable_ps2" => 1,
@@ -1338,6 +1344,8 @@ foreach my $typeboard (sort keys %variants)
 	#			`echo 'set_global_assignment -name CYCLONEII_OPTIMIZATION_TECHNIQUE AREA' >>$type.qsf`;
 				`echo 'set_global_assignment -name OPTIMIZATION_MODE "Aggressive Area"' >>$type.qsf`;
 				`echo 'set_global_assignment -name AUTO_RESOURCE_SHARING ON' >>$type.qsf`;
+				# Pack unrelated registers into LEs with LUTs (fewer LABs)
+				`echo 'set_global_assignment -name QII_AUTO_PACKED_REGISTERS "MINIMIZE AREA WITH CHAINS"' >>$type.qsf`;
 			}
 			else
 			{

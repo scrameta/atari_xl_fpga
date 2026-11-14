@@ -64,14 +64,20 @@ BEGIN
 			shift_next(7) <= feedback;
 			shift_next(6 downto 0) <= shift_reg(7 downto 1);
 
-			shift_next(16) <= ((feedback and select_9_17_del_reg) or (shift_reg(0) and not(select_9_17))) and not(init);
+			-- Die: in = /Init . (chain + sel9) . (xnor + /sel9) . (/sel9 + sel9_d)
+			-- On the cycle switching 9->17 only the 17-bit chain is fed in.
+			shift_next(16) <= ((feedback and select_9_17 and select_9_17_del_reg) or (shift_reg(0) and not(select_9_17))) and not(init);
 
 			cycle_delay_next <= shift_reg(9);
 		end if;
 	end process;
 	
 		-- output
-	bit_out <= cycle_delay_reg; -- from pokey schematics
+	-- Audio tap: poly17Out on the die is node D0 of RANDOM (cycle_delay_reg always
+	-- equals shift_reg(8)), buffered with no clocked stage. It shares poly4's mux
+	-- and path into the channel output flip-flop, so like poly4 the channels see the
+	-- value of the current cycle (the one being shifted in this cycle).
+	bit_out <= cycle_delay_next;
 	RAND_OUT(7 downto 0) <= not(shift_reg(15 downto 8));
 		
 END vhdl;

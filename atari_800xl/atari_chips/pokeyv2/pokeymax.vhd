@@ -534,6 +534,52 @@ ARCHITECTURE vhdl OF pokeymax IS
 	    return ret;
 	end function getByte;
 
+	function to_sl(b : boolean) return std_logic is
+	begin
+		if b then return '1';
+		else return '0';
+		end if;
+	end function to_sl;
+
+	-- flash requesters that exist in this build (bit n = flash_req(n+1))
+	constant flash_req_enable : std_logic_vector(8 downto 0) :=
+	(
+		0 => '1',                                              -- cpu
+		1 => '1',                                              -- config regs
+		2 => to_sl(enable_sample=1),                           -- adpcm step table
+		3 => to_sl(enable_sid=1),                              -- sid 1 tables
+		4 => to_sl(enable_sid=1),                              -- sid 2 tables
+		5 => to_sl(enable_psg=1),                              -- psg volume profile
+		6 => '1',                                              -- pokey mixing profile
+		7 => to_sl(enable_adc=1 and adc_fir_filter_v4=1),      -- adc fir coefficients
+		8 => to_sl(enable_amy=1)                               -- amy rom tables
+	);
+
+	-- mixer L/R channel pairs that exist in this build
+	constant mixer_ch_enable : std_logic_vector(5 downto 0) :=
+	(
+		0 => '1',                                              -- pokey 0/1
+		1 => '1',                                              -- pokey 2/3
+		2 => to_sl(enable_covox=1 or enable_sample=1),         -- covox/sample
+		3 => to_sl(enable_sid=1),                              -- sid
+		4 => to_sl(enable_psg=1),                              -- psg
+		5 => to_sl(enable_amy=1)                               -- amy
+	);
+
+	function to_int(b : boolean) return integer is
+	begin
+		if b then return 1;
+		else return 0;
+		end if;
+	end function to_int;
+
+	-- shared dc blocker channel layout: pokey mixer outputs, then psg, then sio adc
+	constant dcb_psg_base : integer := pokeys;
+	constant dcb_sio_base : integer := dcb_psg_base + 2*to_int(enable_psg=1);
+	constant dcb_channels : integer := dcb_sio_base + to_int(enable_adc=1);
+	signal DCB_IN  : UNSIGNED_AUDIO_TYPE(dcb_channels-1 downto 0);
+	signal DCB_OUT : SIGNED_AUDIO_TYPE(dcb_channels-1 downto 0);
+
 	function MIN(LEFT, RIGHT: INTEGER) return INTEGER is
 	begin
 	  if LEFT < RIGHT then return LEFT;
@@ -596,7 +642,8 @@ flash_on : if enable_flash=1 generate
 	flash_controller_inst : entity work.flash_controller
 	generic map
 	(
-		addr_bits =>flash_addr_bits
+		addr_bits =>flash_addr_bits,
+		req_enable => flash_req_enable
 	)
 	port map
 	(
@@ -921,16 +968,24 @@ PORT MAP(CLK => CLK,
 		 keyboard_scan_enable => KEYBOARD_SCAN_ENABLE,
 		 keyboard_scan_update => KEYBOARD_SCAN_UPDATE
 		);
-pokey1_dc_blocker : entity work.dc_blocker
+-- One dc blocker datapath shared by all channels (pokey, psg, sio adc)
+shared_dc_blocker : entity work.dc_blocker_shared
+GENERIC MAP
+(
+	CHANNELS => dcb_channels
+)
 PORT  MAP
 ( 
 	CLK          => CLK,
 	RESET_N      => RESET_N,
 	ENABLE_CYCLE => ENABLE_CYCLE,
 
-	AUDIO_IN    => POKEY_AUDIO_UNSIGNED(0),
-	AUDIO_OUT   => POKEY_AUDIO_SIGNED(0)
+	AUDIO_IN    => DCB_IN,
+	AUDIO_OUT   => DCB_OUT
 );
+
+DCB_IN(0) <= POKEY_AUDIO_UNSIGNED(0);
+POKEY_AUDIO_SIGNED(0) <= DCB_OUT(0);
 
 --------------------------------------------------------		
 -- POKEY 2-4	 
@@ -970,16 +1025,8 @@ PORT  MAP
 				 keyboard_response => "00",
 				 pot_in=>"00000000");
 
-		pokey_dc_blockerx : entity work.dc_blocker
-		PORT  MAP
-		( 
-			CLK          => CLK,
-			RESET_N      => RESET_N,
-			ENABLE_CYCLE => ENABLE_CYCLE,
-        
-			AUDIO_IN    => POKEY_AUDIO_UNSIGNED(I),
-			AUDIO_OUT   => POKEY_AUDIO_SIGNED(I)
-		);
+		DCB_IN(I) <= POKEY_AUDIO_UNSIGNED(I);
+		POKEY_AUDIO_SIGNED(I) <= DCB_OUT(I);
    end generate POKEY_ON;
 
 --------------
@@ -1299,26 +1346,10 @@ PSG_2 : entity work.PSG_top
 		PROFILE_DATA => flash_do_slow(15 downto 0)
 	);	
 
-psg1_dc_blocker : entity work.dc_blocker
-PORT  MAP
-( 
-	CLK          => CLK,
-	RESET_N      => RESET_N,
-	ENABLE_CYCLE => ENABLE_CYCLE,
-
-	AUDIO_IN    => PSG_AUDIO_UNSIGNED(0),
-	AUDIO_OUT   => PSG_AUDIO_SIGNED(0)
-);
-psg2_dc_blocker : entity work.dc_blocker
-PORT  MAP
-( 
-	CLK          => CLK,
-	RESET_N      => RESET_N,
-	ENABLE_CYCLE => ENABLE_CYCLE,
-
-	AUDIO_IN    => PSG_AUDIO_UNSIGNED(1),
-	AUDIO_OUT   => PSG_AUDIO_SIGNED(1)
-);
+DCB_IN(dcb_psg_base) <= PSG_AUDIO_UNSIGNED(0);
+DCB_IN(dcb_psg_base+1) <= PSG_AUDIO_UNSIGNED(1);
+PSG_AUDIO_SIGNED(0) <= DCB_OUT(dcb_psg_base);
+PSG_AUDIO_SIGNED(1) <= DCB_OUT(dcb_psg_base+1);
 
 end generate psg_on;		
 	
@@ -2041,6 +2072,10 @@ begin
 end process;
 
 mixer1 : entity work.mixer
+GENERIC MAP
+(
+	ch_enable => mixer_ch_enable
+)
 PORT MAP
 (
 	CLK => CLK,
@@ -2442,16 +2477,8 @@ end generate fir_off;
 
 	SIO_AUDIO_UNSIGNED <= unsigned(not(adc_use_reg(15))&adc_use_reg(14 downto 0));
 
-sio_audio_dc_blocker : entity work.dc_blocker 
-PORT  MAP
-( 
-	CLK          => CLK,
-	RESET_N      => RESET_N,
-	ENABLE_CYCLE => ENABLE_CYCLE,
-
-	AUDIO_IN    => SIO_AUDIO_UNSIGNED,
-	AUDIO_OUT   => SIO_AUDIO_SIGNED
-);
+DCB_IN(dcb_sio_base) <= SIO_AUDIO_UNSIGNED;
+SIO_AUDIO_SIGNED <= DCB_OUT(dcb_sio_base);
 
 process(adc_reg,adc_output,adc_valid,ADC_VOLUME_REG)
 	variable adc_shrunk : signed(19 downto 0);
