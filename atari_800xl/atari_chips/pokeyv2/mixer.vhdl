@@ -14,7 +14,14 @@ use work.AudioTypes.all;
 
 LIBRARY work;
 
+-- ch_enable: one bit per L/R channel pair (bit 0 = L_CH0/R_CH0 ... bit 5 = L_CH5/R_CH5).
+-- A disabled pair is removed entirely: its mixer state is skipped and its
+-- inputs are not in the volume mux. Its ports can stay connected upstream.
 ENTITY mixer IS 
+GENERIC
+(
+	ch_enable : std_logic_vector(5 downto 0) := (others=>'1')
+);
 PORT
 (
 	CLK : IN STD_LOGIC;
@@ -33,13 +40,13 @@ PORT
 	L_CH2 : IN SIGNED(15 downto 0);
 	L_CH3 : IN SIGNED(15 downto 0);
 	L_CH4 : IN SIGNED(15 downto 0);
-	L_CH5 : IN SIGNED(15 downto 0);
+	L_CH5 : IN SIGNED(15 downto 0) := (others=>'0');
 	R_CH0 : IN SIGNED(15 downto 0);
 	R_CH1 : IN SIGNED(15 downto 0);
 	R_CH2 : IN SIGNED(15 downto 0);
 	R_CH3 : IN SIGNED(15 downto 0);
 	R_CH4 : IN SIGNED(15 downto 0);
-	R_CH5 : IN SIGNED(15 downto 0);
+	R_CH5 : IN SIGNED(15 downto 0) := (others=>'0');
 	B_CH0 : IN SIGNED(15 downto 0);
 	B_CH1 : IN SIGNED(15 downto 0);
 
@@ -113,6 +120,19 @@ ARCHITECTURE vhdl OF mixer IS
 	
 	signal write : std_logic;
 
+	-- Next state after channel state i, skipping disabled channels
+	function next_ch_state(en : std_logic_vector(5 downto 0); i : integer) return unsigned is
+	begin
+		for k in 0 to 5 loop
+			if k>i and en(k)='1' then
+				return to_unsigned(k,4);
+			end if;
+		end loop;
+		return state_BCH0;
+	end function;
+
+	constant state_first : unsigned(3 downto 0) := next_ch_state(ch_enable,-1);
+
 BEGIN
 -- DETECT IF RIGHT CHANNEL PLAYING
 -- TODO: into another entity
@@ -129,7 +149,7 @@ begin
 		acc_reg <= (others=>'0');
 		out_ch_reg <= (others=>'0');
 		divided_reg <= (others=>'0');
-		state_reg <= state_CH0;
+		state_reg <= state_first;
 	elsif (clk'event and clk='1') then
 		RIGHT_REG <= RIGHT_NEXT;
 		RIGHT_SNAP_REG <= RIGHT_SNAP_NEXT;
@@ -200,22 +220,22 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 		case state_reg is
 			when state_CH0 =>
 				channelsel <= x"0";					
-				state_next <= state_CH1;				
+				state_next <= next_ch_state(ch_enable,0);
 			when state_CH1 =>
 				channelsel <= x"1";
-				state_next <= state_CH2;
+				state_next <= next_ch_state(ch_enable,1);
 			when state_CH2 =>
 				channelsel <= x"2";
-				state_next <= state_CH3;	
+				state_next <= next_ch_state(ch_enable,2);
 			when state_CH3 =>
 				channelsel <= x"3";
-				state_next <= state_CH4;
+				state_next <= next_ch_state(ch_enable,3);
 			when state_CH4 =>
 				channelsel <= x"4";
-				state_next <= state_CH5;
+				state_next <= next_ch_state(ch_enable,4);
 			when state_CH5 =>
 				channelsel <= x"5";
-				state_next <= state_BCH0;
+				state_next <= next_ch_state(ch_enable,5);
 			when state_BCH0 =>
 				channelsel <= x"6";
 				state_next <= state_BCH1;
@@ -248,11 +268,11 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 				-- Critical path: just the saturation check + mux
 				write       <= '1';
 				out_ch_next <= std_logic_vector(unsigned(out_ch_reg)+1);
-				state_next  <= state_CH0;
+				state_next  <= state_first;
 				addAcc := '0';
 
 			when others =>
-				state_next <= state_CH0;
+				state_next <= state_first;
 		end case;
 
 		channelsel(3) <= out_ch_reg(0);
@@ -332,6 +352,15 @@ RIGHT_PLAYING_RECENTLY <= or_reduce(std_logic_vector(RIGHT_PLAYING_COUNT_REG));
 			out_left_enable <= '0';
 			out_right_enable <= '0';
 		end case;
+
+		-- disabled channels: never selected, and removed from the mux
+		for k in 0 to 5 loop
+			if ch_enable(k)='0' and channelsel(2 downto 0)=std_logic_vector(to_unsigned(k,3)) then
+				volume <= (others=>'0');
+				out_left_enable <= '0';
+				out_right_enable <= '0';
+			end if;
+		end loop;
 	end process;
 	
 	left_on_right <= not(FANCY_ENABLE) or (not(RIGHT_PLAYING_RECENTLY) AND DETECT_RIGHT);		

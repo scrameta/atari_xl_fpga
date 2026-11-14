@@ -15,11 +15,17 @@ use IEEE.STD_LOGIC_MISC.all;
 LIBRARY work;
 
 -- takes about 5-6 cycles per read (depending on family)
--- So at 116MHz can service all 8 clients at >2MHz - if they all request at once
+-- So at 116MHz can service all 9 clients at >2MHz - if they all request at once
+--
+-- req_enable: one bit per requester (bit 0 = req1 ... bit 8 = req9).
+-- A disabled requester is removed entirely: its request is ignored, it has
+-- no round-robin slot and its address is not in the address mux. Its port
+-- can stay connected (or undriven) upstream.
 ENTITY flash_controller IS 
 	GENERIC
 	(
-		addr_bits: integer := 16
+		addr_bits: integer := 16;
+		req_enable : std_logic_vector(8 downto 0) := (others=>'1')
 	);
 	PORT
 	(
@@ -137,7 +143,65 @@ ARCHITECTURE vhdl OF flash_controller IS
 	signal flash_complete_slow_next : std_logic_vector(8 downto 0);
 	signal flash_complete_slow_reg : std_logic_vector(8 downto 0);	
 
+	-- requests from disabled requesters are ignored
+	signal req_masked : std_logic_vector(8 downto 0);
+
+	-- all request addresses, widened to addr_bits
+	type req_addr_type is array(0 to 8) of std_logic_vector(addr_bits-1 downto 0);
+	signal req_addr : req_addr_type;
+
+	-- Previous enabled requester before i (cyclic). The round-robin token only
+	-- rotates through enabled requesters, so robin bits of disabled requesters
+	-- are constant 0 and synthesise away.
+	function prev_enabled(en : std_logic_vector(8 downto 0); i : integer) return integer is
+		variable j : integer;
+	begin
+		j := i;
+		for k in 0 to 8 loop
+			if j=0 then
+				j := 8;
+			else
+				j := j-1;
+			end if;
+			if en(j)='1' then
+				return j;
+			end if;
+		end loop;
+		return i;
+	end function;
+
+	-- Token starts on the last enabled requester, so the first grant goes to
+	-- the first enabled one (same as the original "100000000" reset value)
+	function robin_reset(en : std_logic_vector(8 downto 0)) return std_logic_vector is
+		variable ret : std_logic_vector(8 downto 0);
+	begin
+		ret := (others=>'0');
+		for k in 8 downto 0 loop
+			if en(k)='1' then
+				ret(k) := '1';
+				return ret;
+			end if;
+		end loop;
+		return ret;
+	end function;
+
 BEGIN
+
+	assert or_reduce(req_enable)='1'
+		report "flash_controller: req_enable has no requesters enabled"
+		severity failure;
+
+	req_masked <= flash_req_request and req_enable;
+
+	req_addr(0) <= flash_req1_addr;
+	req_addr(1) <= std_logic_vector(resize(unsigned(flash_req2_addr),addr_bits));
+	req_addr(2) <= std_logic_vector(resize(unsigned(flash_req3_addr),addr_bits));
+	req_addr(3) <= flash_req4_addr;
+	req_addr(4) <= flash_req5_addr;
+	req_addr(5) <= std_logic_vector(resize(unsigned(flash_req6_addr),addr_bits));
+	req_addr(6) <= std_logic_vector(resize(unsigned(flash_req7_addr),addr_bits));
+	req_addr(7) <= std_logic_vector(resize(unsigned(flash_req8_addr),addr_bits));
+	req_addr(8) <= std_logic_vector(resize(unsigned(flash_req9_addr),addr_bits));
 
 	flash1 : flash
 	port map
@@ -175,7 +239,7 @@ BEGIN
 			request_di_reg <= (others=>'0');
 			device_reg <= '0';
 			output_reg <= (others=>'0');
-			robin_reg <= "100000000";
+			robin_reg <= robin_reset(req_enable);
 			flash_do_reg <= (others=>'0');
 			flash_complete_reg <= (others=>'0');
 			flash_write_reg <= '0';
@@ -210,11 +274,9 @@ BEGIN
 	-- TODO burst!
 	process(state_reg,request_addr_reg,request_di_reg,device_reg,output_reg,
 		robin_reg,
-		flash_req_request,
 
-		flash_req1_addr, flash_req1_data_in, flash_req1_write_n, flash_req1_addr_config,
-		flash_req2_addr, flash_req3_addr, flash_req4_addr,
-		flash_req5_addr, flash_req6_addr, flash_req7_addr, flash_req8_addr, flash_req9_addr,
+		req_masked, req_addr,
+		flash_req1_data_in, flash_req1_write_n, flash_req1_addr_config,
 
 		flash_readvalid, flash_waitrequest,
 
@@ -238,43 +300,35 @@ BEGIN
 		flash_read_next <= flash_read_reg;
 		flash_write_next <= flash_write_reg;
 
-		device := '0';
+		-- robin_reg is one-hot, so select the address with AND-OR rather than
+		-- full-width compares. Disabled requesters drop out of the mux.
+		device := robin_reg(0) and req_enable(0) and flash_req1_addr_config;
 		addr := (others=>'0');
-		case robin_reg is
-		when '0'&x"01" =>
-			addr := flash_req1_addr;
-			device := flash_req1_addr_config;
-		when '0'&x"02" =>
-			addr(12 downto 0) := flash_req2_addr;
-		when '0'&x"04" =>
-			addr(12 downto 0) := flash_req3_addr;
-		when '0'&x"08" =>
-			addr := flash_req4_addr;
-		when '0'&x"10" =>
-			addr := flash_req5_addr;
-		when '0'&x"20" =>
-			addr(12 downto 0) := flash_req6_addr;
-		when '0'&x"40" =>
-			addr(12 downto 0) := flash_req7_addr;
-		when '0'&x"80" =>
-			addr(12 downto 0) := flash_req8_addr;
-		when others =>
-			addr(12 downto 0) := flash_req9_addr;
-		end case;
+		for i in 0 to 8 loop
+			if (req_enable(i)='1' and robin_reg(i)='1') then
+				addr := addr or req_addr(i);
+			end if;
+		end loop;
 
-
+		-- rotate the token to the next enabled requester
 		update_robin <= complete;
 		if (update_robin='1') then
-			robin_next <= robin_reg(7 downto 0)&robin_reg(8);
+			for i in 0 to 8 loop
+				if (req_enable(i)='1') then
+					robin_next(i) <= robin_reg(prev_enabled(req_enable,i));
+				else
+					robin_next(i) <= '0';
+				end if;
+			end loop;
 		end if;
 
 		case state_reg is
 		when state_idle=>
-			if (or_reduce(robin_reg and flash_req_request)='1') then
+			if (or_reduce(robin_reg and req_masked)='1') then
 				request_addr_next <= addr;
 				request_di_next <= flash_req1_data_in;
 
-				if (robin_reg(0)='1' and flash_req1_write_n='0') then --write
+				if (robin_reg(0)='1' and req_enable(0)='1' and flash_req1_write_n='0') then --write
 					state_next <= state_write;
 				else
 					state_next <= state_read;
@@ -350,7 +404,7 @@ BEGIN
 	end process;
 
 	-- register complete
-	flash_complete_next <= output_reg and (complete&complete&complete&complete&complete&complete&complete&complete&complete);
+	flash_complete_next <= output_reg and req_enable and (8 downto 0=>complete);
 	flash_complete_slow_next <= flash_complete_next or flash_complete_reg;
 	process(flash_do_reg,flash_do,complete)
 	begin
