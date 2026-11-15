@@ -19,7 +19,7 @@ entity amy1 is
     -- Repair the noise generators' pseudo-random registers (see the README). false = the
     -- netlist as drawn, where A, B and C get no feedback and freeze within 15 updates.
     NOISE_FIX : boolean := true;
-    -- memory layout: true = packed into 4 M9Ks (needs ce low on the two clks before each
+    -- memory layout: true = packed into 3 M9Ks (needs ce low on the two clks before each
     -- ce), false = one block per memory (ce low on the clk before each ce)
     MEM_PACKED : boolean := true
   );
@@ -50,7 +50,7 @@ entity amy1 is
     load_we   : in  std_logic;                      -- write one image word
     load_addr : in  std_logic_vector(10 downto 0);
     load_data : in  std_logic_vector(31 downto 0);
-    -- auxiliary port on the VOICE block RAM (words 16..255; the packed layout only)
+    -- auxiliary ports (the note engine's, unused: tied off in the packed layout)
     aux_re    : in  std_logic := '0';
     aux_raddr : in  std_logic_vector(7 downto 0) := (others => '0');
     aux_rack  : out std_logic;

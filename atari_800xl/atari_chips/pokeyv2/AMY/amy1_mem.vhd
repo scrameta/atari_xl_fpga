@@ -30,7 +30,8 @@ entity amy1_mem is
     load_addr : in  std_logic_vector(10 downto 0);
     load_data : in  std_logic_vector(31 downto 0);
 
-    -- auxiliary port on the VOICE block RAM (words 16..255; the packed layout only)
+    -- auxiliary port, once on the VOICE block RAM for the note engine: no longer
+    -- connected (the voice RAM is in M9K 3 now); the outputs are tied off
     aux_re    : in  std_logic := '0';                      -- read aux_raddr ...
     aux_raddr : in  std_logic_vector(7 downto 0) := (others => '0');
     aux_rack  : out std_logic;                             -- ... accepted: data next clock
@@ -40,9 +41,8 @@ entity amy1_mem is
     aux_wdata : in  std_logic_vector(35 downto 0) := (others => '0');
     aux_wack  : out std_logic;                             -- ... done at this edge
 
-    -- auxiliary port 2 on the harmonic block RAM, words 128..255 (address 0..127 here;
-    -- the packed layout only): the note engine's Rev C extension page.  Same handshake
-    -- as the aux port; granted in any clock the core leaves the port free.
+    -- auxiliary port 2, once the note engine's Rev C extension page in the harmonic
+    -- block RAM: no longer connected (the voice RAM has words 240..255); tied off
     aux2_re    : in  std_logic := '0';
     aux2_raddr : in  std_logic_vector(6 downto 0) := (others => '0');
     aux2_rack  : out std_logic;

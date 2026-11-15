@@ -1,5 +1,5 @@
 ---------------------------------------------------------------------------
--- AMY1 memories, packed for the FPGA: 4 block RAMs (M9K), nothing in logic.
+-- AMY1 memories, packed for the FPGA: 3 block RAMs (M9K), nothing in logic.
 --
 --   M9K 1, true dual port 512 x 18: SROMBS (256 x 17) on port A,
 --                                    XROMBS (128 x 15) at word 256 on port B
@@ -8,12 +8,11 @@
 --                                    NOISE (64 x 3) at word 640
 --   M9K 3, simple dual port 256 x 36: HARMBRKPOINT | HARMCURNTVAL | LHPRAM in words
 --                                    0..63, PHASERAM (8 x 20) in words 64..71, Rev C
---                                    coefficients in 72..119; words 128..255 belong to
---                                    the aux2 port (the note engine's extension page)
---   M9K 4, simple dual port 256 x 36: VOICE18 | VOICE3 in words 0..15; words
---                                    16..255 belong to the aux port (amy1_top's
---                                    note engine)
---   OCTSPL is no longer read.
+--                                    coefficients in 72..119, VOICE18 | VOICE3 in words
+--                                    240..255; 120..239 unused
+--   OCTSPL is no longer read. The aux and aux2 ports (the note engine's pages, in a
+--   fourth M9K and in M9K 3's top half) are gone with the engine: their outputs are
+--   tied off.
 --
 -- The contract (amy1_core): the address of a chip clock gives its data before the ce
 -- that ends the clock; a write enabled in a chip clock happens at that ce. Here, with
@@ -22,12 +21,14 @@
 --        unregistered output: the data is there for the rest of the chip clock);
 --        M9K 3 writes the previous chip clock's PHASERAM word
 --   e2   M9K 2 port B reads the NOISE row (XROMINT's data is held from e2 on);
---        M9K 3 reads the PHASERAM word (the harmonic word is held);
---        M9K 4's read port is free for the aux port (the voice data is held)
---   ce   the writes: NOISE on M9K 2 port A, the harmonic and voice words on the write
---        ports of M9K 3 and 4, merged with this clock's read of the same word (the
---        RAMs that share an address are one word)
--- So ce must be low on the two clks before each ce (three clks per chip clock at least).
+--        M9K 3 reads the PHASERAM word (the harmonic word is held) and writes the
+--        previous chip clock's voice word
+--   e6   M9K 3 reads the voice word (held from e7)
+--   ce   the writes: NOISE on M9K 2 port A, the harmonic word on M9K 3's write port,
+--        merged with this clock's read of the same word (the RAMs that share an
+--        address are one word); the voice word is merged the same way and written at
+--        the next e2
+-- M9K 3's full schedule (below) needs at least 9 clks per chip clock (the Rev C minimum).
 -- Every read is registered (a read on the edge of a write to the same word returns the
 -- old data, which the M9K does natively), so Quartus adds no pass-through logic.
 --
@@ -71,9 +72,7 @@ architecture packed of amy1_mem is
   --  64..71 voice phases (historical), 72..87 4 x 6-bit stochasticity,
   --  88..119 2 x 18-bit accumulated phase offsets, 120..127 unused.
   type harm_t is array (0 to 255) of std_logic_vector(35 downto 0);
-  type voice_t is array (0 to 255) of std_logic_vector(35 downto 0);
   signal harm : harm_t;
-  signal voice : voice_t;
   signal harm_rd : std_logic_vector(35 downto 0);
   signal harm_hold : std_logic_vector(35 downto 0) := (others => '0');
   signal harm_q : std_logic_vector(35 downto 0);
@@ -103,16 +102,16 @@ architecture packed of amy1_mem is
   signal ext_value_reg, ext_value_next : std_logic_vector(7 downto 0) := (others => '0');
   signal ext_rd_addr, offset_addr, stochastic_addr : std_logic_vector(6 downto 0);
 
-  signal voice_rd : std_logic_vector(35 downto 0);
   signal voice_hold : std_logic_vector(20 downto 0) := (others => '0');
   signal voice_q : std_logic_vector(20 downto 0);
-  signal aux_rack_i, aux_wack_i, voice_wr : std_logic;
-  signal harm_we, harm_re, voice_we, voice_re : std_logic;
+  signal voice_wr, harm_we, harm_re : std_logic;
   signal harm_waddr, harm_raddr   : std_logic_vector(7 downto 0);
-  signal aux2_rack_i, aux2_wack_i : std_logic;
   signal harm_wdata               : std_logic_vector(35 downto 0);
-  signal voice_waddr, voice_raddr : std_logic_vector(7 downto 0);
-  signal voice_wdata              : std_logic_vector(35 downto 0);
+  constant VOICE_PAGE : std_logic_vector(3 downto 0) := "1111";   -- M9K 3 words 240..255
+  -- the voice write, delayed from ce to e2 (M9K 3's write port is busy at ce)
+  signal vw_we_d   : std_logic := '0';
+  signal vw_addr_d : std_logic_vector(3 downto 0)  := (others => '0');
+  signal vw_data_d : std_logic_vector(20 downto 0) := (others => '0');
 
 begin
 
@@ -210,12 +209,12 @@ begin
   -- M9K 3: harmonic RAM / phase RAM / extra coefficients / phase offsets.
   -- Clock scheduling at 8.192 MHz: 14 system CLK edges per internal chip ce.
   -- e1 harmonic read + previous phase write
-  -- e2 phase read
+  -- e2 phase read + previous voice write
   -- e3 capture phase, read the *audio* harmonic detuning word
   -- e4 capture detune, read stochasticity word
   -- e5 capture stochasticity, read offset state word
-  -- e6 calculate the increment; register it and the offset word
-  -- e7 add, write & capture updated phase offset
+  -- e6 calculate the increment; register it and the offset word; read the voice word
+  -- e7 add, write & capture updated phase offset; hold the voice word
   -- e7 read pending extension-command coefficient word
   -- e8 RMW extension-command word and acknowledge (if pending)
   -- No extra M9K or read/write ports. THIS REQUIRES >=9 CLK CYCLES PER CE.
@@ -233,13 +232,12 @@ begin
                      phase_addr_d, phase_data_d, ce_d6, ext_enable, offset_step,
                      harm_rd, phase_slot, off_sum, oldw_reg, ce_d7, offset_addr,
                      ce_d8, ext_req_reg, ext_kind_reg, ext_value_reg,
-                     ext_index_reg, ext_rd_addr, aux2_we, aux2_waddr, aux2_wdata)
+                     ext_index_reg, ext_rd_addr, vw_we_d, vw_addr_d, vw_data_d, ce_d2)
     variable w : std_logic_vector(35 downto 0);
     variable n : natural range 0 to 3;
   begin
     harm_we <= '0';
     harm_waddr <= "00" & harmbrkpoint_addr;
-    aux2_wack_i <= '0';
     harm_wdata <= (35 downto 20 => '0') & phase_data_d;
     w := (others => '0');
     if load_we = '1' and in_unit(load_addr, HARM_BASE, 6) then
@@ -250,6 +248,10 @@ begin
       harm_we <= '1';
       harm_waddr <= "01000" & load_addr(2 downto 0);
       harm_wdata <= (35 downto 20 => '0') & load_data(19 downto 0);
+    elsif load_we = '1' and in_unit(load_addr, VOICE_BASE, 4) then
+      harm_we <= '1';
+      harm_waddr <= VOICE_PAGE & load_addr(3 downto 0);
+      harm_wdata <= (35 downto 21 => '0') & load_data(20 downto 0);
     elsif ce = '1' and (lhpram_we = '1' or harmcurntval_we = '1' or harmbrkpoint_we = '1') then
       w := harm_hold;
       if harmbrkpoint_we = '1' then w(15 downto 0) := harmbrkpoint_wdata; end if;
@@ -258,6 +260,12 @@ begin
       harm_we <= '1'; harm_wdata <= w;
     elsif phase_we_d = '1' then
       harm_we <= '1'; harm_waddr <= "01000" & phase_addr_d;
+    elsif vw_we_d = '1' and ce_d2 = '1' then
+      -- the voice word merged at the last ce (high only at e2: never meets the ce, e1,
+      -- e7 or e8 writes)
+      harm_we <= '1';
+      harm_waddr <= VOICE_PAGE & vw_addr_d;
+      harm_wdata <= (35 downto 21 => '0') & vw_data_d;
     elsif ce_d7 = '1' and ext_enable = '1' and offset_step = '1' then
       w := oldw_reg;
       if phase_slot(0) = '0' then
@@ -275,11 +283,6 @@ begin
         w(n*6+5 downto n*6) := ext_value_reg(5 downto 0);
       end if;
       harm_we <= '1'; harm_waddr <= '0' & ext_rd_addr; harm_wdata <= w;
-    elsif aux2_we = '1' then
-      -- lowest priority: the extension page (words 128..255) is never part of a
-      -- core read-modify-write, so the write needs only a free port
-      harm_we <= '1'; harm_waddr <= '1' & aux2_waddr; harm_wdata <= aux2_wdata;
-      aux2_wack_i <= '1';
     end if;
   end process;
 
@@ -288,20 +291,12 @@ begin
                 "00" & phase_slot when ce_d3 = '1' else
                 '0' & stochastic_addr when ce_d4 = '1' else
                 '0' & offset_addr when ce_d5 = '1' else
-                '1' & aux2_raddr when aux2_rack_i = '1' else
+                VOICE_PAGE & voice18_addr when ce_d6 = '1' else
                 '0' & ext_rd_addr;
-  harm_re <= ce_d1 or ce_d2 or ce_d3 or ce_d4 or ce_d5 or
-             (ce_d7 and ext_req_reg) or aux2_rack_i;
-
-  -- aux2 reads take any clock in which the core neither reads M9K 3 nor uses harm_rd in
-  -- the next clock: the core reads at e1..e5 and e7 and uses each result one clock
-  -- later (e2..e6, e8).  With at least 9 clocks per chip clock (the Rev C minimum)
-  -- that leaves ce, e6 and e8..; at 3/7 of 57.344 MHz (14 clocks) eight per chip clock.
-  aux2_rack_i <= aux2_re and not (ce_d1 or ce_d2 or ce_d3 or ce_d4 or ce_d5 or ce_d7)
-                 and not load_we;
-  aux2_rack  <= aux2_rack_i;
-  aux2_wack  <= aux2_wack_i;
-  aux2_rdata <= harm_rd;
+  -- the voice word is read at e6: the e5 offset word is registered (oldw/oldh) on the
+  -- same edge, and offset_old_q, the other output straight from harm_rd, is unused
+  harm_re <= ce_d1 or ce_d2 or ce_d3 or ce_d4 or ce_d5 or ce_d6 or
+             (ce_d7 and ext_req_reg);
 
   harm_ram: process(clk)
   begin
@@ -479,66 +474,73 @@ begin
   ext_ack <= ext_ack_reg;
 
   ---------------------------------------------------------------------------
-  -- M9K 4: voice RAMs, one word per voice: 20..18 VOICE3 | 17..0 VOICE18; the aux port
-  -- reads when the core does not (its data is held from e2), writes when it does not
+  -- Voice RAM: VOICE3 | VOICE18 (bits 20..18 | 17..0), one word per voice, in M9K 3
+  -- words 240..255. Read at e6, held from e7; the ce write (merged with this clock's
+  -- read of the same word) is registered and done at e2 of the next chip clock, before
+  -- that clock's e6 read. The core takes the voice data only at ce (the envelope
+  -- generator's F bus feeds registers and the write data), so e7 is in time.
   voice_wr <= ce and (voice18_we or voice3_we);
 
-  voice_wr_p: process (load_we, load_addr, load_data, voice_wr, voice_q, voice18_we, voice3_we,
-                       voice18_wdata, voice3_wdata, voice18_addr, aux_wack_i, aux_waddr, aux_wdata)
-    variable w : std_logic_vector(35 downto 0);
-  begin
-    voice_we    <= '0';
-    voice_waddr <= aux_waddr;
-    voice_wdata <= aux_wdata;
-    if load_we = '1' and in_unit(load_addr, VOICE_BASE, 4) then
-      voice_we    <= '1';
-      voice_waddr <= "0000" & load_addr(3 downto 0);
-      voice_wdata <= (35 downto 21 => '0') & load_data(20 downto 0);
-    elsif voice_wr = '1' then
-      w := (35 downto 21 => '0') & voice_q;      -- this clock's read of the same word
-      if voice18_we = '1' then w(17 downto 0)  := voice18_wdata; end if;
-      if voice3_we = '1'  then w(20 downto 18) := voice3_wdata;  end if;
-      voice_we    <= '1';
-      voice_waddr <= "0000" & voice18_addr;
-      voice_wdata <= w;
-    elsif aux_wack_i = '1' then
-      voice_we    <= '1';
-    end if;
-  end process;
-
-  voice_raddr <= "0000" & voice18_addr when ce_d1 = '1' else aux_raddr;
-  voice_re    <= ce_d1 or aux_rack_i;
-
-  voice_ram: process (clk)
+  voice_w_regs: process (clk)
+    variable w : std_logic_vector(20 downto 0);
   begin
     if rising_edge(clk) then
-      if voice_we = '1' then
-        voice(to_integer(unsigned(voice_waddr))) <= voice_wdata;
+      if voice_wr = '1' then
+        w := voice_q;
+        if voice18_we = '1' then w(17 downto 0)  := voice18_wdata; end if;
+        if voice3_we = '1'  then w(20 downto 18) := voice3_wdata;  end if;
+        vw_we_d   <= '1';
+        vw_addr_d <= voice18_addr;
+        vw_data_d <= w;
+      elsif ce_d2 = '1' then
+        vw_we_d   <= '0';                        -- written at this edge
       end if;
-      if voice_re = '1' then
-        voice_rd <= voice(to_integer(unsigned(voice_raddr)));
-      end if;
-    end if;
-  end process;
-
-  process (clk)
-  begin
-    if rising_edge(clk) then
-      if ce_d2 = '1' then
-        voice_hold <= voice_rd(20 downto 0);
+      if ce_d7 = '1' then
+        voice_hold <= harm_rd(20 downto 0);      -- the e6 read (e7 may reload harm_rd)
       end if;
     end if;
   end process;
 
-  voice_q  <= voice_rd(20 downto 0) when ce_d2 = '1' else voice_hold;
+  voice_q   <= harm_rd(20 downto 0) when ce_d7 = '1' else voice_hold;
   voice18_q <= voice_q(17 downto 0);
   voice3_q  <= voice_q(20 downto 18);
 
-  aux_rack_i <= aux_re and not ce_d1 and not load_we;
-  aux_wack_i <= aux_we and not load_we and not voice_wr;
-  aux_rack   <= aux_rack_i;
-  aux_wack   <= aux_wack_i;
-  aux_rdata  <= voice_rd;
+  -- the note engine's ports, unused
+  aux_rack   <= '0';
+  aux_wack   <= '0';
+  aux_rdata  <= (others => '0');
+  aux2_rack  <= '0';
+  aux2_wack  <= '0';
+  aux2_rdata <= (others => '0');
+
+  -- synthesis translate_off
+  -- self-check: the old layout's voice RAM, written at ce, against voice_q at each ce
+  -- (from the first e6 read on)
+  voice_shadow: process (clk)
+    type sv_t is array (0 to 15) of std_logic_vector(20 downto 0);
+    variable sv   : sv_t := (others => (others => '0'));
+    variable w    : std_logic_vector(20 downto 0);
+    variable live : boolean := false;
+  begin
+    if rising_edge(clk) then
+      if load_we = '1' and in_unit(load_addr, VOICE_BASE, 4) then
+        sv(to_integer(unsigned(load_addr(3 downto 0)))) := load_data(20 downto 0);
+      elsif ce = '1' then
+        if live then
+          assert voice_q = sv(to_integer(unsigned(voice18_addr)))
+            report "voice RAM mismatch" severity failure;
+        end if;
+        if voice_wr = '1' then
+          w := voice_q;
+          if voice18_we = '1' then w(17 downto 0)  := voice18_wdata; end if;
+          if voice3_we = '1'  then w(20 downto 18) := voice3_wdata;  end if;
+          sv(to_integer(unsigned(voice18_addr))) := w;
+        end if;
+      end if;
+      if ce_d7 = '1' then live := true; end if;
+    end if;
+  end process;
+  -- synthesis translate_on
 
   octspl_q <= (others => '0');
 end architecture;
